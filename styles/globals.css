@@ -1,0 +1,48 @@
+/**
+ * globals.css
+ * ─────────────────────────────────────────────────────────────────
+ * Minimal global reset and base styles.
+ *
+ * The navbar itself is almost entirely self-contained via
+ * styled-jsx scoped styles — this file only covers the page shell.
+ * ─────────────────────────────────────────────────────────────────
+ */
+
+/* ── Universal box model reset ────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base page ────────────────────────────────────────────────── */
+html,
+body {
+  background: #1a1a1a;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
+  min-height: 100vh;
+}
+
+/* ── Smooth scrolling ─────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Focus ring: visible only for keyboard navigation ────────── */
+:focus-visible {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
+}
+
+/* Remove default button / anchor styling ─────────────────────── */
+button {
+  all: unset;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
