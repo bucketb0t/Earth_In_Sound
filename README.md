@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Earth In Sound
 
-## Getting Started
+![Earth In Sound logo](public/EarthInSound.webp)
 
-First, run the development server:
+Earth In Sound is the website for a production company that also hosts a
+podcast. The project scope is to present the company, its music-production
+identity, artist-related work, podcast presence, community touchpoints, and
+store access through a custom interface rather than a generic web header.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The current build focuses on a hardware-console-inspired navigation system.
+Its cells are designed to become individual artwork surfaces, allowing each
+brand area to develop its own visual language while remaining part of one
+coherent site experience.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Current Scope
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Brand-forward landing experience for Earth In Sound.
+- Custom navbar as the primary interface object.
+- Dedicated sections for Earth In Sound, Jason Walton, I Hate Music, account,
+  store, and cart access.
+- A structure that supports future custom artwork per cell.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Out Of Scope For The Current Build
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Full page content for every navigation target.
+- Checkout, authentication, and account backend behavior.
+- Podcast hosting infrastructure.
+- Store inventory or payment integration.
