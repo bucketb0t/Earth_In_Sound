@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 14">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #6d4900;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6 {
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        fill: #666;
+      }
+
+      .cls-3 {
+        fill: url(#radial-gradient);
+      }
+
+      .cls-4 {
+        fill: #2d2d2d;
+      }
+
+      .cls-5 {
+        fill: #191919;
+      }
+
+      .cls-6 {
+        fill: #0a0a0a;
+      }
+    </style>
+    <radialGradient id="radial-gradient" cx="8.62" cy="-70.5" fx="8.62" fy="-70.5" r="7.28" gradientTransform="translate(4.33 63.4) scale(.89 .8)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fbb03b"/>
+      <stop offset="1" stop-color="#bf8500"/>
+    </radialGradient>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <polygon class="cls-6" points="24 14 0 14 1.5 13 22.5 13 24 14"/>
+      <rect class="cls-4" x="3" y="2" width="18" height="10"/>
+      <polygon class="cls-5" points="24 0 24 14 22.5 13 22.5 1 24 0"/>
+      <polygon class="cls-5" points="1.5 1 1.5 13 0 14 0 0 1.5 1"/>
+      <polygon class="cls-2" points="24 0 22.5 1 1.5 1 0 0 24 0"/>
+      <path class="cls-4" d="M1.5,1v12h21V1H1.5ZM3,12V2h18v10H3Z"/>
+      <rect class="cls-1" x="3" y="2" width="18" height="10"/>
+      <rect class="cls-3" x="4" y="3" width="16" height="8"/>
+    </g>
+  </g>
+</svg>
