@@ -200,7 +200,7 @@ export default function KnobCell({
                   fontSize={8}
                   fontFamily="'Courier New', monospace"
                   letterSpacing="0.05em"
-                  fill={on ? "var(--glow)" : "#444"}
+                  fill={on ? "var(--glow)" : "#ffffff"}
                   style={{ transition: "fill 0.2s", userSelect: "none" }}
                 >
                   {link}

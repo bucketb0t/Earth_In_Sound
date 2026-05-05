@@ -59,7 +59,7 @@ export const DEFAULT_TRIG_DEG = 90;
  */
 export const DESIGN_WIDTH = 1200;
 export const DESIGN_HEIGHT = 140;
-export const NAVBAR_VISUAL_WIDTH_PERCENT = 80;
+export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
 
 /*
  * Fixed cell geometry.
