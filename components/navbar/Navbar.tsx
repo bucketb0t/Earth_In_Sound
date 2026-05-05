@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  DESIGN_HEIGHT,
-  NAVBAR_VISUAL_WIDTH_PERCENT,
-} from "./config";
+import { DESIGN_HEIGHT, NAVBAR_VISUAL_WIDTH_PERCENT } from "./config";
 import { NavbarContext, useNavbar } from "./state";
 
 import AccountCell from "./cells/AccountCell";
@@ -13,6 +10,8 @@ import IHateMusicCell from "./cells/IHateMusicCell";
 import JasonWaltonCell from "./cells/JasonWaltonCell";
 import LogoCell from "./cells/LogoCell";
 import StoreCell from "./cells/StoreCell";
+import type { CSSProperties } from "react";
+import baseBannerNavbar from "./NavbarAssets/SVG/BaseBannerNavbar.svg";
 
 /**
  * Navbar shell and provider.
@@ -26,7 +25,7 @@ export default function Navbar() {
   const { shellRef, scale, ready } = navbarState;
 
   /*
-   * The final rendered faceplate is intentionally 80% of the shell. Because
+   * The final rendered faceplate spans the full shell width.
    * CSS transform scale changes visual size after layout, the unscaled root is
    * widened by 1 / scale before the transform is applied.
    */
@@ -34,7 +33,10 @@ export default function Navbar() {
     scale > 0
       ? `${(NAVBAR_VISUAL_WIDTH_PERCENT / scale).toFixed(4)}%`
       : `${NAVBAR_VISUAL_WIDTH_PERCENT}%`;
-
+  const baseBannerUrl =
+    typeof baseBannerNavbar === "string"
+      ? baseBannerNavbar
+      : baseBannerNavbar.src;
   return (
     <NavbarContext.Provider value={navbarState}>
       <div
@@ -47,11 +49,14 @@ export default function Navbar() {
       >
         <div
           className="navbar-root"
-          style={{
-            transform: `translateX(-50%) scale(${scale})`,
-            transformOrigin: "top center",
-            width: rootWidth,
-          }}
+          style={
+            {
+              transform: `translateX(-50%) scale(${scale})`,
+              transformOrigin: "top center",
+              width: rootWidth,
+              "--navbar-bg": `url(${baseBannerUrl})`,
+            } as CSSProperties
+          }
           role="navigation"
           aria-label="Earth In Sound site navigation"
         >
@@ -75,14 +80,18 @@ export default function Navbar() {
         .navbar-shell {
           position: relative;
           width: 100%;
-          padding: 0 clamp(16px, 4vw, 64px);
+          padding: 0;
         }
 
         .navbar-root {
           position: absolute;
           top: 0;
           left: 50%;
-          background: linear-gradient(180deg, #232323 0%, #181818 100%);
+          background-color: #181818;
+          background-image: var(--navbar-bg);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
           border-bottom: 2px solid #111;
           box-shadow:
             0 4px 32px rgba(0, 0, 0, 0.8),
