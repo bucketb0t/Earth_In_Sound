@@ -216,6 +216,7 @@ export default function KnobCell({
       <style jsx>{`
         .knob-cell {
           flex: 0.25 1 0;
+          overflow: visible;
         }
 
         .knob-wrap {

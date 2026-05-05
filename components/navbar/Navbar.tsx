@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { DESIGN_HEIGHT, NAVBAR_VISUAL_WIDTH_PERCENT } from "./config";
 import { NavbarContext, useNavbar } from "./state";
 
@@ -10,33 +11,50 @@ import IHateMusicCell from "./cells/IHateMusicCell";
 import JasonWaltonCell from "./cells/JasonWaltonCell";
 import LogoCell from "./cells/LogoCell";
 import StoreCell from "./cells/StoreCell";
-import type { CSSProperties } from "react";
+
 import baseBannerNavbar from "./NavbarAssets/SVG/BaseBannerNavbar.svg";
+import baseLineNavbar from "./NavbarAssets/SVG/BaseLineNavbar.svg";
 
 /**
  * Navbar shell and provider.
  *
- * This component owns the physical hardware faceplate: responsive scale,
- * centered width, reserved height, and cell order. The cells own their artwork
- * and read shared state through NavbarContext.
+ * This component owns the physical navbar surface:
+ * - full-width faceplate sizing
+ * - responsive scale
+ * - background artwork
+ * - bottom line artwork
+ * - cell order
+ *
+ * Individual cells own their own artwork and behavior.
  */
 export default function Navbar() {
   const navbarState = useNavbar();
   const { shellRef, scale, ready } = navbarState;
 
   /*
-   * The final rendered faceplate spans the full shell width.
-   * CSS transform scale changes visual size after layout, the unscaled root is
-   * widened by 1 / scale before the transform is applied.
+   * The navbar faceplate spans the full shell width.
+   *
+   * Because CSS transform scale changes visual size after layout,
+   * the unscaled root is widened by 1 / scale before scale() is applied.
+   * This keeps the final visual width at 100%.
    */
   const rootWidth =
     scale > 0
       ? `${(NAVBAR_VISUAL_WIDTH_PERCENT / scale).toFixed(4)}%`
       : `${NAVBAR_VISUAL_WIDTH_PERCENT}%`;
+
+  /*
+   * Next turns imported SVG files into usable asset URLs.
+   * The string/object check keeps this safe across bundler output shapes.
+   */
   const baseBannerUrl =
     typeof baseBannerNavbar === "string"
       ? baseBannerNavbar
       : baseBannerNavbar.src;
+
+  const baseLineUrl =
+    typeof baseLineNavbar === "string" ? baseLineNavbar : baseLineNavbar.src;
+
   return (
     <NavbarContext.Provider value={navbarState}>
       <div
@@ -55,6 +73,7 @@ export default function Navbar() {
               transformOrigin: "top center",
               width: rootWidth,
               "--navbar-bg": `url(${baseBannerUrl})`,
+              "--navbar-line": `url(${baseLineUrl})`,
             } as CSSProperties
           }
           role="navigation"
@@ -66,6 +85,7 @@ export default function Navbar() {
               <EISCell />
               <JasonWaltonCell />
               <IHateMusicCell />
+
               <div className="row-secondary">
                 <AccountCell />
                 <StoreCell />
@@ -98,9 +118,33 @@ export default function Navbar() {
             inset 0 1px 0 rgba(255, 255, 255, 0.05);
           font-family: "Courier New", monospace;
           color: #ccc;
+          overflow: visible;
+          isolation: isolate;
+        }
+
+        /*
+         * BaseLineNavbar.svg is artwork, not a CSS border value.
+         * The pseudo-element creates a dedicated image layer pinned to
+         * the bottom of the faceplate.
+         */
+        .navbar-root::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 8px;
+          background-image: var(--navbar-line);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
+          pointer-events: none;
+          z-index: 1;
         }
 
         .navbar-inner {
+          position: relative;
+          z-index: 2;
           display: flex;
           align-items: stretch;
           width: 100%;
