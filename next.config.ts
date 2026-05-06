@@ -3,8 +3,9 @@ import type { NextConfig } from "next";
 /**
  * Project-level Next settings.
  *
- * The package uses Next 16, so TypeScript config is supported. Remote image
- * patterns stay empty while the logo is served from /public.
+ * The package uses Next 16, so TypeScript config is supported. Navbar artwork
+ * is imported from the component tree; remote image patterns stay empty until
+ * the site intentionally pulls media from an outside domain.
  */
 const nextConfig: NextConfig = {
   reactStrictMode: true,

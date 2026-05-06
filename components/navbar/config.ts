@@ -42,7 +42,7 @@ export const LED_DEG_FROM_TOP: readonly [number, number, number] = [
 ] as const;
 
 export const KNOB_R = 18;
-export const LED_ORBT = 30;
+export const LED_ORBIT = 30;
 export const DOT_DIST = 10.5;
 export const KNOB_CANVAS = 80;
 export const KNOB_SVG_W = 160;
@@ -93,8 +93,10 @@ export const CELL_GEOMETRY = {
     },
   },
   eis: {
+    logoCellWidth: 180,
+    logoWidth: 110,
     trackWidth: 8,
-    thumbSize: 16,
+    thumbSize: 12,
     rowGap: 6,
   },
   account: {

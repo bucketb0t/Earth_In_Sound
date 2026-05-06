@@ -8,15 +8,13 @@ import { NavbarContext, useNavbar } from "./state";
 
 import AccountCell from "./cells/AccountCell";
 import CartCell from "./cells/CartCell";
-import EISCell from "./cells/EISCell";
+import EISLogoCell from "./cells/EISLogoCell";
 import IHateMusicCell from "./cells/IHateMusicCell";
 import JasonWaltonCell from "./cells/JasonWaltonCell";
-import LogoCell from "./cells/LogoCell";
 import StoreCell from "./cells/StoreCell";
 
 import baseBannerNavbar from "./NavbarAssets/SVG/BaseBannerNavbar.svg";
 import baseLineNavbar from "./NavbarAssets/SVG/BaseLineNavbar.svg";
-import baseLogoEISPlaque from "./NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg";
 
 /**
  * Local navbar font.
@@ -32,11 +30,13 @@ const futuraHeavy = localFont({
 /**
  * Navbar shell and provider.
  *
- * Layering model:
- * - navbar-root owns the full-width base banner artwork.
- * - navbar-root::after owns the bottom baseline artwork.
- * - grouped/cell containers can place plaque artwork above the banner.
- * - each cell renders its controls above its own plaque layer.
+ * This component should stay structural:
+ * - provide shared navbar state
+ * - measure and scale the whole navbar
+ * - render the base banner and baseline
+ * - define the order of the cells
+ *
+ * Individual cell artwork belongs inside each cell component.
  */
 export default function Navbar() {
   const navbarState = useNavbar();
@@ -45,8 +45,8 @@ export default function Navbar() {
   /*
    * The navbar faceplate spans the full shell width.
    *
-   * Because CSS transform scale changes visual size after layout, the unscaled
-   * root is widened by 1 / scale before scale() is applied.
+   * CSS transform scale changes visual size after layout, so the unscaled root
+   * is widened by 1 / scale before scale() is applied.
    */
   const rootWidth =
     scale > 0
@@ -63,11 +63,6 @@ export default function Navbar() {
 
   const baseLineUrl =
     typeof baseLineNavbar === "string" ? baseLineNavbar : baseLineNavbar.src;
-
-  const baseLogoEISPlaqueUrl =
-    typeof baseLogoEISPlaque === "string"
-      ? baseLogoEISPlaque
-      : baseLogoEISPlaque.src;
 
   return (
     <NavbarContext.Provider value={navbarState}>
@@ -88,7 +83,6 @@ export default function Navbar() {
               width: rootWidth,
               "--navbar-bg": `url(${baseBannerUrl})`,
               "--navbar-line": `url(${baseLineUrl})`,
-              "--logo-eis-bg": `url(${baseLogoEISPlaqueUrl})`,
             } as CSSProperties
           }
           role="navigation"
@@ -96,13 +90,7 @@ export default function Navbar() {
         >
           <div className="navbar-inner">
             <div className="row-primary">
-              <div className="logo-eis-group">
-                <div className="logo-eis-content">
-                  <LogoCell />
-                  <EISCell />
-                </div>
-              </div>
-
+              <EISLogoCell />
               <JasonWaltonCell />
               <IHateMusicCell />
 
@@ -136,6 +124,10 @@ export default function Navbar() {
           font-family: var(--font-futura-heavy), sans-serif;
         }
 
+        /*
+         * The baseline is a visual layer, not a CSS border. Keeping it in
+         * ::after lets plugs and other cell artwork layer above it correctly.
+         */
         .navbar-root::after {
           content: "";
           position: absolute;
@@ -166,41 +158,6 @@ export default function Navbar() {
           align-items: stretch;
           justify-content: flex-start;
           flex: 1 1 0;
-          min-width: 0;
-        }
-
-        /*
-         * Logo + EIS shared artwork group.
-         *
-         * The ::before layer is the plaque artwork. The content wrapper sits
-         * above it, so LogoCell and EISCell remain interactive and readable.
-         */
-        .logo-eis-group {
-          position: relative;
-          display: flex;
-          align-items: stretch;
-          min-width: 0;
-          overflow: visible;
-          isolation: isolate;
-        }
-
-        .logo-eis-group::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: var(--logo-eis-bg);
-          background-repeat: no-repeat;
-          background-position: center;
-          background-size: cover;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .logo-eis-content {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          align-items: stretch;
           min-width: 0;
         }
 

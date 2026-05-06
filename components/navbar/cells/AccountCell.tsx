@@ -1,7 +1,7 @@
 "use client";
 
 import { CELL_GEOMETRY } from "../config";
-import { activateOnEnterOrSpace, useNavbarContext } from "../state";
+import { useNavbarContext } from "../state";
 
 /**
  * Account cell.
@@ -25,17 +25,16 @@ export default function AccountCell() {
           Off
         </span>
 
-        <div
+        <button
+          type="button"
           className={`h-toggle-track ${loggedIn ? "on" : ""}`}
           onClick={toggleLogin}
           role="switch"
-          tabIndex={0}
           aria-checked={loggedIn}
           aria-label="Login toggle"
-          onKeyDown={(event) => activateOnEnterOrSpace(event, toggleLogin)}
         >
           <div className="h-toggle-nub" />
-        </div>
+        </button>
 
         <span
           className="h-toggle-lbl"
@@ -75,11 +74,15 @@ export default function AccountCell() {
         }
 
         .h-toggle-track {
+          appearance: none;
           width: 36px;
           height: 18px;
           background: #0d0d0d;
           border: 1px solid #2a2a2a;
           border-radius: 9px;
+          color: inherit;
+          font: inherit;
+          padding: 0;
           position: relative;
           cursor: pointer;
         }

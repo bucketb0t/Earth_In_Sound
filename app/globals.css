@@ -81,8 +81,25 @@ a {
   align-items: flex-start;
 }
 
+/*
+ * Cell separators are drawn as a pseudo-element instead of a real border.
+ * That keeps the line visible even when a cell is a native button that resets
+ * its border for accessibility-friendly control behavior.
+ */
 .navbar-cell--bordered {
-  border-left: 1px solid #2a2a2a;
+  position: relative;
+}
+
+.navbar-cell--bordered::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: #2a2a2a;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .led {

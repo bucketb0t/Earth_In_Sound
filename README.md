@@ -1,6 +1,6 @@
 # Earth In Sound
 
-![Earth In Sound logo](public/EarthInSound.webp)
+![Earth In Sound logo](components/navbar/NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg)
 
 Earth In Sound is the website for a production company that also hosts a
 podcast. The project scope is to present the company, its music-production
@@ -8,9 +8,9 @@ identity, artist-related work, podcast presence, community touchpoints, and
 store access through a custom interface rather than a generic web header.
 
 The current build focuses on a hardware-console-inspired navigation system.
-Its cells are designed to become individual artwork surfaces, allowing each
-brand area to develop its own visual language while remaining part of one
-coherent site experience.
+Each navbar cell is treated as its own artwork surface, allowing every brand
+area to develop a custom visual identity while still behaving as one coherent
+site interface.
 
 ## Current Scope
 

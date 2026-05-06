@@ -59,7 +59,9 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
           height: 8px;
           border-radius: 50%;
           background: #736969;
-          transition: all 0.25s ease;
+          transition:
+            background 0.25s ease,
+            box-shadow 0.25s ease;
           pointer-events: none;
         }
 
@@ -69,6 +71,11 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
         }
 
         .port {
+          /*
+           * The bitmap port and plug use hand-tuned offsets because they are
+           * artwork, not mathematical primitives. Keep these values together
+           * when you tune the jack position for a new plaque.
+           */
           position: absolute;
           bottom: -15px;
           right: 4.5px;

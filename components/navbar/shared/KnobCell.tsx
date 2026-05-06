@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import {
   CELL_GEOMETRY,
@@ -12,7 +12,7 @@ import {
   KNOB_R,
   KNOB_SVG_W,
   LED_DEG_FROM_TOP,
-  LED_ORBT,
+  LED_ORBIT,
   ledToTrig,
   svgPoint,
   toRad,
@@ -76,31 +76,43 @@ export default function KnobCell({
     dot.style.filter = "none";
   }, [isActive, activeIdx, glow]);
 
-  const ticks = Array.from({ length: 8 }, (_, idx) => {
-    const rad = toRad(idx * 45);
-    const cosr = Math.cos(rad);
-    const sinr = Math.sin(rad);
+  /*
+   * These SVG coordinates are static. Memoizing them keeps render work focused
+   * on the active state instead of recalculating the same geometry repeatedly.
+   */
+  const ticks = useMemo(
+    () =>
+      Array.from({ length: 8 }, (_, idx) => {
+        const rad = toRad(idx * 45);
+        const cosr = Math.cos(rad);
+        const sinr = Math.sin(rad);
 
-    return (
-      <line
-        key={idx}
-        x1={CX + (KNOB_R - 4) * cosr}
-        y1={CY - (KNOB_R - 4) * sinr}
-        x2={CX + (KNOB_R + 1) * cosr}
-        y2={CY - (KNOB_R + 1) * sinr}
-        stroke="#333"
-        strokeWidth="1"
-      />
-    );
-  });
+        return (
+          <line
+            key={idx}
+            x1={CX + (KNOB_R - 4) * cosr}
+            y1={CY - (KNOB_R - 4) * sinr}
+            x2={CX + (KNOB_R + 1) * cosr}
+            y2={CY - (KNOB_R + 1) * sinr}
+            stroke="#333"
+            strokeWidth="1"
+          />
+        );
+      }),
+    [],
+  );
 
-  const positions = LED_DEG_FROM_TOP.map((deg) => {
-    const trigDeg = ledToTrig(deg);
-    return {
-      led: svgPoint(LED_ORBT, trigDeg),
-      lbl: svgPoint(LED_ORBT + 16, trigDeg),
-    };
-  });
+  const positions = useMemo(
+    () =>
+      LED_DEG_FROM_TOP.map((deg) => {
+        const trigDeg = ledToTrig(deg);
+        return {
+          led: svgPoint(LED_ORBIT, trigDeg),
+          lbl: svgPoint(LED_ORBIT + 16, trigDeg),
+        };
+      }),
+    [],
+  );
 
   const initDotPt = svgPoint(DOT_DIST, DEFAULT_TRIG_DEG);
 

@@ -42,9 +42,10 @@ It avoids broad global button resets so future native buttons keep normal
 browser behavior.
 
 `components/navbar/Navbar.tsx` owns the physical faceplate. It measures the
-available width, applies the responsive scale, preserves the intentional 80%
-visual width, defines the cell order, and provides shared state through
-`NavbarContext`.
+available width, applies the responsive scale, preserves the full-width visual
+frame, defines the cell order, and provides shared state through
+`NavbarContext`. It owns only full-navbar artwork such as the base banner and
+baseline.
 
 `components/navbar/config.ts` is the static source of truth. It contains
 section identifiers, section links, labels, glow colors, knob geometry, settled
@@ -57,7 +58,8 @@ helper used by custom controls.
 
 `components/navbar/cells/` contains the individual visual and interaction
 surfaces. Each file represents one navbar cell and is the intended home for
-future custom artwork for that area.
+future custom artwork for that area. If an image belongs to one cell, import it
+inside that cell instead of passing it down from `Navbar.tsx`.
 
 `components/navbar/shared/` contains reusable visual mechanisms. `KnobCell.tsx`
 is shared by the Jason Walton and I Hate Music sections, and
@@ -65,12 +67,11 @@ is shared by the Jason Walton and I Hate Music sections, and
 
 ## Navbar Cell Roles
 
-`LogoCell.tsx` renders the Earth In Sound logo and calls `goHome()`, which
-sets the EIS section to its Home state.
-
-`EISCell.tsx` renders the vertical three-position slider for Earth In Sound.
-It uses Pointer Events so mouse, touch, and stylus input follow one code path.
-Releasing the thumb snaps to the nearest valid link index.
+`EISLogoCell.tsx` combines the Earth In Sound logo and the EIS navigation
+slider because they share one plaque artwork. The logo calls `goHome()`, which
+sets the EIS section to its Home state. The slider uses Pointer Events so
+mouse, touch, and stylus input follow one code path; keyboard users can move
+the slider with arrow keys, Home, and End.
 
 `JasonWaltonCell.tsx` and `IHateMusicCell.tsx` are thin section wrappers. They
 pass labels, links, and glow colors into the shared `KnobCell`.
@@ -89,7 +90,8 @@ on refresh before scoped styles settle.
 it reveals the cart control.
 
 `CartCell.tsx` renders the item-count badge and cart button. The cart button is
-kept out of the tab order and marked disabled until Store reveals it.
+a native disabled button until Store reveals it, so browser keyboard and focus
+behavior stay predictable.
 
 ## Flow Chart
 
@@ -105,14 +107,13 @@ flowchart TD
   Config --> Knob
   Config --> Utility
 
-  Provider --> Logo["LogoCell"]
-  Provider --> EIS["EISCell slider"]
+  Provider --> EISLogo["EISLogoCell logo + slider"]
   Provider --> JW["JasonWaltonCell"]
   Provider --> IHM["IHateMusicCell"]
   Provider --> Utility["Account / Store / Cart"]
 
-  Logo --> GoHome["goHome -> eisNavTo(0)"]
-  EIS --> EisNav["eisNavTo(index)"]
+  EISLogo --> GoHome["goHome -> eisNavTo(0)"]
+  EISLogo --> EisNav["eisNavTo(index)"]
   JW --> Knob["shared KnobCell"]
   IHM --> Knob
   Knob --> KnobNav["knobNavTo(section, index)"]
@@ -142,7 +143,10 @@ flowchart TD
 
 - Navigation indexes are clamped before entering shared state.
 - EIS slider dragging uses one Pointer Events path for mouse and touch.
+- EIS slider keyboard control supports Arrow keys, Home, and End.
 - Custom div/SVG controls support both Enter and Space activation.
+- Native buttons are used when artwork does not require custom SVG/div control
+  behavior.
 - Active controls expose ARIA state where appropriate.
 - Inactive jack cables are hidden on first paint to prevent refresh flashes.
 - Reduced-motion users receive near-instant transitions.

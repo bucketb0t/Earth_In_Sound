@@ -1,7 +1,7 @@
 "use client";
 
 import { CELL_GEOMETRY } from "../config";
-import { activateOnEnterOrSpace, useNavbarContext } from "../state";
+import { useNavbarContext } from "../state";
 
 /**
  * Cart cell.
@@ -28,15 +28,13 @@ export default function CartCell() {
           <span>{displayCount}</span>
         </div>
 
-        <div
+        <button
+          type="button"
           className={`cart-btn ${cartVisible ? "enabled" : ""}`}
           style={{ width: btnSize, height: btnSize }}
           onClick={cartPress}
-          role="button"
-          tabIndex={cartVisible ? 0 : -1}
           aria-label="Shopping cart"
-          aria-disabled={!cartVisible}
-          onKeyDown={(event) => activateOnEnterOrSpace(event, cartPress)}
+          disabled={!cartVisible}
         >
           <svg
             width="26"
@@ -91,7 +89,7 @@ export default function CartCell() {
               strokeLinecap="round"
             />
           </svg>
-        </div>
+        </button>
       </div>
 
       <style jsx>{`
@@ -145,13 +143,17 @@ export default function CartCell() {
         }
 
         .cart-btn {
+          appearance: none;
           border-radius: 50%;
           background: linear-gradient(145deg, #2a2a2a, #111);
           border: 1px solid #333;
+          color: inherit;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
+          font: inherit;
+          padding: 0;
           transition: border-color 0.2s;
           flex-shrink: 0;
         }
@@ -167,6 +169,10 @@ export default function CartCell() {
 
         .cart-btn.enabled:hover {
           border-color: #22c55e55;
+        }
+
+        .cart-btn:disabled {
+          cursor: default;
         }
       `}</style>
     </div>

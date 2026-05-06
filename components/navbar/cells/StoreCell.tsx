@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { CELL_GEOMETRY } from "../config";
-import { activateOnEnterOrSpace, useNavbarContext } from "../state";
+import { useNavbarContext } from "../state";
 
 /**
  * Store cell.
@@ -22,15 +22,13 @@ export default function StoreCell() {
   } as CSSProperties;
 
   return (
-    <div
+    <button
+      type="button"
       className="navbar-cell navbar-cell--center navbar-cell--bordered store-cell"
       style={styleVars}
       onClick={storePress}
-      role="button"
-      tabIndex={0}
       aria-label="Store"
       aria-busy={storeAnimating}
-      onKeyDown={(event) => activateOnEnterOrSpace(event, storePress)}
     >
       <div className="cell-label">Store</div>
 
@@ -38,16 +36,19 @@ export default function StoreCell() {
         className="store-display"
         style={{ padding: `${paddingY}px ${paddingX}px` }}
       >
-        <span
-          style={{ transition: "color 0.1s, text-shadow 0.1s" }}
-        >
+        <span style={{ transition: "color 0.1s, text-shadow 0.1s" }}>
           {storeText}
         </span>
       </div>
 
       <style jsx>{`
         .store-cell {
+          appearance: none;
+          background: transparent;
+          border: 0;
+          color: inherit;
           flex: 1 1 0;
+          font: inherit;
           min-width: 80px;
           cursor: pointer;
           user-select: none;
@@ -78,6 +79,6 @@ export default function StoreCell() {
           text-shadow: 0 0 6px var(--store-glow);
         }
       `}</style>
-    </div>
+    </button>
   );
 }
