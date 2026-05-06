@@ -1,37 +1,56 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import jackPlugNavbar from "../NavbarAssets/PNG/JackPlugNavbar.png";
+import jackPortNavbar from "../NavbarAssets/PNG/JackPortNavbar.png";
 
-interface LEDPortProps {
+interface JackLEDPortProps {
   active: boolean;
 }
 
 /**
  * Corner jack indicator for knob cells.
  *
- * The parent KnobCell provides --glow CSS variables, so this decorative piece
- * can share the section color without receiving styling props.
+ * The parent KnobCell provides --glow, so this component can share the active
+ * section color. The port and plug are bitmap assets stored with the navbar.
  */
-export default function JackLEDPort({ active }: LEDPortProps) {
+export default function JackLEDPort({ active }: JackLEDPortProps) {
+  const jackPlugUrl =
+    typeof jackPlugNavbar === "string" ? jackPlugNavbar : jackPlugNavbar.src;
+
+  const jackPortUrl =
+    typeof jackPortNavbar === "string" ? jackPortNavbar : jackPortNavbar.src;
+
   /*
    * Visibility is applied inline, not only through styled-jsx, to prevent a
-   * first-paint flash where inactive cables can appear before scoped CSS lands.
+   * first-paint flash where inactive plugs can appear before scoped CSS lands.
    */
-  const cableStyle = {
+  const plugStyle = {
     opacity: active ? 1 : 0,
     visibility: active ? "visible" : "hidden",
     transform: active ? "translateY(0)" : "translateY(20px)",
   } satisfies CSSProperties;
 
+  const assetStyle = {
+    "--jack-plug": `url(${jackPlugUrl})`,
+    "--jack-port": `url(${jackPortUrl})`,
+  } as CSSProperties;
+
   return (
-    <>
+    <div className="jack-led-port" style={assetStyle}>
       <div className={`led-indicator ${active ? "active" : ""}`} />
-      <div className={`port ${active ? "active" : ""}`}>
-        <div className="port-inner" />
-      </div>
-      <div className="cable" style={cableStyle} />
+      <div className={`port ${active ? "active" : ""}`} />
+      <div className="plug" style={plugStyle} />
 
       <style jsx>{`
+        .jack-led-port {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          overflow: visible;
+          z-index: 3;
+        }
+
         .led-indicator {
           position: absolute;
           top: 5px;
@@ -51,63 +70,41 @@ export default function JackLEDPort({ active }: LEDPortProps) {
 
         .port {
           position: absolute;
-          bottom: 5px;
-          right: 6px;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: #0d0d0d;
-          border: 2px solid #222;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s ease;
+          bottom: -15px;
+          right: 4.5px;
+          width: 48px;
+          height: 48px;
+          background-image: var(--jack-port);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
+          transition:
+            filter 0.25s ease,
+            opacity 0.25s ease;
           pointer-events: none;
         }
 
         .port.active {
-          border-color: var(--glow);
-          box-shadow: 0 0 6px var(--glow);
+          filter: drop-shadow(0 0 6px var(--glow));
         }
 
-        .port-inner {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #2a2a2a;
-        }
-
-        .port.active .port-inner {
-          background: var(--glow);
-        }
-
-        .cable {
+        .plug {
           position: absolute;
           bottom: -40px;
-          right: 11px;
-          width: 3px;
-          height: 40px;
-          background: #2a2a2a;
-          border-radius: 2px;
+          right: 4px;
+          width: 48px;
+          height: 96px;
+          background-image: var(--jack-plug);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
           transition:
             opacity 0.2s ease,
             visibility 0.2s ease,
             transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
         }
-
-        .cable::after {
-          content: "";
-          position: absolute;
-          top: -6px;
-          left: -2px;
-          width: 7px;
-          height: 6px;
-          background: #ccc;
-          border-radius: 2px;
-        }
-
       `}</style>
-    </>
+    </div>
   );
 }
