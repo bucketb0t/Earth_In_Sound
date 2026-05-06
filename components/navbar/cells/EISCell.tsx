@@ -109,10 +109,7 @@ export default function EISCell() {
   };
 
   return (
-    <div
-      className="navbar-cell navbar-cell--center eis-cell"
-      style={styleVars}
-    >
+    <div className="navbar-cell navbar-cell--center eis-cell" style={styleVars}>
       <div className="slider-row">
         <div className="eis-track" ref={trackRef} style={{ width: trackWidth }}>
           <div

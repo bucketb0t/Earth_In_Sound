@@ -1,6 +1,8 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import localFont from "next/font/local";
+
 import { DESIGN_HEIGHT, NAVBAR_VISUAL_WIDTH_PERCENT } from "./config";
 import { NavbarContext, useNavbar } from "./state";
 
@@ -14,18 +16,27 @@ import StoreCell from "./cells/StoreCell";
 
 import baseBannerNavbar from "./NavbarAssets/SVG/BaseBannerNavbar.svg";
 import baseLineNavbar from "./NavbarAssets/SVG/BaseLineNavbar.svg";
+import baseLogoEISPlaque from "./NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg";
+
+/**
+ * Local navbar font.
+ *
+ * next/font/local creates a real font-family and exposes it through a CSS
+ * variable. The path is relative to this Navbar.tsx file.
+ */
+const futuraHeavy = localFont({
+  src: "./NavbarAssets/Fonts/FuturaHeavyFont.ttf",
+  variable: "--font-futura-heavy",
+});
 
 /**
  * Navbar shell and provider.
  *
- * This component owns the physical navbar surface:
- * - full-width faceplate sizing
- * - responsive scale
- * - background artwork
- * - bottom line artwork
- * - cell order
- *
- * Individual cells own their own artwork and behavior.
+ * Layering model:
+ * - navbar-root owns the full-width base banner artwork.
+ * - navbar-root::after owns the bottom baseline artwork.
+ * - grouped/cell containers can place plaque artwork above the banner.
+ * - each cell renders its controls above its own plaque layer.
  */
 export default function Navbar() {
   const navbarState = useNavbar();
@@ -34,9 +45,8 @@ export default function Navbar() {
   /*
    * The navbar faceplate spans the full shell width.
    *
-   * Because CSS transform scale changes visual size after layout,
-   * the unscaled root is widened by 1 / scale before scale() is applied.
-   * This keeps the final visual width at 100%.
+   * Because CSS transform scale changes visual size after layout, the unscaled
+   * root is widened by 1 / scale before scale() is applied.
    */
   const rootWidth =
     scale > 0
@@ -44,8 +54,7 @@ export default function Navbar() {
       : `${NAVBAR_VISUAL_WIDTH_PERCENT}%`;
 
   /*
-   * Next turns imported SVG files into usable asset URLs.
-   * The string/object check keeps this safe across bundler output shapes.
+   * Imported SVGs are converted by Next into usable asset URLs.
    */
   const baseBannerUrl =
     typeof baseBannerNavbar === "string"
@@ -54,6 +63,11 @@ export default function Navbar() {
 
   const baseLineUrl =
     typeof baseLineNavbar === "string" ? baseLineNavbar : baseLineNavbar.src;
+
+  const baseLogoEISPlaqueUrl =
+    typeof baseLogoEISPlaque === "string"
+      ? baseLogoEISPlaque
+      : baseLogoEISPlaque.src;
 
   return (
     <NavbarContext.Provider value={navbarState}>
@@ -66,7 +80,7 @@ export default function Navbar() {
         }}
       >
         <div
-          className="navbar-root"
+          className={`${futuraHeavy.variable} navbar-root`}
           style={
             {
               transform: `translateX(-50%) scale(${scale})`,
@@ -74,6 +88,7 @@ export default function Navbar() {
               width: rootWidth,
               "--navbar-bg": `url(${baseBannerUrl})`,
               "--navbar-line": `url(${baseLineUrl})`,
+              "--logo-eis-bg": `url(${baseLogoEISPlaqueUrl})`,
             } as CSSProperties
           }
           role="navigation"
@@ -81,8 +96,13 @@ export default function Navbar() {
         >
           <div className="navbar-inner">
             <div className="row-primary">
-              <LogoCell />
-              <EISCell />
+              <div className="logo-eis-group">
+                <div className="logo-eis-content">
+                  <LogoCell />
+                  <EISCell />
+                </div>
+              </div>
+
               <JasonWaltonCell />
               <IHateMusicCell />
 
@@ -107,26 +127,15 @@ export default function Navbar() {
           position: absolute;
           top: 0;
           left: 50%;
-          background-color: #181818;
           background-image: var(--navbar-bg);
           background-repeat: no-repeat;
           background-position: center;
           background-size: cover;
-          border-bottom: 2px solid #111;
-          box-shadow:
-            0 4px 32px rgba(0, 0, 0, 0.8),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-          font-family: "Courier New", monospace;
-          color: #ccc;
           overflow: visible;
           isolation: isolate;
+          font-family: var(--font-futura-heavy), sans-serif;
         }
 
-        /*
-         * BaseLineNavbar.svg is artwork, not a CSS border value.
-         * The pseudo-element creates a dedicated image layer pinned to
-         * the bottom of the faceplate.
-         */
         .navbar-root::after {
           content: "";
           position: absolute;
@@ -157,6 +166,41 @@ export default function Navbar() {
           align-items: stretch;
           justify-content: flex-start;
           flex: 1 1 0;
+          min-width: 0;
+        }
+
+        /*
+         * Logo + EIS shared artwork group.
+         *
+         * The ::before layer is the plaque artwork. The content wrapper sits
+         * above it, so LogoCell and EISCell remain interactive and readable.
+         */
+        .logo-eis-group {
+          position: relative;
+          display: flex;
+          align-items: stretch;
+          min-width: 0;
+          overflow: visible;
+          isolation: isolate;
+        }
+
+        .logo-eis-group::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: var(--logo-eis-bg);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .logo-eis-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: stretch;
           min-width: 0;
         }
 
