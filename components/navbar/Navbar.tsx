@@ -23,7 +23,7 @@ import baseLineNavbar from "./NavbarAssets/SVG/BaseLineNavbar.svg";
  * variable. The path is relative to this Navbar.tsx file.
  */
 const futuraHeavy = localFont({
-  src: "./NavbarAssets/Fonts/FuturaHeavyFont.ttf",
+  src: "./NavbarAssets/Fonts/FuturaHeavy_GeneralCaps.ttf",
   variable: "--font-futura-heavy",
 });
 
@@ -101,6 +101,7 @@ export default function Navbar() {
               </div>
             </div>
           </div>
+          <div className="navbar-baseline" aria-hidden="true" />
         </div>
       </div>
 
@@ -112,9 +113,12 @@ export default function Navbar() {
         }
 
         .navbar-root {
+          --navbar-line-height: 8px;
+
           position: absolute;
           top: 0;
           left: 50%;
+          padding-bottom: var(--navbar-line-height);
           background-image: var(--navbar-bg);
           background-repeat: no-repeat;
           background-position: center;
@@ -122,25 +126,6 @@ export default function Navbar() {
           overflow: visible;
           isolation: isolate;
           font-family: var(--font-futura-heavy), sans-serif;
-        }
-
-        /*
-         * The baseline is a visual layer, not a CSS border. Keeping it in
-         * ::after lets plugs and other cell artwork layer above it correctly.
-         */
-        .navbar-root::after {
-          content: "";
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          height: 8px;
-          background-image: var(--navbar-line);
-          background-repeat: no-repeat;
-          background-position: center;
-          background-size: cover;
-          pointer-events: none;
-          z-index: 1;
         }
 
         .navbar-inner {
@@ -152,6 +137,25 @@ export default function Navbar() {
           min-height: 110px;
           padding: 0 clamp(16px, 10%, 120px);
         }
+
+        .navbar-baseline {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 3;
+          height: var(--navbar-line-height);
+          background-image: var(--navbar-line);
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: cover;
+          pointer-events: none;
+        }
+
+        /*
+         * The baseline is a visual layer, not a CSS border. Keeping it in
+         * ::after lets plugs and other cell artwork layer above it correctly.
+         */
 
         .row-primary {
           display: flex;

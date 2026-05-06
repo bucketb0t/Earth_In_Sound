@@ -73,6 +73,12 @@ a {
   min-width: 0;
 }
 
+.navbar-fit {
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+}
+
 .navbar-cell--center {
   align-items: center;
 }

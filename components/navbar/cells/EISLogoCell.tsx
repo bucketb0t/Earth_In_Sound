@@ -7,15 +7,34 @@ import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { CELL_GEOMETRY, EIS_LINKS, SECTION_GLOWS } from "../config";
 import { useNavbarContext } from "../state";
 
+/*
+ * EIS artwork assets.
+ *
+ * These assets belong to this cell, so they stay imported here instead of in
+ * Navbar.tsx. That keeps the parent navbar structural and the cell visual.
+ */
 import earthInSoundLogoHover from "../NavbarAssets/SVG/EarthInSoundLogoHooverNavbar.svg";
 import earthInSoundLogoOff from "../NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg";
 import earthInSoundPlaque from "../NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg";
 import earthInSoundSliderBar from "../NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg";
 import earthInSoundSliderThumb from "../NavbarAssets/SVG/EarthInSoundSliderThumbNavbar.svg";
 
+/*
+ * Section constants.
+ *
+ * GLOW gives this cell its active color. LAST_EIS_INDEX is used by the slider
+ * math so the code keeps working if the EIS link list changes length.
+ */
 const GLOW = SECTION_GLOWS.eis;
 const LAST_EIS_INDEX = EIS_LINKS.length - 1;
 
+/*
+ * Asset URL conversion.
+ *
+ * Next can expose imported SVGs either as strings or objects with a `src`
+ * field depending on build handling. The CSS background-image values need
+ * plain URLs, so each imported artwork is normalized here.
+ */
 const earthInSoundPlaqueUrl =
   typeof earthInSoundPlaque === "string"
     ? earthInSoundPlaque
@@ -31,6 +50,12 @@ const earthInSoundSliderThumbUrl =
     ? earthInSoundSliderThumb
     : earthInSoundSliderThumb.src;
 
+/*
+ * Pointer drag session state.
+ *
+ * This is stored in a ref instead of React state because drag movement is
+ * high-frequency visual work. React only needs the final selected link index.
+ */
 interface DragState {
   active: boolean;
   startY: number;
@@ -45,14 +70,31 @@ interface DragState {
  * Navbar.tsx only decides where the cell sits in the full navbar.
  */
 export default function EISLogoCell() {
+  /*
+   * Shared navbar state.
+   *
+   * The cell reads the active page and slider position from context, then uses
+   * shared actions so every navbar cell stays synchronized.
+   */
   const { activePage, eisSliderPos, eisNavTo, goHome } = useNavbarContext();
-  const { logoCellWidth, logoWidth, trackWidth, thumbSize, rowGap } =
-    CELL_GEOMETRY.eis;
+  const { logoCellWidth, logoWidth, trackWidth, thumbSize } = CELL_GEOMETRY.eis;
 
+  /*
+   * DOM refs for slider math.
+   *
+   * The slider needs real rendered sizes because the bar and thumb scale with
+   * the cell. offsetHeight gives the current layout size after zoom/resizing.
+   */
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragState>({ active: false, startY: 0, startTop: 0 });
 
+  /*
+   * Derived render state.
+   *
+   * `isActive` controls the active EIS visuals. `activeLabel` gives the slider
+   * an accessible text value that matches the selected row.
+   */
   const isActive = activePage?.section === "eis";
   const activeLabel = EIS_LINKS[eisSliderPos] ?? EIS_LINKS[0];
 
@@ -72,6 +114,13 @@ export default function EISLogoCell() {
     "--eis-slider-thumb": `url(${earthInSoundSliderThumbUrl})`,
   } as CSSProperties;
 
+  /*
+   * Index -> thumb top position.
+   *
+   * The slider stores the selected row as an index, while the thumb needs a
+   * pixel top value. The calculation uses the current rendered track/thumb
+   * heights, so it follows responsive layout changes.
+   */
   const idxToTop = useCallback((idx: number): number => {
     const track = trackRef.current;
     const thumb = thumbRef.current;
@@ -81,6 +130,12 @@ export default function EISLogoCell() {
     return idx * step;
   }, []);
 
+  /*
+   * Thumb top position -> nearest index.
+   *
+   * This is the reverse of idxToTop(). It is used when a drag ends so the
+   * released thumb snaps to Home, About, or Contact.
+   */
   const topToIdx = useCallback((top: number): number => {
     const track = trackRef.current;
     const thumb = thumbRef.current;
@@ -105,11 +160,47 @@ export default function EISLogoCell() {
     [idxToTop],
   );
 
+  /*
+   * Resize-aware thumb correction.
+   *
+   * When zooming or resizing changes the slider/thumb dimensions, the selected
+   * index stays the same but the old pixel top value becomes wrong. The
+   * ResizeObserver re-snaps the thumb to the correct stop after size changes.
+   */
   useEffect(() => {
-    const raf = requestAnimationFrame(() => snapThumb(eisSliderPos));
-    return () => cancelAnimationFrame(raf);
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    let raf: number | null = null;
+
+    const resnap = () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => snapThumb(eisSliderPos));
+    };
+
+    resnap();
+
+    if (!track || !thumb) {
+      return () => {
+        if (raf !== null) cancelAnimationFrame(raf);
+      };
+    }
+
+    const observer = new ResizeObserver(resnap);
+    observer.observe(track);
+    observer.observe(thumb);
+
+    return () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, [eisSliderPos, snapThumb]);
 
+  /*
+   * Live drag movement.
+   *
+   * While dragging, the thumb follows the pointer and is clamped inside the
+   * current track. The actual selected link is not committed until release.
+   */
   const moveThumbToPointer = (clientY: number): void => {
     const track = trackRef.current;
     const thumb = thumbRef.current;
@@ -121,6 +212,12 @@ export default function EISLogoCell() {
     thumb.style.top = `${Math.max(0, Math.min(maxTop, rawTop))}px`;
   };
 
+  /*
+   * Drag release / cancellation.
+   *
+   * Pointer capture is released, then the current thumb top is converted into
+   * the nearest EIS link index and sent through shared navbar state.
+   */
   const finishDrag = (thumb: HTMLDivElement, pointerId: number): void => {
     if (!drag.current.active) return;
 
@@ -134,6 +231,12 @@ export default function EISLogoCell() {
     eisNavTo(topToIdx(top));
   };
 
+  /*
+   * Drag start.
+   *
+   * The first pointer position and the thumb's starting top are saved so later
+   * pointer movement can be converted into a relative thumb movement.
+   */
   const onThumbPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     drag.current = {
       active: true,
@@ -174,7 +277,8 @@ export default function EISLogoCell() {
 
   return (
     <div className="eis-logo-cell" style={styleVars}>
-      <div className="eis-logo-content">
+      <div className="navbar-fit eis-logo-content">
+        {/* Logo area: returns the EIS navigation state to Home. */}
         <button
           type="button"
           className="logo-button"
@@ -204,17 +308,19 @@ export default function EISLogoCell() {
           </span>
         </button>
 
-        <div className="navbar-cell navbar-cell--center eis-controls">
-          <div className="slider-row">
+        {/* Slider area: custom bar/thumb plus the three EIS navigation rows. */}
+        <div className="navbar-fit eis-controls">
+          <div className="navbar-fit slider-row">
+            {/* Slider track: provides the measured rail used by drag math. */}
             <div
               className="eis-track"
               ref={trackRef}
               style={{ width: trackWidth }}
             >
+              {/* Slider thumb: draggable, keyboard-operable, and resnapped on resize. */}
               <div
                 className={`eis-thumb ${isActive ? "active" : ""}`}
                 ref={thumbRef}
-                style={{ width: thumbSize, height: thumbSize }}
                 role="slider"
                 tabIndex={0}
                 aria-label="Earth In Sound section slider"
@@ -234,7 +340,8 @@ export default function EISLogoCell() {
               />
             </div>
 
-            <div className="eis-links">
+            {/* Link rows: clicking text/LEDs updates the same slider state. */}
+            <div className="navbar-fit eis-links">
               {EIS_LINKS.map((link, idx) => {
                 const on = isActive && eisSliderPos === idx;
 
@@ -243,7 +350,6 @@ export default function EISLogoCell() {
                     key={link}
                     type="button"
                     className="eis-link-row"
-                    style={{ gap: rowGap }}
                     onClick={() => eisNavTo(idx)}
                     aria-label={`Navigate to ${link}`}
                     aria-pressed={on}
@@ -263,6 +369,25 @@ export default function EISLogoCell() {
 
       <style jsx>{`
         .eis-logo-cell {
+          /*
+           * Cell-level responsive variables.
+           *
+           * cqw units respond to this cell's own width because the element is
+           * marked as an inline-size container below. This lets the logo,
+           * slider, LEDs, and text resize together.
+           */
+          --eis-logo-rendered-width: clamp(72px, 39cqw, var(--eis-logo-width));
+          --eis-slider-height: clamp(36px, 26cqw, 72px);
+          --eis-slider-gap: clamp(6px, 5cqw, 16px);
+          --eis-led-size: clamp(6px, 3.5cqw, 10px);
+          --eis-link-font-size: clamp(7px, 3.2cqw, 9px);
+          --eis-link-gap: clamp(3px, 2.2cqw, 6px);
+          --eis-rendered-thumb-height: clamp(8px, 5cqw, var(--eis-thumb-size));
+          --eis-rendered-thumb-width: calc(
+            var(--eis-rendered-thumb-height) * 1.82
+          );
+
+          container-type: inline-size;
           position: relative;
           display: flex;
           align-items: stretch;
@@ -270,6 +395,7 @@ export default function EISLogoCell() {
           isolation: isolate;
           margin-right: 16px;
         }
+
         /*
          * The plaque is cell-local artwork. Keeping it here prevents Navbar.tsx
          * from becoming a catalogue of every individual cell background.
@@ -287,36 +413,53 @@ export default function EISLogoCell() {
         }
 
         .eis-logo-content {
+          /*
+           * Two-column cell layout.
+           *
+           * The logo and slider share the available plaque space by percentage,
+           * so the slider does not get crushed by a fixed-width logo.
+           */
           position: relative;
           z-index: 1;
-          display: flex;
-          align-items: stretch;
+          display: grid;
+          grid-template-columns: minmax(0, 64%) minmax(0, 36%);
+          align-items: center;
+          width: 100%;
           min-width: 0;
         }
 
         .logo-button {
+          /*
+           * Native button reset.
+           *
+           * The button keeps accessible click/keyboard behavior while removing
+           * default browser button styling that would fight the artwork.
+           */
           appearance: none;
           background: transparent;
           border: 0;
           color: inherit;
-          flex: 0 0 var(--eis-logo-cell-width);
+          width: 100%;
+          min-width: 0;
           font: inherit;
           cursor: pointer;
-          padding: clamp(4px, 0.5vw, 8px) 0 0;
           display: flex;
           align-items: center;
           justify-content: center;
           outline-offset: -2px;
-        }
-
-        .logo-button:focus-visible {
-          outline: 2px solid var(--glow);
+          padding: clamp(4px, 0.5vw, 8px) 0 0;
         }
 
         .logo-frame {
+          /*
+           * Responsive logo frame.
+           *
+           * The frame preserves the logo proportion while capping the logo so
+           * it cannot force the grid column wider than available.
+           */
           position: relative;
           display: block;
-          width: var(--eis-logo-width);
+          width: min(var(--eis-logo-rendered-width), 88%);
           aspect-ratio: 130 / 90;
         }
 
@@ -344,21 +487,40 @@ export default function EISLogoCell() {
         }
 
         .eis-controls {
-          flex: 0.1 1 auto;
+          /*
+           * Slider column shell.
+           *
+           * min-width: 0 is important in CSS grid/flex layouts; it allows the
+           * slider column to shrink instead of overflowing the cell.
+           */
+          width: 100%;
+          min-width: 0;
+          padding-inline: clamp(2px, 1cqw, 8px);
         }
 
         .slider-row {
+          /*
+           * Slider horizontal layout.
+           *
+           * This row keeps the bar and label stack centered while the gap
+           * follows the cell's responsive sizing variables.
+           */
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: var(--eis-slider-gap);
           flex: 1;
           width: 100%;
           justify-content: center;
           min-width: 0;
-          --eis-slider-height: clamp(36px, 7vw, 72px);
         }
 
         .eis-track {
+          /*
+           * Custom slider bar artwork.
+           *
+           * The track is still a real measured element so drag math can use
+           * its rendered height even though the visible bar is an SVG asset.
+           */
           height: var(--eis-slider-height);
           background-image: var(--eis-slider-bar);
           background-repeat: no-repeat;
@@ -369,6 +531,14 @@ export default function EISLogoCell() {
         }
 
         .eis-thumb {
+          /*
+           * Custom slider thumb artwork.
+           *
+           * Width is derived from height to preserve the SVG's wide aspect
+           * ratio. The top value is controlled by the drag/snap logic above.
+           */
+          width: var(--eis-rendered-thumb-width);
+          height: var(--eis-rendered-thumb-height);
           position: absolute;
           left: 50%;
           top: 0;
@@ -379,7 +549,6 @@ export default function EISLogoCell() {
           background-size: 100% 100%;
           border: 0;
           cursor: grab;
-          touch-action: none;
           transition:
             filter 0.2s,
             opacity 0.2s;
@@ -396,13 +565,28 @@ export default function EISLogoCell() {
         }
 
         .eis-links {
+          /*
+           * Label alignment grid.
+           *
+           * The top and bottom rows match the rendered thumb height, which
+           * aligns Home/Contact LED centers with the thumb's stop centers.
+           */
           display: grid;
-          grid-template-rows: var(--eis-thumb-size) 1fr var(--eis-thumb-size);
+          grid-template-rows:
+            var(--eis-rendered-thumb-height)
+            1fr
+            var(--eis-rendered-thumb-height);
           height: var(--eis-slider-height);
           flex: 1;
         }
 
         .eis-link-row {
+          /*
+           * Link row button reset.
+           *
+           * Each row is a real button for accessibility, but visually behaves
+           * like the hardware label/LED pair in the design.
+           */
           appearance: none;
           background: transparent;
           border: 0;
@@ -410,9 +594,19 @@ export default function EISLogoCell() {
           font: inherit;
           display: flex;
           align-items: center;
+          gap: var(--eis-link-gap);
           cursor: pointer;
           padding: 0;
           text-align: left;
+        }
+
+        .eis-link-row :global(.led) {
+          width: var(--eis-led-size);
+          height: var(--eis-led-size);
+        }
+
+        .eis-link-row :global(.link-label) {
+          font-size: var(--eis-link-font-size);
         }
 
         .eis-link-row:focus-visible {
