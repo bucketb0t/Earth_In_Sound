@@ -1,152 +1,210 @@
 # Project Architecture
 
-This file explains how the current Earth In Sound project is organized and how
-the navbar works internally. The README stays limited to project scope; this
-document carries the implementation details.
+This document explains the implementation structure of the Earth In Sound
+project. The README describes project scope; this file describes how the code
+is engineered.
 
 ## Application Shape
 
-The project is a Next.js App Router application. `app/page.tsx` renders the
-navbar as the first interactive object on the home page. The page itself stays
-simple; the navbar owns the current user-facing behavior.
+The project is a Next.js App Router application. `app/page.tsx` remains a
+Server Component and renders the navbar as the first interactive object on the
+home page. The navbar itself is a Client Component because it uses React state,
+pointer events, keyboard handlers, DOM measurements, and responsive scaling.
 
-The navbar is a client-side feature because it uses React state, pointer
-events, keyboard handlers, and responsive measurements. The rest of the app can
-grow around it without forcing every page to become client-rendered.
+Styling is split out of component files into CSS Modules. Global CSS is kept
+small and only owns the reset, theme tokens, reduced-motion behavior, and tiny
+shared navbar primitives.
 
-## File Blocks And Roles
+## Current File Structure
 
 ```text
 app/
   layout.tsx
   page.tsx
+  page.module.css
   globals.css
 
 components/navbar/
-  Navbar.tsx
   config.ts
   state.ts
+  NavbarAssets/
   cells/
+    AccountCell/
+      AccountCell.tsx
+      AccountCell.module.css
+    CartCell/
+      CartCell.tsx
+      CartCell.module.css
+    EISLogoCell/
+      EISLogoCell.tsx
+      EISLogoCell.module.css
+    IHateMusicCell/
+      IHateMusicCell.tsx
+      IHateMusicCell.module.css
+    JasonWaltonCell/
+      JasonWaltonCell.tsx
+      JasonWaltonCell.module.css
+    StoreCell/
+      StoreCell.tsx
+      StoreCell.module.css
   shared/
+    Navbar/
+      Navbar.tsx
+      NavbarStyle.module.css
+    KnobCell/
+      KnobCell.tsx
+      KnobCell.module.css
+    JackLEDPort/
+      JackLEDPort.tsx
+      JackLEDPort.module.css
 ```
+
+## File Roles
 
 `app/layout.tsx` is the root document shell. It imports global CSS and defines
 site metadata.
 
-`app/page.tsx` is the home route. It renders the navbar and leaves room for
-future page content.
+`app/page.tsx` is the home route. It imports the shared navbar shell from
+`components/navbar/shared/Navbar/Navbar`.
 
-`app/globals.css` owns the global reset, theme tokens, shared navbar cell
-layout primitives, shared LED/link label primitives, and reduced-motion rules.
-It avoids broad global button resets so future native buttons keep normal
-browser behavior.
+`app/page.module.css` owns page-local layout styling, currently the empty
+content area's padding.
 
-`components/navbar/Navbar.tsx` owns the physical faceplate. It measures the
-available width, applies the responsive scale, preserves the full-width visual
-frame, defines the cell order, and provides shared state through
-`NavbarContext`. It owns only full-navbar artwork such as the base banner and
-baseline.
+`app/globals.css` owns the site reset, theme variables, focus ring, shared
+navbar primitives such as `.navbar-cell`, `.led`, and `.link-label`, and the
+reduced-motion media query.
 
-`components/navbar/config.ts` is the static source of truth. It contains
-section identifiers, section links, labels, glow colors, knob geometry, settled
-cell geometry, navbar design dimensions, and store animation frames.
+`components/navbar/config.ts` is the static source of truth for section ids,
+link labels, SVG geometry, navbar design dimensions, baseline thickness, knob
+offsets, and store animation frames.
 
-`components/navbar/state.ts` owns shared React behavior. It defines the navbar
-context, the `useNavbar()` hook, shared state, navigation actions, store
-animation, responsive measurement, cart visibility, and the keyboard activation
-helper used by custom controls.
+`components/navbar/state.ts` owns shared React behavior. It defines
+`NavbarContext`, `useNavbar()`, navigation actions, responsive measurement,
+store animation, cart visibility, account state, and the keyboard activation
+helper for custom controls.
 
-`components/navbar/cells/` contains the individual visual and interaction
-surfaces. Each file represents one navbar cell and is the intended home for
-future custom artwork for that area. If an image belongs to one cell, import it
-inside that cell instead of passing it down from `Navbar.tsx`.
+`components/navbar/NavbarAssets/` stores local navbar artwork, fonts, videos,
+SVGs, and bitmap assets. Assets stay here unless a future section becomes large
+enough to justify its own asset folder.
 
-`components/navbar/shared/` contains reusable visual mechanisms. `KnobCell.tsx`
-is shared by the Jason Walton and I Hate Music sections, and
-`JackLEDPort.tsx` renders their shared corner LED/port/cable indicator.
+## Navbar Shell
 
-## Navbar Cell Roles
+`components/navbar/shared/Navbar/Navbar.tsx` owns the full navbar shell. It:
 
-`EISLogoCell.tsx` combines the Earth In Sound logo and the EIS navigation
-slider because they share one plaque artwork. The logo calls `goHome()`, which
-sets the EIS section to its Home state. The slider uses Pointer Events so
-mouse, touch, and stylus input follow one code path; keyboard users can move
-the slider with arrow keys, Home, and End.
+- creates the navbar context provider
+- measures and scales the shell through `useNavbar()`
+- syncs runtime CSS variables needed for scale, width, height, and baseline
+- imports the local navbar font
+- defines the visual cell order
 
-`JasonWaltonCell.tsx` and `IHateMusicCell.tsx` are thin section wrappers. They
-pass labels, links, and glow colors into the shared `KnobCell`.
+`components/navbar/shared/Navbar/NavbarStyle.module.css` owns the shared
+banner, baseline, root faceplate, inner row layout, and secondary row layout.
+The baseline is drawn on `.navbarShell::after` and tied to `100vw` so it stays
+edge-to-edge during browser zoom.
 
-`KnobCell.tsx` renders the rotary SVG control, orbiting LEDs, labels, active
-indicator dot, and the shared jack indicator. It reads the active section from
-context and calls shared navigation actions.
+The navbar uses CSS Modules instead of plain component-level global CSS because
+Next's App Router only allows global CSS imports at the root layout boundary.
 
-`JackLEDPort.tsx` renders the decorative LED, jack socket, and cable indicator.
-Inactive cables are hidden inline as well as through CSS so they do not flash
-on refresh before scoped styles settle.
+## Cell Folders
 
-`AccountCell.tsx` renders the local login toggle and username display.
+Each cell now has its own folder containing:
 
-`StoreCell.tsx` runs the store scramble animation. When the animation finishes,
-it reveals the cart control.
+- one `.tsx` file for behavior and markup
+- one `.module.css` file for that cell's styling
 
-`CartCell.tsx` renders the item-count badge and cart button. The cart button is
-a native disabled button until Store reveals it, so browser keyboard and focus
-behavior stay predictable.
+This keeps future custom artwork isolated. If a cell receives a new plaque,
+hover state, animation, or layout, the work should happen inside that cell's
+folder instead of overloading the shared navbar shell.
+
+## Cell Roles
+
+`EISLogoCell` combines the Earth In Sound logo and the EIS navigation slider
+because they share one plaque. The logo calls `goHome()`. The slider supports
+pointer dragging, keyboard navigation, and resize-aware snapping.
+
+`JasonWaltonCell` and `IHateMusicCell` are section wrappers. They provide the
+section id, label, and link list to the shared `KnobCell`.
+
+`KnobCell` renders the reusable rotary SVG control: knob face, tick marks,
+orbiting LEDs, link labels, active indicator dot, and the shared jack overlay.
+
+`JackLEDPort` renders the shared corner LED, jack socket, and plug bitmap
+overlay for knob cells.
+
+`AccountCell` renders the login switch and username display.
+
+`StoreCell` runs the store scramble animation. When the animation finishes,
+the cart control becomes available.
+
+`CartCell` renders the item-count badge and cart button. The cart button stays
+disabled until the store animation reveals it.
+
+## Styling Rules
+
+- Component-level visual styling lives in CSS Modules.
+- `globals.css` is only for shared primitives and page-level defaults.
+- No component uses `style={...}` for visual styling.
+- Runtime DOM style updates are allowed only for measured behavior, such as
+  navbar scale variables and slider thumb position.
+- New cell artwork should go in the owning cell folder unless it is truly
+  shared across multiple cells.
 
 ## Flow Chart
 
 ```mermaid
 flowchart TD
-  Page["app/page.tsx"] --> Navbar["Navbar.tsx"]
-  Navbar --> Measure["ResizeObserver measures shell width"]
-  Measure --> Scale["Compute scale from DESIGN_WIDTH"]
+  Page["app/page.tsx<br/>Server Component"] --> Navbar["shared/Navbar/Navbar.tsx<br/>Client shell"]
   Navbar --> Provider["NavbarContext.Provider"]
-  Provider --> State["state.ts: useNavbar state/actions"]
-  Config["config.ts: links, colors, geometry"] --> Navbar
+  Navbar --> ShellCSS["NavbarStyle.module.css<br/>banner, baseline, rows"]
+  Navbar --> State["state.ts<br/>useNavbar state/actions"]
+  State --> Measure["ResizeObserver<br/>scale from DESIGN_WIDTH"]
+  State --> Actions["navigation, account, store, cart actions"]
+  Config["config.ts<br/>links, dimensions, SVG geometry"] --> State
   Config --> EIS
   Config --> Knob
-  Config --> Utility
 
-  Provider --> EISLogo["EISLogoCell logo + slider"]
+  Provider --> EIS["EISLogoCell<br/>logo + slider"]
   Provider --> JW["JasonWaltonCell"]
   Provider --> IHM["IHateMusicCell"]
   Provider --> Utility["Account / Store / Cart"]
 
-  EISLogo --> GoHome["goHome -> eisNavTo(0)"]
-  EISLogo --> EisNav["eisNavTo(index)"]
-  JW --> Knob["shared KnobCell"]
+  EIS --> EISCSS["EISLogoCell.module.css"]
+  JW --> Knob["shared/KnobCell"]
   IHM --> Knob
-  Knob --> KnobNav["knobNavTo(section, index)"]
-  Knob --> Jack["JackLEDPort"]
-  Utility --> Store["storePress animation"]
-  Store --> RevealCart["set cartVisible true"]
+  Knob --> KnobCSS["KnobCell.module.css"]
+  Knob --> Jack["shared/JackLEDPort"]
+  Jack --> JackCSS["JackLEDPort.module.css"]
+  Utility --> UtilityCSS["cell CSS Modules"]
 
-  GoHome --> Active["activePage"]
-  EisNav --> Active
+  EIS --> EISNav["eisNavTo(index) / goHome()"]
+  Knob --> KnobNav["knobNavTo(section, index)"]
+  Utility --> Store["storePress()"]
+  Store --> RevealCart["cartVisible = true"]
+
+  EISNav --> Active["activePage / eisSliderPos"]
   KnobNav --> Active
-  Active --> Cells["Cells render active glow/state"]
+  Active --> Render["Cells render active state"]
 ```
 
 ## State Flow
 
 1. `Navbar.tsx` calls `useNavbar()` and provides the returned state through
-   context.
+   `NavbarContext`.
 2. A cell calls an action such as `eisNavTo()`, `knobNavTo()`, `goHome()`,
-   `toggleLogin()`, or `storePress()`.
-3. `state.ts` updates the shared React state.
+   `toggleLogin()`, `storePress()`, or `cartPress()`.
+3. `state.ts` updates shared React state.
 4. Context consumers re-render with the new active section, slider position,
    account state, store text, or cart visibility.
-5. Component-local CSS and CSS variables render the correct glow, motion, and
-   active visual state.
+5. CSS Modules render the visual state through classes, pseudo-elements, and
+   component-local styles.
 
 ## Interaction Guarantees
 
 - Navigation indexes are clamped before entering shared state.
-- EIS slider dragging uses one Pointer Events path for mouse and touch.
+- EIS slider dragging uses Pointer Events for mouse, touch, and stylus.
 - EIS slider keyboard control supports Arrow keys, Home, and End.
-- Custom div/SVG controls support both Enter and Space activation.
-- Native buttons are used when artwork does not require custom SVG/div control
-  behavior.
+- Custom SVG/div controls support both Enter and Space activation.
+- Native buttons are used where the artwork does not require SVG control.
 - Active controls expose ARIA state where appropriate.
-- Inactive jack cables are hidden on first paint to prevent refresh flashes.
+- The baseline remains edge-to-edge at browser zoom levels.
 - Reduced-motion users receive near-instant transitions.

@@ -22,22 +22,22 @@ import {
 
 export interface ActivePage {
   section: SectionId;
-  idx: number;
+  linkIndex: number;
 }
 
 export interface NavbarState {
   activePage: ActivePage | null;
   eisSliderPos: number;
-  loggedIn: boolean;
+  isLoggedIn: boolean;
   cartCount: number;
   cartVisible: boolean;
   storeText: string;
   storeAnimating: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
   scale: number;
-  ready: boolean;
-  eisNavTo: (idx: number) => void;
-  knobNavTo: (sectionId: KnobSectionId, idx: number) => void;
+  isScaleReady: boolean;
+  eisNavTo: (linkIndex: number) => void;
+  knobNavTo: (sectionId: KnobSectionId, linkIndex: number) => void;
   knobFaceClick: (sectionId: KnobSectionId) => void;
   goHome: () => void;
   toggleLogin: () => void;
@@ -52,9 +52,11 @@ export const NavbarContext = createContext<NavbarState | null>(null);
  * Fails loudly if a cell is rendered outside Navbar's provider.
  */
 export function useNavbarContext(): NavbarState {
-  const ctx = useContext(NavbarContext);
-  if (!ctx) throw new Error("useNavbarContext must be used inside <Navbar />.");
-  return ctx;
+  const navbarState = useContext(NavbarContext);
+  if (!navbarState) {
+    throw new Error("useNavbarContext must be used inside <Navbar />.");
+  }
+  return navbarState;
 }
 
 /**
@@ -71,10 +73,13 @@ export function activateOnEnterOrSpace<T extends Element>(
 }
 
 // Guards every position-based navigation call before it reaches render state.
-function clampSectionIndex(section: SectionId, idx: number): number {
-  const max = SECTION_LINKS[section].length - 1;
-  if (!Number.isFinite(idx)) return 0;
-  return Math.max(0, Math.min(max, Math.round(idx)));
+function clampSectionLinkIndex(
+  section: SectionId,
+  requestedLinkIndex: number,
+): number {
+  const maxLinkIndex = SECTION_LINKS[section].length - 1;
+  if (!Number.isFinite(requestedLinkIndex)) return 0;
+  return Math.max(0, Math.min(maxLinkIndex, Math.round(requestedLinkIndex)));
 }
 
 /**
@@ -86,10 +91,10 @@ export function useNavbar(): NavbarState {
   const storeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [scale, setScale] = useState(1);
-  const [ready, setReady] = useState(false);
+  const [isScaleReady, setIsScaleReady] = useState(false);
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [eisSliderPos, setEisSliderPos] = useState(0);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const cartCount = 0;
   const [cartVisible, setCartVisible] = useState(false);
   const [storeText, setStoreText] = useState("STORE");
@@ -97,21 +102,23 @@ export function useNavbar(): NavbarState {
 
   /* Measure before paint, then keep scale synced to the shell border-box. */
   useLayoutEffect(() => {
-    const el = shellRef.current;
-    if (!el) return;
+    const shellElement = shellRef.current;
+    if (!shellElement) return;
 
-    const measure = (width: number) => {
-      setScale(Math.min(1, width / DESIGN_WIDTH));
-      setReady(true);
+    const syncScaleFromShellWidth = (shellWidth: number) => {
+      setScale(Math.min(1, shellWidth / DESIGN_WIDTH));
+      setIsScaleReady(true);
     };
 
-    measure(el.getBoundingClientRect().width);
+    syncScaleFromShellWidth(shellElement.getBoundingClientRect().width);
 
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) measure(entry.target.getBoundingClientRect().width);
+      if (entry) {
+        syncScaleFromShellWidth(entry.target.getBoundingClientRect().width);
+      }
     });
 
-    observer.observe(el);
+    observer.observe(shellElement);
     return () => observer.disconnect();
   }, []);
 
@@ -124,17 +131,17 @@ export function useNavbar(): NavbarState {
     };
   }, []);
 
-  const eisNavTo = useCallback((idx: number): void => {
-    const safeIdx = clampSectionIndex("eis", idx);
-    setEisSliderPos(safeIdx);
-    setActivePage({ section: "eis", idx: safeIdx });
+  const eisNavTo = useCallback((linkIndex: number): void => {
+    const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
+    setEisSliderPos(clampedEisLinkIndex);
+    setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
   }, []);
 
   const knobNavTo = useCallback(
-    (sectionId: KnobSectionId, idx: number): void => {
+    (sectionId: KnobSectionId, linkIndex: number): void => {
       setActivePage({
         section: sectionId,
-        idx: clampSectionIndex(sectionId, idx),
+        linkIndex: clampSectionLinkIndex(sectionId, linkIndex),
       });
     },
     [],
@@ -149,7 +156,7 @@ export function useNavbar(): NavbarState {
   }, [eisNavTo]);
 
   const toggleLogin = useCallback((): void => {
-    setLoggedIn((previous) => !previous);
+    setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
   }, []);
 
   /* Store animation is non-reentrant; finishing it reveals the cart control. */
@@ -157,9 +164,9 @@ export function useNavbar(): NavbarState {
     if (storeAnimating) return;
     setStoreAnimating(true);
 
-    let frameIdx = 0;
-    function runFrame(): void {
-      if (frameIdx >= STORE_FRAMES.length) {
+    let storeFrameIndex = 0;
+    function advanceStoreFrame(): void {
+      if (storeFrameIndex >= STORE_FRAMES.length) {
         setStoreText("STORE");
         setStoreAnimating(false);
         setCartVisible(true);
@@ -167,11 +174,14 @@ export function useNavbar(): NavbarState {
         return;
       }
 
-      setStoreText(STORE_FRAMES[frameIdx++]!);
-      storeTimerRef.current = setTimeout(runFrame, STORE_FRAME_INTERVAL);
+      setStoreText(STORE_FRAMES[storeFrameIndex++]!);
+      storeTimerRef.current = setTimeout(
+        advanceStoreFrame,
+        STORE_FRAME_INTERVAL,
+      );
     }
 
-    runFrame();
+    advanceStoreFrame();
   }, [storeAnimating]);
 
   const cartPress = useCallback((): void => {
@@ -181,14 +191,14 @@ export function useNavbar(): NavbarState {
   return {
     activePage,
     eisSliderPos,
-    loggedIn,
+    isLoggedIn,
     cartCount,
     cartVisible,
     storeText,
     storeAnimating,
     shellRef,
     scale,
-    ready,
+    isScaleReady,
     eisNavTo,
     knobNavTo,
     knobFaceClick,

@@ -1,4 +1,5 @@
-import Navbar from "@/components/navbar/Navbar";
+import Navbar from "@/components/navbar/shared/Navbar/Navbar";
+import styles from "./page.module.css";
 
 /**
  * Home route.
@@ -8,7 +9,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      <main style={{ padding: "40px 24px" }} />
+      <main className={styles.main} />
     </>
   );
 }

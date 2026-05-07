@@ -1,11 +1,11 @@
 "use client";
 
-import { JW_LINKS, SECTION_GLOWS } from "../config";
-import KnobCell from "../shared/KnobCell";
+import { JW_LINKS } from "../../config";
+import KnobCell from "../../shared/KnobCell/KnobCell";
 
 /**
  * Jason Walton section.
- * Thin wrapper that feeds Jason-specific labels/color into the shared knob.
+ * Thin wrapper that feeds Jason-specific identity and links into the knob.
  */
 export default function JasonWaltonCell() {
   return (
@@ -13,7 +13,6 @@ export default function JasonWaltonCell() {
       sectionId="jw"
       label="Jason Walton"
       links={JW_LINKS}
-      glow={SECTION_GLOWS.jw}
     />
   );
 }

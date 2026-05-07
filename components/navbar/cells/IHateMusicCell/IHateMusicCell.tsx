@@ -1,11 +1,11 @@
 "use client";
 
-import { IHM_LINKS, SECTION_GLOWS } from "../config";
-import KnobCell from "../shared/KnobCell";
+import { IHM_LINKS } from "../../config";
+import KnobCell from "../../shared/KnobCell/KnobCell";
 
 /**
  * I Hate Music podcast section.
- * Thin wrapper that feeds podcast-specific labels/color into the shared knob.
+ * Thin wrapper that feeds podcast-specific identity and links into the knob.
  */
 export default function IHateMusicCell() {
   return (
@@ -13,7 +13,6 @@ export default function IHateMusicCell() {
       sectionId="ihm"
       label="I Hate Music"
       links={IHM_LINKS}
-      glow={SECTION_GLOWS.ihm}
     />
   );
 }

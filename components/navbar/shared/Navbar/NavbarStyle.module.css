@@ -1,0 +1,89 @@
+/*
+ * Navbar shell styles.
+ * Banner and baseline artwork live here because they belong to the whole bar.
+ */
+
+.navbarShell {
+  --navbar-shell-height: 120px;
+  --navbar-line-height: 8px;
+
+  position: relative;
+  width: 100%;
+  height: var(--navbar-shell-height);
+  padding: 0;
+  overflow: visible;
+  visibility: hidden;
+  background-image: url("../../NavbarAssets/SVG/BaseBannerNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.navbarShellReady {
+  visibility: visible;
+}
+
+.navbarShell::after {
+  /*
+   * Baseline is viewport-tied, not root-tied, so it stays edge-to-edge while
+   * the interactive faceplate scales around the center.
+   */
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 10;
+  width: 100vw;
+  height: var(--navbar-line-height);
+  pointer-events: none;
+  transform: translateX(-50%);
+  background-image: url("../../NavbarAssets/SVG/BaseLineNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 100% 100%;
+}
+
+.navbarRoot {
+  --navbar-scale: 1;
+  --navbar-root-width: 100%;
+  --navbar-root-height: 112px;
+
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--navbar-root-width);
+  height: var(--navbar-root-height);
+  overflow: visible;
+  isolation: isolate;
+  transform: translateX(-50%) scale(var(--navbar-scale));
+  transform-origin: top center;
+  background: transparent;
+  font-family: var(--font-futura-heavy), sans-serif;
+}
+
+.navbarInner {
+  /* Cells stretch to the faceplate height while keeping horizontal air. */
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  padding: 0 clamp(16px, 10%, 120px);
+}
+
+.rowPrimary {
+  display: flex;
+  flex: 1 1 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.rowSecondary {
+  display: flex;
+  flex: 0.5 1 0;
+  align-items: stretch;
+  min-width: 0;
+  border-left: 1px solid #2a2a2a;
+}

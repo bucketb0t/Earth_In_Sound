@@ -1,0 +1,94 @@
+/*
+ * Shared knob cell styles.
+ * Section wrappers provide labels; this file owns the reusable SVG machinery.
+ */
+
+.knobCell {
+  /* Shared cell sizing; individual wrapper decides labels/glow only. */
+  flex: 0.25 1 0;
+  overflow: visible;
+}
+
+.jw {
+  --glow: #4daaff;
+  --glow-soft: #4daaff66;
+}
+
+.ihm {
+  --glow: #ff4d4d;
+  --glow-soft: #ff4d4d66;
+}
+
+.knobWrap {
+  /* Limits the SVG to its designed coordinate width. */
+  width: 100%;
+  max-width: 160px;
+}
+
+.knobSvg {
+  display: block;
+  overflow: visible;
+}
+
+.shadowRing {
+  fill: #111;
+}
+
+.knobFace {
+  cursor: pointer;
+  stroke: #333;
+  stroke-width: 1px;
+}
+
+.tick {
+  stroke: #333;
+  stroke-width: 1px;
+}
+
+.indicatorDot {
+  fill: #888;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.indicatorDotActive {
+  fill: var(--glow);
+  filter: drop-shadow(0 0 4px var(--glow));
+}
+
+.centerCap {
+  fill: #0a0a0a;
+}
+
+.choiceGroup {
+  cursor: pointer;
+}
+
+.choiceLed {
+  fill: #111;
+  stroke: #2a2a2a;
+  transition:
+    fill 0.25s,
+    stroke 0.25s,
+    filter 0.25s;
+}
+
+.choiceLedActive {
+  fill: var(--glow);
+  stroke: var(--glow);
+  filter:
+    drop-shadow(0 0 4px var(--glow))
+    drop-shadow(0 0 8px var(--glow-soft));
+}
+
+.choiceText {
+  font-family: "Courier New", monospace;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  fill: #ffffff;
+  user-select: none;
+  transition: fill 0.2s;
+}
+
+.choiceTextActive {
+  fill: var(--glow);
+}

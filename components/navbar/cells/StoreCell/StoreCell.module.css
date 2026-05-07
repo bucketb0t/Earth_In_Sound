@@ -1,0 +1,55 @@
+/*
+ * Store cell styles.
+ * The cell is a button styled as a green hardware display.
+ */
+
+.storeCell {
+  /* Native button reset; the whole cell is the store trigger. */
+  flex: 1 1 0;
+  min-width: 80px;
+  appearance: none;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+}
+
+.storeCell:focus-visible {
+  outline: 2px solid #22c55e;
+  outline-offset: -2px;
+}
+
+.storeDisplay {
+  /* Green LCD-style display used by the store entry point. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 5px 10px;
+  background: #030f03;
+  border: 1px solid #1a2e1a;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 4px #000;
+}
+
+.storeDisplay span {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  transition:
+    color 0.1s,
+    text-shadow 0.1s;
+}
+
+.storeTextReady {
+  color: #22c55e;
+  text-shadow: 0 0 6px #22c55e88;
+}
+
+.storeTextScrambling {
+  color: #ef4444;
+  text-shadow: 0 0 6px #ef444488;
+}

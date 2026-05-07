@@ -1,0 +1,115 @@
+/*
+ * Account cell styles.
+ * Controls the login toggle and username LCD display.
+ */
+
+.accountCell {
+  flex: 1 1 0;
+  min-width: 90px;
+}
+
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.toggleLabel {
+  font-family: "Courier New", monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.toggleLabelDim {
+  color: #333;
+}
+
+.toggleLabelOff {
+  color: #ef4444;
+}
+
+.toggleLabelOn {
+  color: #22c55e;
+}
+
+.toggleTrack {
+  /* Native switch button with custom hardware track styling. */
+  position: relative;
+  width: 36px;
+  height: 18px;
+  padding: 0;
+  appearance: none;
+  cursor: pointer;
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 9px;
+  color: inherit;
+  font: inherit;
+}
+
+.toggleTrack:focus-visible {
+  outline: 2px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.toggleNub {
+  /* Nub movement is pure CSS; React only toggles the on class. */
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(145deg, #555, #333);
+  border: 1px solid #222;
+  border-radius: 50%;
+  transition:
+    left 0.25s,
+    background 0.25s,
+    box-shadow 0.25s;
+}
+
+.toggleTrackOn .toggleNub {
+  left: 20px;
+  background: linear-gradient(145deg, #4ade80, #16a34a);
+  box-shadow: 0 0 6px #22c55e88;
+}
+
+.accountDisplay {
+  /* LCD-style chip sized here so AccountCell.tsx stays markup-only. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 80px;
+  min-height: 22px;
+  margin-top: 6px;
+  padding: 3px 6px;
+  background: #030f03;
+  border: 1px solid #1a2e1a;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 4px #000;
+  transition: box-shadow 0.3s;
+}
+
+.accountDisplay span {
+  font-family: "Courier New", monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: #1a2e1a;
+  transition:
+    color 0.2s,
+    text-shadow 0.2s;
+}
+
+.accountDisplayOn {
+  box-shadow:
+    inset 0 1px 4px #000,
+    0 0 6px #22c55e22;
+}
+
+.accountDisplayOn span {
+  color: #22c55e;
+  text-shadow: 0 0 6px #22c55e88;
+}
