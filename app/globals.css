@@ -1,9 +1,6 @@
 /*
  * Global stylesheet.
- *
- * Keep this file small: it owns the page reset, base theme, and tiny shared
- * navbar primitives that are reused across multiple cells. Individual cell
- * artwork stays inside each component's scoped `style jsx` block.
+ * Owns only reset, page theme, and tiny navbar primitives shared by cells.
  */
 
 *,
@@ -41,18 +38,13 @@ a {
   text-decoration: none;
 }
 
-/* Scoped reset for custom controls. Native buttons stay native by default. */
+/* Opt-in reset for custom controls; native buttons stay native by default. */
 .button-reset {
   all: unset;
   cursor: pointer;
 }
 
-/*
- * Shared navbar primitives.
- *
- * These classes are deliberately tiny and generic. Section-specific colors,
- * artwork, animation, and geometry belong in the owning cell component.
- */
+/* Shared navbar primitives; cell-specific artwork stays in each component. */
 
 .cell-label {
   font-size: 8px;
@@ -87,11 +79,7 @@ a {
   align-items: flex-start;
 }
 
-/*
- * Cell separators are drawn as a pseudo-element instead of a real border.
- * That keeps the line visible even when a cell is a native button that resets
- * its border for accessibility-friendly control behavior.
- */
+/* Pseudo-element separator survives native-button border resets. */
 .navbar-cell--bordered {
   position: relative;
 }

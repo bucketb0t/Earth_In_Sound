@@ -30,10 +30,7 @@ export interface KnobCellProps {
 
 /**
  * Shared rotary knob cell.
- *
- * Jason Walton and I Hate Music use the same interaction model: a knob face,
- * three orbiting LED choices, labels, and a corner jack indicator. The wrapper
- * cells provide section content; this component owns the shared SVG machinery.
+ * Renders knob face, LED choices, labels, indicator dot, and corner jack.
  */
 export default function KnobCell({
   sectionId,
@@ -47,15 +44,13 @@ export default function KnobCell({
   const isActive = activePage?.section === sectionId;
   const activeIdx = isActive ? activePage.idx : -1;
   const offsets = CELL_GEOMETRY.knob[sectionId];
+  // CSS variables let SVG/CSS share the section glow without prop drilling.
   const styleVars = {
     "--glow": glow,
     "--glow-soft": `${glow}66`,
   } as CSSProperties;
 
-  /*
-   * The indicator dot moves imperatively because it is a small SVG-only visual
-   * detail. React still owns which section/index is active.
-   */
+  /* Move the small SVG indicator dot when this knob becomes active/inactive. */
   useEffect(() => {
     const dot = dotRef.current;
     if (!dot) return;
@@ -76,10 +71,7 @@ export default function KnobCell({
     dot.style.filter = "none";
   }, [isActive, activeIdx, glow]);
 
-  /*
-   * These SVG coordinates are static. Memoizing them keeps render work focused
-   * on the active state instead of recalculating the same geometry repeatedly.
-   */
+  /* Static tick marks around the knob face. */
   const ticks = useMemo(
     () =>
       Array.from({ length: 8 }, (_, idx) => {
@@ -102,6 +94,7 @@ export default function KnobCell({
     [],
   );
 
+  /* Static LED/label positions; config offsets nudge the final artwork. */
   const positions = useMemo(
     () =>
       LED_DEG_FROM_TOP.map((deg) => {
@@ -124,12 +117,14 @@ export default function KnobCell({
       <div className="cell-label">{label}</div>
 
       <div className="knob-wrap">
+        {/* One SVG keeps knob, LEDs, labels, and active dot scaling together. */}
         <svg
           viewBox={`0 0 ${KNOB_SVG_W} ${KNOB_CANVAS}`}
           width="100%"
           style={{ display: "block", overflow: "visible" }}
         >
           <defs>
+            {/* Unique gradient id avoids collisions between knob instances. */}
             <radialGradient id={`kg-${sectionId}`} cx="40%" cy="35%" r="60%">
               <stop offset="0%" stopColor="#5a5a5a" />
               <stop offset="100%" stopColor="#1a1a1a" />
@@ -138,6 +133,7 @@ export default function KnobCell({
 
           <circle cx={CX} cy={CY} r={KNOB_R + 3} fill="#111" />
 
+          {/* Knob face: clicking it clears this section's active state. */}
           <circle
             cx={CX}
             cy={CY}
@@ -158,6 +154,7 @@ export default function KnobCell({
 
           {ticks}
 
+          {/* Moving indicator dot: positioned by the effect above. */}
           <circle
             ref={dotRef}
             cx={initDotPt.x}
@@ -170,6 +167,7 @@ export default function KnobCell({
 
           <circle cx={CX} cy={CY} r={5} fill="#0a0a0a" aria-hidden="true" />
 
+          {/* Choice groups: each LED + label behaves as one selectable control. */}
           {links.map((link, idx) => {
             const on = isActive && idx === activeIdx;
             const ledOff = offsets.led[idx] ?? { x: 0, y: 0 };
@@ -227,11 +225,13 @@ export default function KnobCell({
 
       <style jsx>{`
         .knob-cell {
+          /* Shared cell sizing; individual wrapper decides labels/glow only. */
           flex: 0.25 1 0;
           overflow: visible;
         }
 
         .knob-wrap {
+          /* Limits the SVG to its designed coordinate width. */
           width: 100%;
           max-width: ${KNOB_SVG_W}px;
         }

@@ -12,11 +12,8 @@ interface RootLayoutProps {
 }
 
 /**
- * Root App Router layout.
- *
- * Global CSS is imported here because Next's App Router allows global styles
- * only at the root layout boundary. Page and component files stay focused on
- * markup, state, and local artwork.
+ * Root document shell.
+ * Imports global CSS once and leaves interactive UI to child components.
  */
 export default function RootLayout({ children }: RootLayoutProps) {
   return (

@@ -5,9 +5,7 @@ import { useNavbarContext } from "../state";
 
 /**
  * Account cell.
- *
- * A compact hardware-style switch controls the local logged-in state. Geometry
- * values come from static config so the styling remains centralized.
+ * Hardware-style login switch plus username display.
  */
 export default function AccountCell() {
   const { loggedIn, toggleLogin } = useNavbarContext();
@@ -17,6 +15,7 @@ export default function AccountCell() {
     <div className="navbar-cell navbar-cell--center navbar-cell--bordered account-cell">
       <div className="cell-label">Account</div>
 
+      {/* Toggle row: Off/On labels reflect the same loggedIn state as the nub. */}
       <div className="h-toggle-wrap" style={{ gap: toggleGap }}>
         <span
           className="h-toggle-lbl"
@@ -44,6 +43,7 @@ export default function AccountCell() {
         </span>
       </div>
 
+      {/* Username display: dim placeholder when logged out, bright name when on. */}
       <div
         className={`acct-display ${loggedIn ? "on" : ""}`}
         style={{
@@ -74,6 +74,7 @@ export default function AccountCell() {
         }
 
         .h-toggle-track {
+          /* Native switch button with custom hardware track styling. */
           appearance: none;
           width: 36px;
           height: 18px;
@@ -93,6 +94,7 @@ export default function AccountCell() {
         }
 
         .h-toggle-nub {
+          /* Nub movement is pure CSS; React only toggles the .on class. */
           width: 14px;
           height: 14px;
           border-radius: 50%;
@@ -114,6 +116,7 @@ export default function AccountCell() {
         }
 
         .acct-display {
+          /* LCD-style chip sized from config for easy artwork tuning. */
           background: #030f03;
           border: 1px solid #1a2e1a;
           border-radius: 4px;

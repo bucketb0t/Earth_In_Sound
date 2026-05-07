@@ -10,9 +10,7 @@ interface JackLEDPortProps {
 
 /**
  * Corner jack indicator for knob cells.
- *
- * The parent KnobCell provides --glow, so this component can share the active
- * section color. The port and plug are bitmap assets stored with the navbar.
+ * Uses KnobCell's --glow variable and local bitmap port/plug assets.
  */
 export default function JackLEDPort({ active }: JackLEDPortProps) {
   const jackPlugUrl =
@@ -21,16 +19,14 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
   const jackPortUrl =
     typeof jackPortNavbar === "string" ? jackPortNavbar : jackPortNavbar.src;
 
-  /*
-   * Visibility is applied inline, not only through styled-jsx, to prevent a
-   * first-paint flash where inactive plugs can appear before scoped CSS lands.
-   */
+  /* Inline visibility prevents inactive plug flash before scoped CSS loads. */
   const plugStyle = {
     opacity: active ? 1 : 0,
     visibility: active ? "visible" : "hidden",
     transform: active ? "translateY(0)" : "translateY(20px)",
   } satisfies CSSProperties;
 
+  // Asset variables keep bitmap URLs in React and positioning in CSS.
   const assetStyle = {
     "--jack-plug": `url(${jackPlugUrl})`,
     "--jack-port": `url(${jackPortUrl})`,
@@ -38,12 +34,14 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
 
   return (
     <div className="jack-led-port" style={assetStyle}>
+      {/* LED and port glow through the parent knob's --glow color. */}
       <div className={`led-indicator ${active ? "active" : ""}`} />
       <div className={`port ${active ? "active" : ""}`} />
       <div className="plug" style={plugStyle} />
 
       <style jsx>{`
         .jack-led-port {
+          /* Full-cell overlay; does not affect knob SVG layout. */
           position: absolute;
           inset: 0;
           pointer-events: none;
@@ -71,11 +69,7 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
         }
 
         .port {
-          /*
-           * The bitmap port and plug use hand-tuned offsets because they are
-           * artwork, not mathematical primitives. Keep these values together
-           * when you tune the jack position for a new plaque.
-           */
+          /* Hand-tuned bitmap socket position for the current navbar artwork. */
           position: absolute;
           bottom: -15px;
           right: 4.5px;
@@ -96,6 +90,7 @@ export default function JackLEDPort({ active }: JackLEDPortProps) {
         }
 
         .plug {
+          /* Hidden until active; positioned to visually meet the socket. */
           position: absolute;
           bottom: -40px;
           right: 4px;

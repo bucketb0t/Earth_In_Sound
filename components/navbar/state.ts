@@ -47,6 +47,10 @@ export interface NavbarState {
 
 export const NavbarContext = createContext<NavbarState | null>(null);
 
+/**
+ * Safe context accessor for navbar cells.
+ * Fails loudly if a cell is rendered outside Navbar's provider.
+ */
 export function useNavbarContext(): NavbarState {
   const ctx = useContext(NavbarContext);
   if (!ctx) throw new Error("useNavbarContext must be used inside <Navbar />.");
@@ -55,9 +59,7 @@ export function useNavbarContext(): NavbarState {
 
 /**
  * Keyboard helper for custom artwork controls.
- *
- * The navbar uses SVG groups and styled divs where native buttons would fight
- * the artwork. This gives those controls the expected Enter and Space behavior.
+ * Gives non-button SVG/div controls native-like Enter and Space activation.
  */
 export function activateOnEnterOrSpace<T extends Element>(
   event: KeyboardEvent<T>,
@@ -68,6 +70,7 @@ export function activateOnEnterOrSpace<T extends Element>(
   action();
 }
 
+// Guards every position-based navigation call before it reaches render state.
 function clampSectionIndex(section: SectionId, idx: number): number {
   const max = SECTION_LINKS[section].length - 1;
   if (!Number.isFinite(idx)) return 0;
@@ -76,10 +79,7 @@ function clampSectionIndex(section: SectionId, idx: number): number {
 
 /**
  * Shared navbar state and actions.
- *
- * This hook is the only place that mutates cross-cell behavior: active link,
- * EIS slider position, account state, store animation, cart visibility, and
- * responsive shell scale.
+ * Coordinates active links, scaling, account/store/cart state, and cell actions.
  */
 export function useNavbar(): NavbarState {
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -95,10 +95,7 @@ export function useNavbar(): NavbarState {
   const [storeText, setStoreText] = useState("STORE");
   const [storeAnimating, setStoreAnimating] = useState(false);
 
-  /*
-   * The ResizeObserver and initial pass use the same border-box model so the
-   * transform scale does not jump after the first observer callback.
-   */
+  /* Measure before paint, then keep scale synced to the shell border-box. */
   useLayoutEffect(() => {
     const el = shellRef.current;
     if (!el) return;
@@ -118,6 +115,7 @@ export function useNavbar(): NavbarState {
     return () => observer.disconnect();
   }, []);
 
+  /* Clear any pending store animation timer when the navbar unmounts. */
   useEffect(() => {
     return () => {
       if (storeTimerRef.current !== null) {
@@ -154,10 +152,7 @@ export function useNavbar(): NavbarState {
     setLoggedIn((previous) => !previous);
   }, []);
 
-  /*
-   * Store keeps the original no-reentry timer behavior: pressing while the
-   * scramble is running does nothing, and the cart becomes active at the end.
-   */
+  /* Store animation is non-reentrant; finishing it reveals the cart control. */
   const storePress = useCallback((): void => {
     if (storeAnimating) return;
     setStoreAnimating(true);

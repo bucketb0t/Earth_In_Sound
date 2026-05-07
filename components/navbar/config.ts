@@ -1,14 +1,13 @@
 /**
  * Static navbar configuration.
- *
- * This file is the single source of truth for section ids, labels, colors,
- * geometry constants, and store animation frames. Keep artwork components
- * reading from here instead of duplicating values locally.
+ * Central place for labels, colors, geometry, sizing, and animation frames.
  */
 
+// State keys used by the EIS slider and shared knob sections.
 export type SectionId = "eis" | "ihm" | "jw";
 export type KnobSectionId = Exclude<SectionId, "eis">;
 
+// Link order is positional: index 0 means the first physical control stop.
 export const EIS_LINKS = ["Home", "About", "Contact"] as const;
 export const JW_LINKS = ["Biography", "Discography", "Production"] as const;
 export const IHM_LINKS = ["Podcast", "Community", "Patreon"] as const;
@@ -31,12 +30,7 @@ export const SECTION_GLOWS: Record<SectionId, string> = {
   ihm: "#ff4d4d",
 };
 
-/*
- * Knob geometry.
- *
- * Angles are expressed clockwise from the top of the knob because that is
- * easier to tune visually. `ledToTrig` converts them for SVG math.
- */
+/* Knob geometry: visual angles are clockwise from top; SVG math is converted. */
 export const LED_DEG_FROM_TOP: readonly [number, number, number] = [
   45, 90, 135,
 ] as const;
@@ -51,20 +45,14 @@ export const CX = KNOB_CANVAS / 2;
 export const CY = KNOB_CANVAS / 2;
 export const DEFAULT_TRIG_DEG = 90;
 
-/*
- * Responsive navbar shell.
- */
+/* Responsive shell: total height includes the baseline artwork. */
 export const DESIGN_WIDTH = 1200;
-export const DESIGN_HEIGHT = 140;
+export const DESIGN_HEIGHT = 120;
 export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
+// Unscaled visual thickness of BaseLineNavbar.svg.
+export const BASE_LINE_HEIGHT = 8;
 
-/*
- * Fixed cell geometry.
- *
- * These values used to be live-tuned by the development control panel. The
- * panel is no longer part of the current navbar runtime, so the settled values
- * live here as static config beside the rest of the navbar geometry.
- */
+/* Fixed per-cell geometry; tune here before moving values into artwork later. */
 export const CELL_GEOMETRY = {
   knob: {
     jw: {
@@ -135,12 +123,7 @@ export function svgPoint(r: number, trigDeg: number): SvgPoint {
   };
 }
 
-/*
- * Store scramble animation.
- *
- * ASCII frames avoid encoding surprises while preserving the existing
- * "scramble into STORE, then reveal cart" behavior.
- */
+/* Store scramble frames; ASCII avoids encoding surprises in source control. */
 export const STORE_FRAMES: readonly string[] = [
   "##",
   "**",

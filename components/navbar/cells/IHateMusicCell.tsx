@@ -5,9 +5,7 @@ import KnobCell from "../shared/KnobCell";
 
 /**
  * I Hate Music podcast section.
- *
- * The podcast keeps its labels and glow color here while sharing the rotary
- * knob behavior with other artist/section cells.
+ * Thin wrapper that feeds podcast-specific labels/color into the shared knob.
  */
 export default function IHateMusicCell() {
   return (

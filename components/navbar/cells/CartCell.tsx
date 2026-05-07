@@ -5,9 +5,7 @@ import { useNavbarContext } from "../state";
 
 /**
  * Cart cell.
- *
- * The badge always shows a two-digit count. The circular cart button stays out
- * of the tab order until the store animation has revealed it.
+ * Two-digit badge plus circular cart button revealed by the store animation.
  */
 export default function CartCell() {
   const { cartCount, cartVisible, cartPress } = useNavbarContext();
@@ -20,7 +18,9 @@ export default function CartCell() {
     <div className="navbar-cell navbar-cell--center navbar-cell--bordered cart-cell">
       <div className="cell-label">Cart</div>
 
+      {/* Cart stack: count display above the circular button. */}
       <div className="cart-btn-wrap" style={{ gap: wrapGap }}>
+        {/* Badge stays visible but dim when the count is zero. */}
         <div
           className={`cart-badge ${badgeActive ? "active" : "zero"}`}
           aria-label={`${cartCount} items in cart`}
@@ -28,6 +28,7 @@ export default function CartCell() {
           <span>{displayCount}</span>
         </div>
 
+        {/* Disabled until storePress() reveals cart availability. */}
         <button
           type="button"
           className={`cart-btn ${cartVisible ? "enabled" : ""}`}
@@ -105,6 +106,7 @@ export default function CartCell() {
         }
 
         .cart-badge {
+          /* LCD count chip; active state only changes glow/opacity. */
           background: #030f03;
           border: 1px solid #1a2e1a;
           border-radius: 4px;
@@ -143,6 +145,7 @@ export default function CartCell() {
         }
 
         .cart-btn {
+          /* Native button semantics with circular hardware styling. */
           appearance: none;
           border-radius: 50%;
           background: linear-gradient(145deg, #2a2a2a, #111);

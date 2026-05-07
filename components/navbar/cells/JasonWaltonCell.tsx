@@ -5,9 +5,7 @@ import KnobCell from "../shared/KnobCell";
 
 /**
  * Jason Walton section.
- *
- * This wrapper keeps section-specific content separate from the reusable knob
- * machinery, which makes future custom artwork for this cell easy to isolate.
+ * Thin wrapper that feeds Jason-specific labels/color into the shared knob.
  */
 export default function JasonWaltonCell() {
   return (

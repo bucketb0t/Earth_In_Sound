@@ -2,18 +2,18 @@ import type { NextConfig } from "next";
 
 /**
  * Project-level Next settings.
- *
- * The package uses Next 16, so TypeScript config is supported. Navbar artwork
- * is imported from the component tree; remote image patterns stay empty until
- * the site intentionally pulls media from an outside domain.
+ * Keeps framework behavior explicit while the navbar design evolves.
  */
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Allows opening the dev server through http://127.0.0.1:3000.
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
+    // Add domains here only when the site intentionally uses remote media.
     remotePatterns: [],
   },
 
-  // Keeps Turbopack rooted in this project on machines with parent lockfiles.
+  // Prevents Turbopack from walking up into parent folders with other lockfiles.
   turbopack: {
     root: process.cwd(),
   },

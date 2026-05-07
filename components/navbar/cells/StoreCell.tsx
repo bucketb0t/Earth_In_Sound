@@ -6,9 +6,7 @@ import { useNavbarContext } from "../state";
 
 /**
  * Store cell.
- *
- * Pressing the display runs the shared store scramble animation in useNavbar().
- * When the animation finishes, the cart control becomes visible.
+ * Store display button that runs the shared scramble animation.
  */
 export default function StoreCell() {
   const { storeText, storeAnimating, storePress } = useNavbarContext();
@@ -16,6 +14,7 @@ export default function StoreCell() {
 
   const isScrambling = storeAnimating && storeText !== "STORE";
   const textColor = isScrambling ? "#ef4444" : "#22c55e";
+  // CSS variables keep animated color logic out of the styled-jsx block.
   const styleVars = {
     "--store-color": textColor,
     "--store-glow": `${textColor}88`,
@@ -32,6 +31,7 @@ export default function StoreCell() {
     >
       <div className="cell-label">Store</div>
 
+      {/* Display chip: text comes from useNavbar's timed animation frames. */}
       <div
         className="store-display"
         style={{ padding: `${paddingY}px ${paddingX}px` }}
@@ -43,6 +43,7 @@ export default function StoreCell() {
 
       <style jsx>{`
         .store-cell {
+          /* Native button reset; the whole cell is the store trigger. */
           appearance: none;
           background: transparent;
           border: 0;
@@ -60,6 +61,7 @@ export default function StoreCell() {
         }
 
         .store-display {
+          /* Green LCD-style display used by the store entry point. */
           background: #030f03;
           border: 1px solid #1a2e1a;
           border-radius: 4px;
