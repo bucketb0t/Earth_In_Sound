@@ -4,76 +4,81 @@
  */
 
 .accountCell {
-  flex: 1 1 0;
-  min-width: 90px;
+  --account-control-width: 108px;
+  --cell-plaque-aspect: 165 / 141;
+
+  flex: 0 0 auto;
+  min-width: 0;
+  /* Height drives the plaque; width follows the SVG ratio. */
+  background-image: url("../../NavbarAssets/SVG/AccountPlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
 }
 
-.toggleWrap {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.toggleLabel {
-  font-family: "Courier New", monospace;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: color 0.2s;
-}
-
-.toggleLabelDim {
-  color: #333;
-}
-
-.toggleLabelOff {
-  color: #ef4444;
-}
-
-.toggleLabelOn {
-  color: #22c55e;
-}
-
-.toggleTrack {
-  /* Native switch button with custom hardware track styling. */
-  position: relative;
-  width: 36px;
-  height: 18px;
+.loginControl {
+  display: grid;
+  grid-template-columns: 22px minmax(64px, 1fr);
+  align-items: stretch;
+  gap: 4px;
+  width: min(100%, var(--account-control-width));
   padding: 0;
   appearance: none;
   cursor: pointer;
-  background: #0d0d0d;
-  border: 1px solid #2a2a2a;
-  border-radius: 9px;
+  background: transparent;
+  border: 0;
   color: inherit;
   font: inherit;
 }
 
-.toggleTrack:focus-visible {
-  outline: 2px solid #22c55e;
-  outline-offset: 2px;
+.loginSwitchPlate {
+  min-height: 24px;
+  background: linear-gradient(145deg, #1d1d1d, #080808);
+  border: 1px solid #2b2b2b;
+  box-shadow:
+    inset 0 1px 2px #555,
+    inset 0 -2px 3px #000;
 }
 
-.toggleNub {
-  /* Nub movement is pure CSS; React only toggles the on class. */
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  background: linear-gradient(145deg, #555, #333);
-  border: 1px solid #222;
+.loginStatusPanel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 0 10px;
+  background: linear-gradient(180deg, #202020, #111);
+  border: 1px solid #2a2a2a;
+  box-shadow:
+    inset 0 1px 2px #555,
+    inset 0 -2px 4px #000;
+}
+
+.loginLed {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
   border-radius: 50%;
   transition:
-    left 0.25s,
-    background 0.25s,
-    box-shadow 0.25s;
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
-.toggleTrackOn .toggleNub {
-  left: 20px;
-  background: linear-gradient(145deg, #4ade80, #16a34a);
-  box-shadow: 0 0 6px #22c55e88;
+.loginLedOff {
+  background: #ef4444;
+  box-shadow: 0 0 5px #ef444488;
+}
+
+.loginLedOn {
+  background: #22c55e;
+  box-shadow: 0 0 5px #22c55e88;
+}
+
+.loginText {
+  font-size: 9px;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
 }
 
 .accountDisplay {
@@ -81,8 +86,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 80px;
+  width: min(100%, var(--account-control-width));
   min-height: 22px;
   margin-top: 6px;
   padding: 3px 6px;

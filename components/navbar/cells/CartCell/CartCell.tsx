@@ -14,9 +14,7 @@ export default function CartCell() {
   const isCartBadgeActive = cartCount > 0;
 
   return (
-    <div
-      className={`navbar-cell navbar-cell--center navbar-cell--bordered ${styles.cartCell}`}
-    >
+    <div className={`navbar-cell navbar-cell--center ${styles.cartCell}`}>
       <div className="cell-label">Cart</div>
 
       {/* Cart stack: count display above the circular button. */}

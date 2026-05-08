@@ -4,8 +4,16 @@
  */
 
 .cartCell {
-  flex: 1 1 0;
-  min-width: 70px;
+  --cell-plaque-aspect: 115 / 142.28;
+
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-right: 16px;
+  /* Height drives the plaque; width follows the SVG ratio. */
+  background-image: url("../../NavbarAssets/SVG/CartPlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
 }
 
 .cartButtonWrap {

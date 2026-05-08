@@ -1,4 +1,12 @@
 /*
- * I Hate Music cell styles.
- * Currently inherits the shared KnobCell styling; add podcast artwork overrides here.
+ * I Hate Music cell artwork.
+ * Keeps podcast-specific plaque and glow values out of the shared KnobCell.
  */
+
+.iHateMusicCell {
+  --cell-plaque-aspect: 280 / 142.28;
+  --glow: #ff4d4d;
+  --glow-soft: #ff4d4d66;
+
+  background-image: url("../../NavbarAssets/SVG/IHMPlaqueNavbar.svg");
+}

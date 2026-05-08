@@ -15,6 +15,7 @@
   --background: #1a1a1a;
   --foreground: #ccc;
   --focus-ring: #22c55e;
+  --cell-plaque-height: 90%;
 }
 
 html {
@@ -38,12 +39,6 @@ a {
   text-decoration: none;
 }
 
-/* Opt-in reset for custom controls; native buttons stay native by default. */
-.button-reset {
-  all: unset;
-  cursor: pointer;
-}
-
 /* Shared navbar primitives; cell-specific artwork stays in each component. */
 
 .cell-label {
@@ -63,6 +58,7 @@ a {
   padding: 10px 8px;
   position: relative;
   min-width: 0;
+  aspect-ratio: var(--cell-plaque-aspect);
 }
 
 .navbar-fit {
@@ -77,23 +73,6 @@ a {
 
 .navbar-cell--start {
   align-items: flex-start;
-}
-
-/* Pseudo-element separator survives native-button border resets. */
-.navbar-cell--bordered {
-  position: relative;
-}
-
-.navbar-cell--bordered::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 1px;
-  background: #2a2a2a;
-  pointer-events: none;
-  z-index: 2;
 }
 
 .led {

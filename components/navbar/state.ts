@@ -12,7 +12,6 @@ import {
   type RefObject,
 } from "react";
 import {
-  DESIGN_WIDTH,
   SECTION_LINKS,
   STORE_FRAME_INTERVAL,
   STORE_FRAMES,
@@ -34,6 +33,7 @@ export interface NavbarState {
   storeText: string;
   storeAnimating: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
+  contentRef: RefObject<HTMLDivElement | null>;
   scale: number;
   isScaleReady: boolean;
   eisNavTo: (linkIndex: number) => void;
@@ -88,6 +88,7 @@ function clampSectionLinkIndex(
  */
 export function useNavbar(): NavbarState {
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const storeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [scale, setScale] = useState(1);
@@ -100,25 +101,31 @@ export function useNavbar(): NavbarState {
   const [storeText, setStoreText] = useState("STORE");
   const [storeAnimating, setStoreAnimating] = useState(false);
 
-  /* Measure before paint, then keep scale synced to the shell border-box. */
+  /*
+   * Measure before paint, then keep scale synced to the real cell edges.
+   * The navbar only shrinks once the viewport reaches the rendered content.
+   */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
-    if (!shellElement) return;
+    const contentElement = contentRef.current;
+    if (!shellElement || !contentElement) return;
 
-    const syncScaleFromShellWidth = (shellWidth: number) => {
-      setScale(Math.min(1, shellWidth / DESIGN_WIDTH));
+    const syncScaleFromCellEdges = () => {
+      const shellWidth = shellElement.getBoundingClientRect().width;
+      const contentWidth = contentElement.scrollWidth;
+      const nextScale =
+        contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
+
+      setScale(nextScale);
       setIsScaleReady(true);
     };
 
-    syncScaleFromShellWidth(shellElement.getBoundingClientRect().width);
+    syncScaleFromCellEdges();
 
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) {
-        syncScaleFromShellWidth(entry.target.getBoundingClientRect().width);
-      }
-    });
+    const observer = new ResizeObserver(syncScaleFromCellEdges);
 
     observer.observe(shellElement);
+    observer.observe(contentElement);
     return () => observer.disconnect();
   }, []);
 
@@ -197,6 +204,7 @@ export function useNavbar(): NavbarState {
     storeText,
     storeAnimating,
     shellRef,
+    contentRef,
     scale,
     isScaleReady,
     eisNavTo,

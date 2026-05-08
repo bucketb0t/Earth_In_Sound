@@ -2,6 +2,7 @@
 
 import { IHM_LINKS } from "../../config";
 import KnobCell from "../../shared/KnobCell/KnobCell";
+import styles from "./IHateMusicCell.module.css";
 
 /**
  * I Hate Music podcast section.
@@ -13,6 +14,7 @@ export default function IHateMusicCell() {
       sectionId="ihm"
       label="I Hate Music"
       links={IHM_LINKS}
+      className={styles.iHateMusicCell}
     />
   );
 }

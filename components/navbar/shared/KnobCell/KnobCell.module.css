@@ -4,19 +4,12 @@
  */
 
 .knobCell {
-  /* Shared cell sizing; individual wrapper decides labels/glow only. */
-  flex: 0.25 1 0;
+  /* Shared knob mechanics; section wrappers provide plaque and glow values. */
+  flex: 0 0 auto;
   overflow: visible;
-}
-
-.jw {
-  --glow: #4daaff;
-  --glow-soft: #4daaff66;
-}
-
-.ihm {
-  --glow: #ff4d4d;
-  --glow-soft: #ff4d4d66;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
 }
 
 .knobWrap {

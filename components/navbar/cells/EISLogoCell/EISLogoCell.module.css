@@ -17,18 +17,20 @@
   --eis-thumb-size: 12px;
   --eis-rendered-thumb-height: clamp(8px, 5cqw, var(--eis-thumb-size));
   --eis-rendered-thumb-width: calc(var(--eis-rendered-thumb-height) * 1.82);
+  --cell-plaque-aspect: 413 / 142.28;
 
   container-type: inline-size;
   position: relative;
   display: flex;
-  flex: 0 1 clamp(180px, 36vw, 280px);
+  flex: 0 0 auto;
   align-items: stretch;
-  margin-right: 16px;
+  aspect-ratio: var(--cell-plaque-aspect);
+  margin-left: 16px;
   isolation: isolate;
 }
 
 .eisLogoCell::before {
-  /* Plaque is local background artwork for this cell only. */
+  /* Height drives the plaque; width follows the SVG ratio. */
   content: "";
   position: absolute;
   inset: 0;
@@ -37,7 +39,7 @@
   background-image: url("../../NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
+  background-size: auto var(--cell-plaque-height);
 }
 
 .eisLogoContent {

@@ -25,6 +25,7 @@ export interface KnobCellProps {
   sectionId: KnobSectionId;
   label: string;
   links: readonly string[];
+  className?: string;
 }
 
 /**
@@ -35,6 +36,7 @@ export default function KnobCell({
   sectionId,
   label,
   links,
+  className = "",
 }: KnobCellProps) {
   const { activePage, knobNavTo, knobFaceClick } = useNavbarContext();
 
@@ -42,7 +44,6 @@ export default function KnobCell({
   const isActive = activePage?.section === sectionId;
   const activeLinkIndex = isActive ? activePage.linkIndex : -1;
   const sectionOffsets = KNOB_OFFSETS[sectionId];
-  const sectionClass = sectionId === "jw" ? styles.jw : styles.ihm;
 
   /* Move the small SVG indicator dot when this knob becomes active/inactive. */
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function KnobCell({
 
   return (
     <div
-      className={`navbar-cell navbar-cell--start navbar-cell--bordered ${styles.knobCell} ${sectionClass}`}
+      className={`navbar-cell navbar-cell--start ${styles.knobCell} ${className}`}
     >
       <div className="cell-label">{label}</div>
 

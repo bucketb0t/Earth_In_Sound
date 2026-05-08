@@ -1,4 +1,12 @@
 /*
- * Jason Walton cell styles.
- * Currently inherits the shared KnobCell styling; add plaque/artwork overrides here.
+ * Jason Walton cell artwork.
+ * Keeps Jason-specific plaque and glow values out of the shared KnobCell.
  */
+
+.jasonWaltonCell {
+  --cell-plaque-aspect: 280 / 142.28;
+  --glow: #4daaff;
+  --glow-soft: #4daaff66;
+
+  background-image: url("../../NavbarAssets/SVG/JWWPlaqueNavbar.svg");
+}

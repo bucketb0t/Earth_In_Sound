@@ -2,6 +2,7 @@
 
 import { JW_LINKS } from "../../config";
 import KnobCell from "../../shared/KnobCell/KnobCell";
+import styles from "./JasonWaltonCell.module.css";
 
 /**
  * Jason Walton section.
@@ -13,6 +14,7 @@ export default function JasonWaltonCell() {
       sectionId="jw"
       label="Jason Walton"
       links={JW_LINKS}
+      className={styles.jasonWaltonCell}
     />
   );
 }

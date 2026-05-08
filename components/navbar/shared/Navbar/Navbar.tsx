@@ -30,7 +30,7 @@ const futuraHeavy = localFont({
  */
 export default function Navbar() {
   const navbarState = useNavbar();
-  const { shellRef, scale, isScaleReady } = navbarState;
+  const { shellRef, contentRef, scale, isScaleReady } = navbarState;
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   // Compensates for transform scale so the final visual width stays exact.
@@ -81,16 +81,13 @@ export default function Navbar() {
           aria-label="Earth In Sound site navigation"
         >
           <div className={styles.navbarInner}>
-            <div className={styles.rowPrimary}>
+            <div ref={contentRef} className={styles.rowPrimary}>
               <EISLogoCell />
               <JasonWaltonCell />
               <IHateMusicCell />
-
-              <div className={styles.rowSecondary}>
-                <AccountCell />
-                <StoreCell />
-                <CartCell />
-              </div>
+              <AccountCell />
+              <StoreCell />
+              <CartCell />
             </div>
           </div>
         </div>

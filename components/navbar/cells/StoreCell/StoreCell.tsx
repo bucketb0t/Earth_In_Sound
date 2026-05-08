@@ -14,7 +14,7 @@ export default function StoreCell() {
   return (
     <button
       type="button"
-      className={`navbar-cell navbar-cell--center navbar-cell--bordered ${styles.storeCell}`}
+      className={`navbar-cell navbar-cell--center ${styles.storeCell}`}
       onClick={storePress}
       aria-label="Store"
       aria-busy={storeAnimating}
