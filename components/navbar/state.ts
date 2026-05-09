@@ -90,6 +90,7 @@ export function useNavbar(): NavbarState {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const storeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialPixelRatioRef = useRef<number | null>(null);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
@@ -103,15 +104,27 @@ export function useNavbar(): NavbarState {
 
   /*
    * Measure before paint, then keep scale synced to the real cell edges.
-   * The navbar only shrinks once the viewport reaches the rendered content.
+   * Browser zoom changes CSS pixel width, so the shell width is normalized
+   * by devicePixelRatio before deciding whether the navbar should shrink.
+   * This keeps zoom under browser control while preserving real resize fitting.
    */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
 
+    initialPixelRatioRef.current = window.devicePixelRatio || 1;
+
+    const getZoomNeutralShellWidth = (): number => {
+      const initialPixelRatio = initialPixelRatioRef.current ?? 1;
+      const currentPixelRatio = window.devicePixelRatio || initialPixelRatio;
+      const zoomRatio = currentPixelRatio / initialPixelRatio;
+
+      return shellElement.getBoundingClientRect().width * zoomRatio;
+    };
+
     const syncScaleFromCellEdges = () => {
-      const shellWidth = shellElement.getBoundingClientRect().width;
+      const shellWidth = getZoomNeutralShellWidth();
       const contentWidth = contentElement.scrollWidth;
       const nextScale =
         contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
