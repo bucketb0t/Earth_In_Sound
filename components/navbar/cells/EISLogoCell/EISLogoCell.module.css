@@ -6,7 +6,7 @@
 .eisLogoCell {
   --glow: #22c55e;
   --glow-soft: #22c55e66;
-  --eis-logo-width: calc(110px * var(--artwork-cell-scale));
+  --eis-logo-width: calc(125px * var(--artwork-cell-scale));
   --eis-logo-rendered-width: clamp(
     calc(72px * var(--artwork-cell-scale)),
     39cqw,
@@ -15,7 +15,7 @@
   --eis-logo-rendered-height: clamp(
     calc(50px * var(--artwork-cell-scale)),
     27cqw,
-    calc(76px * var(--artwork-cell-scale))
+    calc(84px * var(--artwork-cell-scale))
   );
   --eis-slider-height: clamp(
     calc(36px * var(--artwork-cell-scale)),
@@ -93,14 +93,12 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
-  padding:
-    clamp(
+  padding: clamp(
       calc(4px * var(--artwork-cell-scale)),
       0.5vw,
       calc(8px * var(--artwork-cell-scale))
     )
-    0
-    0;
+    0 0;
   appearance: none;
   cursor: pointer;
   background: transparent;
