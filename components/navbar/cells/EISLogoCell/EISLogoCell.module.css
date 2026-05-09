@@ -6,16 +6,48 @@
 .eisLogoCell {
   --glow: #22c55e;
   --glow-soft: #22c55e66;
-  --eis-logo-width: 110px;
-  --eis-logo-rendered-width: clamp(72px, 39cqw, var(--eis-logo-width));
-  --eis-logo-rendered-height: clamp(50px, 27cqw, 76px);
-  --eis-slider-height: clamp(36px, 26cqw, 72px);
-  --eis-slider-gap: clamp(6px, 5cqw, 16px);
-  --eis-led-size: clamp(6px, 3.5cqw, 10px);
-  --eis-link-font-size: clamp(7px, 3.2cqw, 9px);
-  --eis-link-gap: clamp(3px, 2.2cqw, 6px);
-  --eis-thumb-size: 12px;
-  --eis-rendered-thumb-height: clamp(8px, 5cqw, var(--eis-thumb-size));
+  --eis-logo-width: calc(110px * var(--artwork-cell-scale));
+  --eis-logo-rendered-width: clamp(
+    calc(72px * var(--artwork-cell-scale)),
+    39cqw,
+    var(--eis-logo-width)
+  );
+  --eis-logo-rendered-height: clamp(
+    calc(50px * var(--artwork-cell-scale)),
+    27cqw,
+    calc(76px * var(--artwork-cell-scale))
+  );
+  --eis-slider-height: clamp(
+    calc(36px * var(--artwork-cell-scale)),
+    26cqw,
+    calc(72px * var(--artwork-cell-scale))
+  );
+  --eis-slider-gap: clamp(
+    calc(6px * var(--artwork-cell-scale)),
+    5cqw,
+    calc(16px * var(--artwork-cell-scale))
+  );
+  --eis-led-size: clamp(
+    calc(6px * var(--artwork-cell-scale)),
+    3.5cqw,
+    calc(10px * var(--artwork-cell-scale))
+  );
+  --eis-link-font-size: clamp(
+    calc(7px * var(--artwork-cell-scale)),
+    3.2cqw,
+    calc(9px * var(--artwork-cell-scale))
+  );
+  --eis-link-gap: clamp(
+    calc(3px * var(--artwork-cell-scale)),
+    2.2cqw,
+    calc(6px * var(--artwork-cell-scale))
+  );
+  --eis-thumb-size: calc(12px * var(--artwork-cell-scale));
+  --eis-rendered-thumb-height: clamp(
+    calc(8px * var(--artwork-cell-scale)),
+    5cqw,
+    var(--eis-thumb-size)
+  );
   --eis-rendered-thumb-width: calc(var(--eis-rendered-thumb-height) * 1.82);
   --cell-plaque-aspect: 413 / 142.28;
 
@@ -25,7 +57,8 @@
   flex: 0 0 auto;
   align-items: stretch;
   aspect-ratio: var(--cell-plaque-aspect);
-  margin-left: 16px;
+  /* First navbar edge spacing lives here, separate from artwork sizing logic. */
+  margin-left: calc(16px * var(--artwork-cell-scale));
   isolation: isolate;
 }
 
@@ -60,7 +93,14 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
-  padding: clamp(4px, 0.5vw, 8px) 0 0;
+  padding:
+    clamp(
+      calc(4px * var(--artwork-cell-scale)),
+      0.5vw,
+      calc(8px * var(--artwork-cell-scale))
+    )
+    0
+    0;
   appearance: none;
   cursor: pointer;
   background: transparent;
@@ -110,7 +150,11 @@
   /* min-width: 0 lets the slider column shrink instead of overflowing. */
   width: 100%;
   min-width: 0;
-  padding-inline: clamp(2px, 1cqw, 8px);
+  padding-inline: clamp(
+    calc(2px * var(--artwork-cell-scale)),
+    1cqw,
+    calc(8px * var(--artwork-cell-scale))
+  );
 }
 
 .sliderRow {
@@ -128,7 +172,7 @@
   /* Custom rail artwork on a real measured element for drag math. */
   position: relative;
   flex-shrink: 0;
-  width: 8px;
+  width: calc(8px * var(--artwork-cell-scale));
   height: var(--eis-slider-height);
   background-image: url("../../NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
   background-repeat: no-repeat;

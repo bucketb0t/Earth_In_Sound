@@ -16,6 +16,7 @@
   --foreground: #ccc;
   --focus-ring: #22c55e;
   --cell-plaque-height: 90%;
+  --artwork-cell-scale: 1;
 }
 
 html {
@@ -42,11 +43,11 @@ a {
 /* Shared navbar primitives; cell-specific artwork stays in each component. */
 
 .cell-label {
-  font-size: 8px;
+  font-size: calc(8px * var(--artwork-cell-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #ffffff;
-  margin-bottom: 6px;
+  margin-bottom: calc(6px * var(--artwork-cell-scale));
   text-align: center;
   white-space: nowrap;
 }
@@ -55,7 +56,9 @@ a {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 10px 8px;
+  padding:
+    calc(10px * var(--artwork-cell-scale))
+    calc(8px * var(--artwork-cell-scale));
   position: relative;
   min-width: 0;
   aspect-ratio: var(--cell-plaque-aspect);
@@ -76,8 +79,8 @@ a {
 }
 
 .led {
-  width: 10px;
-  height: 10px;
+  width: calc(10px * var(--artwork-cell-scale));
+  height: calc(10px * var(--artwork-cell-scale));
   border-radius: 50%;
   background: #111;
   border: 1px solid #2a2a2a;
@@ -90,7 +93,7 @@ a {
 }
 
 .link-label {
-  font-size: 9px;
+  font-size: calc(9px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
   color: #ffffff;
   transition: color 0.2s;

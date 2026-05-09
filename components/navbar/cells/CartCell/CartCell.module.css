@@ -1,99 +1,72 @@
 /*
  * Cart cell styles.
- * Owns the two-digit badge and circular cart hardware button.
+ * Owns the SVG counter and cart button artwork states.
  */
+
+@font-face {
+  font-family: "DS-DIGIB Cart";
+  src: url("../../NavbarAssets/Fonts/DS-DIGIB_Cart.TTF") format("truetype");
+  font-display: swap;
+}
 
 .cartCell {
   --cell-plaque-aspect: 115 / 142.28;
 
   flex: 0 0 auto;
   min-width: 0;
-  margin-right: 16px;
-  /* Height drives the plaque; width follows the SVG ratio. */
+  /* Final navbar edge spacing lives here, separate from artwork sizing logic. */
+  margin-right: calc(16px * var(--artwork-cell-scale));
   background-image: url("../../NavbarAssets/SVG/CartPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
 }
 
-.cartButtonWrap {
+.cartCounter {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-}
-
-.cartBadge {
-  /* LCD count chip; active state only changes glow/opacity. */
-  padding: 1px 5px;
-  background: #030f03;
-  border: 1px solid #1a2e1a;
-  border-radius: 4px;
-  box-shadow: inset 0 1px 4px #000;
-  transition:
-    opacity 0.3s,
-    box-shadow 0.3s;
-  pointer-events: none;
-}
-
-.cartBadgeZero {
-  opacity: 0.35;
-}
-
-.cartBadgeActive {
-  opacity: 1;
-  box-shadow:
-    inset 0 1px 4px #000,
-    0 0 6px #22c55e33;
-}
-
-.cartBadge span {
-  display: block;
-  font-family: "Courier New", monospace;
-  font-size: 13px;
-  font-weight: bold;
+  justify-content: center;
+  transform: translate(0, calc(-3px * var(--artwork-cell-scale)));
+  width: calc(48px * var(--artwork-cell-scale));
+  height: calc(24px * var(--artwork-cell-scale));
+  background-image: url("../../NavbarAssets/SVG/CartCounterNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  color: #163a20;
+  font-family: "DS-DIGIB Cart", monospace;
+  font-size: calc(17px * var(--artwork-cell-scale));
   line-height: 1;
-  color: #22c55e;
-  text-shadow: 0 0 8px #22c55e88;
+  letter-spacing: calc(1px * var(--artwork-cell-scale));
+  opacity: 0;
 }
 
-.cartBadgeZero span {
-  color: #1a4a1a;
-  text-shadow: none;
+.cartCounterVisible {
+  opacity: 1;
+  color: #22c55e;
+  text-shadow:
+    0 0 calc(4px * var(--artwork-cell-scale)) #22c55e,
+    0 0 calc(8px * var(--artwork-cell-scale)) #22c55e88;
 }
 
 .cartButton {
-  /* Native button semantics with circular hardware styling. */
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  appearance: none;
+  width: calc(54px * var(--artwork-cell-scale));
+  height: calc(54px * var(--artwork-cell-scale));
+  transform: translate(0, calc(6px * var(--artwork-cell-scale)));
+  border: 0;
+  background-color: transparent;
+  background-image: url("../../NavbarAssets/SVG/CartButtonOffNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
   cursor: pointer;
-  background: linear-gradient(145deg, #2a2a2a, #111);
-  border: 1px solid #333;
-  border-radius: 50%;
-  color: inherit;
-  font: inherit;
-  transition: border-color 0.2s;
 }
 
 .cartButton:hover {
-  border-color: #444;
+  background-image: url("../../NavbarAssets/SVG/CartButtonHooverNavbar.svg");
 }
 
-.cartButton:focus-visible {
-  outline: 2px solid #22c55e;
-  outline-offset: 3px;
-}
-
-.cartButtonEnabled:hover {
-  border-color: #22c55e55;
-}
-
-.cartButton:disabled {
-  cursor: default;
+.cartButtonPressed,
+.cartButtonPressed:hover {
+  background-image: url("../../NavbarAssets/SVG/CartButtonOnNavbar.svg");
 }

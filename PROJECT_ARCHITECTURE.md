@@ -80,7 +80,7 @@ offsets, and store animation frames.
 
 `components/navbar/state.ts` owns shared React behavior. It defines
 `NavbarContext`, `useNavbar()`, navigation actions, responsive measurement,
-store animation, cart visibility, account state, and the keyboard activation
+store animation, cart state, account state, and the keyboard activation
 helper for custom controls.
 
 `components/navbar/NavbarAssets/` stores local navbar artwork, fonts, videos,
@@ -98,9 +98,10 @@ enough to justify its own asset folder.
 - defines the visual cell order
 
 `components/navbar/shared/Navbar/NavbarStyle.module.css` owns the shared
-banner, baseline, root faceplate, inner row layout, and secondary row layout.
-The baseline is drawn on `.navbarShell::after` and tied to `100vw` so it stays
-edge-to-edge during browser zoom.
+banner, baseline, root faceplate, and single-row layout.
+The banner is drawn on `.navbarShell::before` and the baseline is drawn on
+`.navbarShell::after`. Both are viewport-painted decorative layers, so they
+stay edge-to-edge without changing the navbar's measured layout width.
 
 The navbar uses CSS Modules instead of plain component-level global CSS because
 Next's App Router only allows global CSS imports at the root layout boundary.
@@ -133,11 +134,11 @@ overlay for knob cells.
 
 `AccountCell` renders the login switch and username display.
 
-`StoreCell` runs the store scramble animation. When the animation finishes,
-the cart control becomes available.
+`StoreCell` runs the store scramble animation and releases the cart pressed
+state when Store is selected.
 
-`CartCell` renders the item-count badge and cart button. The cart button stays
-disabled until the store animation reveals it.
+`CartCell` renders the item-count badge and cart button. The button can hold
+its pressed state until another navbar action clears it.
 
 ## Styling Rules
 
@@ -157,7 +158,7 @@ flowchart TD
   Navbar --> Provider["NavbarContext.Provider"]
   Navbar --> ShellCSS["NavbarStyle.module.css<br/>banner, baseline, rows"]
   Navbar --> State["state.ts<br/>useNavbar state/actions"]
-  State --> Measure["ResizeObserver<br/>scale from DESIGN_WIDTH"]
+  State --> Measure["ResizeObserver<br/>scale from cell edges"]
   State --> Actions["navigation, account, store, cart actions"]
   Config["config.ts<br/>links, dimensions, SVG geometry"] --> State
   Config --> EIS
@@ -179,7 +180,7 @@ flowchart TD
   EIS --> EISNav["eisNavTo(index) / goHome()"]
   Knob --> KnobNav["knobNavTo(section, index)"]
   Utility --> Store["storePress()"]
-  Store --> RevealCart["cartVisible = true"]
+  Utility --> Cart["cartPress()"]
 
   EISNav --> Active["activePage / eisSliderPos"]
   KnobNav --> Active
@@ -194,7 +195,7 @@ flowchart TD
    `toggleLogin()`, `storePress()`, or `cartPress()`.
 3. `state.ts` updates shared React state.
 4. Context consumers re-render with the new active section, slider position,
-   account state, store text, or cart visibility.
+   account state, store text, or cart pressed state.
 5. CSS Modules render the visual state through classes, pseudo-elements, and
    component-local styles.
 

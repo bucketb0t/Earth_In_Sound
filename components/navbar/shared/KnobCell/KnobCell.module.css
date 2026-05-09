@@ -15,7 +15,7 @@
 .knobWrap {
   /* Limits the SVG to its designed coordinate width. */
   width: 100%;
-  max-width: 160px;
+  max-width: calc(160px * var(--artwork-cell-scale));
 }
 
 .knobSvg {
@@ -75,7 +75,7 @@
 
 .choiceText {
   font-family: "Courier New", monospace;
-  font-size: 8px;
+  font-size: calc(8px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
   fill: #ffffff;
   user-select: none;

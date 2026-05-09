@@ -32,8 +32,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 60px;
-  padding: 5px 10px;
+  min-width: calc(60px * var(--artwork-cell-scale));
+  padding:
+    calc(5px * var(--artwork-cell-scale))
+    calc(10px * var(--artwork-cell-scale));
   background: #030f03;
   border: 1px solid #1a2e1a;
   border-radius: 4px;
@@ -42,7 +44,7 @@
 
 .storeDisplay span {
   font-family: "Courier New", monospace;
-  font-size: 11px;
+  font-size: calc(11px * var(--artwork-cell-scale));
   line-height: 1;
   letter-spacing: 0.05em;
   transition:

@@ -14,10 +14,10 @@
 
 .ledIndicator {
   position: absolute;
-  top: 5px;
-  right: 6px;
-  width: 8px;
-  height: 8px;
+  top: calc(5px * var(--artwork-cell-scale));
+  right: calc(6px * var(--artwork-cell-scale));
+  width: calc(8px * var(--artwork-cell-scale));
+  height: calc(8px * var(--artwork-cell-scale));
   pointer-events: none;
   background: #736969;
   border-radius: 50%;
@@ -34,10 +34,10 @@
 .port {
   /* Hand-tuned bitmap socket position for the current navbar artwork. */
   position: absolute;
-  right: 4.5px;
-  bottom: -15px;
-  width: 48px;
-  height: 48px;
+  right: calc(4.5px * var(--artwork-cell-scale));
+  bottom: calc(-15px * var(--artwork-cell-scale));
+  width: calc(48px * var(--artwork-cell-scale));
+  height: calc(48px * var(--artwork-cell-scale));
   pointer-events: none;
   background-image: url("../../NavbarAssets/PNG/JackPortNavbar.png");
   background-repeat: no-repeat;
@@ -55,10 +55,10 @@
 .plug {
   /* Hidden until active; positioned to visually meet the socket. */
   position: absolute;
-  right: 4px;
-  bottom: -40px;
-  width: 48px;
-  height: 96px;
+  right: calc(4px * var(--artwork-cell-scale));
+  bottom: calc(-40px * var(--artwork-cell-scale));
+  width: calc(48px * var(--artwork-cell-scale));
+  height: calc(96px * var(--artwork-cell-scale));
   pointer-events: none;
   visibility: hidden;
   opacity: 0;
@@ -66,7 +66,7 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  transform: translateY(20px);
+  transform: translateY(calc(20px * var(--artwork-cell-scale)));
   transition:
     opacity 0.2s ease,
     visibility 0.2s ease,

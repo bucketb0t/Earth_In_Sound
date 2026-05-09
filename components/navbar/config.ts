@@ -38,6 +38,17 @@ export const DESIGN_HEIGHT = 120;
 export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
 // Unscaled visual thickness of BaseLineNavbar.svg.
 export const BASE_LINE_HEIGHT = 8;
+// The current cell artwork was tuned at this interactive faceplate height.
+export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
+
+/**
+ * Returns a CSS length that follows the navbar artwork scale.
+ * Use this from TS/TSX when a future component needs the same sizing rule
+ * as CSS modules that use calc(<px> * var(--artwork-cell-scale)).
+ */
+export function artworkScaledPx(px: number): string {
+  return `calc(${px}px * var(--artwork-cell-scale))`;
+}
 
 /* Per-knob SVG nudges; CSS modules own visual sizes and colors. */
 export const KNOB_OFFSETS = {

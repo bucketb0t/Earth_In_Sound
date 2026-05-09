@@ -4,7 +4,7 @@
  */
 
 .accountCell {
-  --account-control-width: 108px;
+  --account-control-width: calc(108px * var(--artwork-cell-scale));
   --cell-plaque-aspect: 165 / 141;
 
   flex: 0 0 auto;
@@ -18,9 +18,11 @@
 
 .loginControl {
   display: grid;
-  grid-template-columns: 22px minmax(64px, 1fr);
+  grid-template-columns:
+    calc(22px * var(--artwork-cell-scale))
+    minmax(calc(64px * var(--artwork-cell-scale)), 1fr);
   align-items: stretch;
-  gap: 4px;
+  gap: calc(4px * var(--artwork-cell-scale));
   width: min(100%, var(--account-control-width));
   padding: 0;
   appearance: none;
@@ -32,7 +34,7 @@
 }
 
 .loginSwitchPlate {
-  min-height: 24px;
+  min-height: calc(24px * var(--artwork-cell-scale));
   background: linear-gradient(145deg, #1d1d1d, #080808);
   border: 1px solid #2b2b2b;
   box-shadow:
@@ -43,9 +45,9 @@
 .loginStatusPanel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 24px;
-  padding: 0 10px;
+  gap: calc(8px * var(--artwork-cell-scale));
+  min-height: calc(24px * var(--artwork-cell-scale));
+  padding: 0 calc(10px * var(--artwork-cell-scale));
   background: linear-gradient(180deg, #202020, #111);
   border: 1px solid #2a2a2a;
   box-shadow:
@@ -54,8 +56,8 @@
 }
 
 .loginLed {
-  width: 8px;
-  height: 8px;
+  width: calc(8px * var(--artwork-cell-scale));
+  height: calc(8px * var(--artwork-cell-scale));
   flex: 0 0 auto;
   border-radius: 50%;
   transition:
@@ -74,7 +76,7 @@
 }
 
 .loginText {
-  font-size: 9px;
+  font-size: calc(9px * var(--artwork-cell-scale));
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
@@ -87,9 +89,11 @@
   align-items: center;
   justify-content: center;
   width: min(100%, var(--account-control-width));
-  min-height: 22px;
-  margin-top: 6px;
-  padding: 3px 6px;
+  min-height: calc(22px * var(--artwork-cell-scale));
+  margin-top: calc(6px * var(--artwork-cell-scale));
+  padding:
+    calc(3px * var(--artwork-cell-scale))
+    calc(6px * var(--artwork-cell-scale));
   background: #030f03;
   border: 1px solid #1a2e1a;
   border-radius: 4px;
@@ -99,7 +103,7 @@
 
 .accountDisplay span {
   font-family: "Courier New", monospace;
-  font-size: 9px;
+  font-size: calc(9px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
   color: #1a2e1a;
   transition:

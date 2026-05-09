@@ -19,6 +19,9 @@ import {
   type SectionId,
 } from "./config";
 
+// Seeded until the real cart data source exists; keeps the counter testable now.
+const INITIAL_CART_COUNT = 1;
+
 export interface ActivePage {
   section: SectionId;
   linkIndex: number;
@@ -29,13 +32,13 @@ export interface NavbarState {
   eisSliderPos: number;
   isLoggedIn: boolean;
   cartCount: number;
-  cartVisible: boolean;
   storeText: string;
   storeAnimating: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
   contentRef: RefObject<HTMLDivElement | null>;
   scale: number;
   isScaleReady: boolean;
+  isCartPressed: boolean;
   eisNavTo: (linkIndex: number) => void;
   knobNavTo: (sectionId: KnobSectionId, linkIndex: number) => void;
   knobFaceClick: (sectionId: KnobSectionId) => void;
@@ -90,15 +93,14 @@ export function useNavbar(): NavbarState {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const storeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialPixelRatioRef = useRef<number | null>(null);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
   const [activePage, setActivePage] = useState<ActivePage | null>(null);
   const [eisSliderPos, setEisSliderPos] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const cartCount = 0;
-  const [cartVisible, setCartVisible] = useState(false);
+  const [cartCount] = useState(INITIAL_CART_COUNT);
+  const [isCartPressed, setIsCartPressed] = useState(false);
   const [storeText, setStoreText] = useState("STORE");
   const [storeAnimating, setStoreAnimating] = useState(false);
 
@@ -113,10 +115,9 @@ export function useNavbar(): NavbarState {
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
 
-    initialPixelRatioRef.current = window.devicePixelRatio || 1;
+    const initialPixelRatio = window.devicePixelRatio || 1;
 
     const getZoomNeutralShellWidth = (): number => {
-      const initialPixelRatio = initialPixelRatioRef.current ?? 1;
       const currentPixelRatio = window.devicePixelRatio || initialPixelRatio;
       const zoomRatio = currentPixelRatio / initialPixelRatio;
 
@@ -155,6 +156,7 @@ export function useNavbar(): NavbarState {
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
     setEisSliderPos(clampedEisLinkIndex);
     setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
+    setIsCartPressed(false);
   }, []);
 
   const knobNavTo = useCallback(
@@ -163,12 +165,14 @@ export function useNavbar(): NavbarState {
         section: sectionId,
         linkIndex: clampSectionLinkIndex(sectionId, linkIndex),
       });
+      setIsCartPressed(false);
     },
     [],
   );
 
   const knobFaceClick = useCallback((sectionId: KnobSectionId): void => {
     setActivePage((prev) => (prev?.section === sectionId ? null : prev));
+    setIsCartPressed(false);
   }, []);
 
   const goHome = useCallback((): void => {
@@ -177,10 +181,12 @@ export function useNavbar(): NavbarState {
 
   const toggleLogin = useCallback((): void => {
     setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
+    setIsCartPressed(false);
   }, []);
 
-  /* Store animation is non-reentrant; finishing it reveals the cart control. */
+  /* Store animation is non-reentrant; pressing Store also releases Cart. */
   const storePress = useCallback((): void => {
+    setIsCartPressed(false);
     if (storeAnimating) return;
     setStoreAnimating(true);
 
@@ -189,7 +195,6 @@ export function useNavbar(): NavbarState {
       if (storeFrameIndex >= STORE_FRAMES.length) {
         setStoreText("STORE");
         setStoreAnimating(false);
-        setCartVisible(true);
         storeTimerRef.current = null;
         return;
       }
@@ -205,15 +210,15 @@ export function useNavbar(): NavbarState {
   }, [storeAnimating]);
 
   const cartPress = useCallback((): void => {
-    if (!cartVisible) return;
-  }, [cartVisible]);
+    if (cartCount <= 0) return;
+    setIsCartPressed(true);
+  }, [cartCount]);
 
   return {
     activePage,
     eisSliderPos,
     isLoggedIn,
     cartCount,
-    cartVisible,
     storeText,
     storeAnimating,
     shellRef,
@@ -227,5 +232,6 @@ export function useNavbar(): NavbarState {
     toggleLogin,
     storePress,
     cartPress,
+    isCartPressed,
   };
 }

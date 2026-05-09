@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { useLayoutEffect, useRef } from "react";
 
 import {
+  ARTWORK_CELL_SCALE_BASE_HEIGHT,
   DESIGN_HEIGHT,
   BASE_LINE_HEIGHT,
   NAVBAR_VISUAL_WIDTH_PERCENT,
@@ -49,6 +50,10 @@ export default function Navbar() {
     const rootElement = rootRef.current;
     if (!shellElement || !rootElement) return;
 
+    /*
+     * Only control geometry is written here. The banner/baseline are pure
+     * viewport paint in CSS, so they cannot feed back into measurements.
+     */
     shellElement.style.setProperty(
       "--navbar-shell-height",
       `${DESIGN_HEIGHT * scale}px`,
@@ -57,11 +62,18 @@ export default function Navbar() {
       "--navbar-line-height",
       `${BASE_LINE_HEIGHT * scale}px`,
     );
+
     rootElement.style.setProperty("--navbar-scale", String(scale));
     rootElement.style.setProperty("--navbar-root-width", compensatedRootWidth);
     rootElement.style.setProperty(
       "--navbar-root-height",
       `${DESIGN_HEIGHT - BASE_LINE_HEIGHT}px`,
+    );
+    rootElement.style.setProperty(
+      "--artwork-cell-scale",
+      String(
+        (DESIGN_HEIGHT - BASE_LINE_HEIGHT) / ARTWORK_CELL_SCALE_BASE_HEIGHT,
+      ),
     );
   }, [compensatedRootWidth, scale, shellRef]);
 
