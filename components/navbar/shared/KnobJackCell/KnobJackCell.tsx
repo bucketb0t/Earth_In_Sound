@@ -18,10 +18,9 @@ import {
   type KnobSectionId,
 } from "../../config";
 import { activateOnEnterOrSpace, useNavbarContext } from "../../state";
-import JackLEDPort from "../JackLEDPort/JackLEDPort";
-import styles from "./KnobCell.module.css";
+import styles from "./KnobJackCell.module.css";
 
-export interface KnobCellProps {
+export interface KnobJackCellProps {
   sectionId: KnobSectionId;
   label: string;
   links: readonly string[];
@@ -29,15 +28,15 @@ export interface KnobCellProps {
 }
 
 /**
- * Shared rotary knob cell.
+ * Shared rotary knob cell with integrated jack port overlay.
  * Renders knob face, LED choices, labels, indicator dot, and corner jack.
  */
-export default function KnobCell({
+export default function KnobJackCell({
   sectionId,
   label,
   links,
   className = "",
-}: KnobCellProps) {
+}: KnobJackCellProps) {
   const { activePage, knobNavTo, knobFaceClick } = useNavbarContext();
 
   const dotRef = useRef<SVGCircleElement>(null);
@@ -227,7 +226,15 @@ export default function KnobCell({
         </svg>
       </div>
 
-      <JackLEDPort isActive={isActive} />
+      {/* Jack port overlay; uses parent knob's --glow variable and bitmap assets. */}
+      <div className={styles.jackPort}>
+        <div
+          className={`${styles.port} ${isActive ? styles.portActive : ""}`}
+        />
+        <div
+          className={`${styles.plug} ${isActive ? styles.plugActive : ""}`}
+        />
+      </div>
     </div>
   );
 }

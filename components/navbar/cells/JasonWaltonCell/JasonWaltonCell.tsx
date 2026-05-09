@@ -1,7 +1,7 @@
 "use client";
 
 import { JW_LINKS } from "../../config";
-import KnobCell from "../../shared/KnobCell/KnobCell";
+import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
 import styles from "./JasonWaltonCell.module.css";
 
 /**

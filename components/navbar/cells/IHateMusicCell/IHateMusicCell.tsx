@@ -1,7 +1,7 @@
 "use client";
 
 import { IHM_LINKS } from "../../config";
-import KnobCell from "../../shared/KnobCell/KnobCell";
+import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
 import styles from "./IHateMusicCell.module.css";
 
 /**
