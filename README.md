@@ -1,6 +1,6 @@
 # Earth In Sound
 
-![Earth In Sound logo](components/navbar/NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg)
+![Earth In Sound logo](public/NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg)
 
 Earth In Sound is the website for a production company that also hosts a
 podcast. The project scope is to present the company, its music-production

@@ -69,7 +69,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("../../NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -122,16 +122,20 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
   transition: opacity 0.18s ease;
 }
 
 .logoImageOff {
   opacity: 1;
+  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg");
 }
 
 .logoImageHover {
   opacity: 0;
+  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoHooverNavbar.svg");
 }
 
 .logoButton:hover .logoImageOff,
@@ -172,7 +176,7 @@
   flex-shrink: 0;
   width: calc(8px * var(--artwork-cell-scale));
   height: var(--eis-slider-height);
-  background-image: url("../../NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 100% 100%;
@@ -187,7 +191,7 @@
   width: var(--eis-rendered-thumb-width);
   height: var(--eis-rendered-thumb-height);
   cursor: grab;
-  background-image: url("../../NavbarAssets/SVG/EarthInSoundSliderThumbNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/EarthInSoundSliderThumbNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 100% 100%;

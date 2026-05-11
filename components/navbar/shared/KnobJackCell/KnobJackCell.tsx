@@ -2,19 +2,19 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import {
-  DEFAULT_INDICATOR_TRIG_DEGREES,
-  INDICATOR_DOT_DISTANCE,
-  KNOB_CANVAS_SIZE,
+  DEFAULT_INDICATOR_TRIG_DEGREES as IDLE_DOT_ANGLE,
+  INDICATOR_DOT_DISTANCE as DOT_ORBIT_RADIUS,
+  KNOB_CANVAS_SIZE as SVG_HEIGHT,
   KNOB_CENTER_X,
   KNOB_CENTER_Y,
   KNOB_OFFSETS,
   KNOB_RADIUS,
-  KNOB_SVG_WIDTH,
-  LED_DEGREES_FROM_TOP,
-  LED_ORBIT_RADIUS,
+  KNOB_SVG_WIDTH as SVG_WIDTH,
+  LED_DEGREES_FROM_TOP as CHOICE_ANGLES,
+  LED_ORBIT_RADIUS as CHOICE_ORBIT_RADIUS,
   degreesToRadians,
-  ledAngleToTrigDegrees,
-  svgPoint,
+  ledAngleToTrigDegrees as clockAngleToMathAngle,
+  svgPoint as polarToCartesian,
   type KnobSectionId,
 } from "../../config";
 import { activateOnEnterOrSpace, useNavbarContext } from "../../state";
@@ -25,46 +25,45 @@ export interface KnobJackCellProps {
   label: string;
   links: readonly string[];
   className?: string;
+  showJackPort?: boolean;
 }
 
 /**
- * Shared rotary knob cell with integrated jack port overlay.
- * Renders knob face, LED choices, labels, indicator dot, and corner jack.
+ * Shared rotary knob cell.
+ * Renders knob face, choice dots, labels, active dot, and an optional jack.
  */
 export default function KnobJackCell({
   sectionId,
   label,
   links,
   className = "",
+  showJackPort = false,
 }: KnobJackCellProps) {
   const { activePage, knobNavTo, knobFaceClick } = useNavbarContext();
 
-  const dotRef = useRef<SVGCircleElement>(null);
+  const indicatorDotRef = useRef<SVGCircleElement>(null);
   const isActive = activePage?.section === sectionId;
   const activeLinkIndex = isActive ? activePage.linkIndex : -1;
   const sectionOffsets = KNOB_OFFSETS[sectionId];
 
-  /* Move the small SVG indicator dot when this knob becomes active/inactive. */
+  /* Move the indicator dot around the knob face when active/inactive. */
   useEffect(() => {
-    const indicatorDot = dotRef.current;
-    if (!indicatorDot) return;
+    const dot = indicatorDotRef.current;
+    if (!dot) return;
 
     if (isActive) {
-      const activeDotPoint = svgPoint(
-        INDICATOR_DOT_DISTANCE,
-        ledAngleToTrigDegrees(LED_DEGREES_FROM_TOP[activeLinkIndex]!),
+      const activeDotPosition = polarToCartesian(
+        DOT_ORBIT_RADIUS,
+        clockAngleToMathAngle(CHOICE_ANGLES[activeLinkIndex]!),
       );
-      indicatorDot.setAttribute("cx", String(activeDotPoint.x));
-      indicatorDot.setAttribute("cy", String(activeDotPoint.y));
+      dot.setAttribute("cx", String(activeDotPosition.x));
+      dot.setAttribute("cy", String(activeDotPosition.y));
       return;
     }
 
-    const idleDotPoint = svgPoint(
-      INDICATOR_DOT_DISTANCE,
-      DEFAULT_INDICATOR_TRIG_DEGREES,
-    );
-    indicatorDot.setAttribute("cx", String(idleDotPoint.x));
-    indicatorDot.setAttribute("cy", String(idleDotPoint.y));
+    const idleDotPosition = polarToCartesian(DOT_ORBIT_RADIUS, IDLE_DOT_ANGLE);
+    dot.setAttribute("cx", String(idleDotPosition.x));
+    dot.setAttribute("cy", String(idleDotPosition.y));
   }, [isActive, activeLinkIndex]);
 
   /* Static tick marks around the knob face. */
@@ -89,23 +88,20 @@ export default function KnobJackCell({
     [],
   );
 
-  /* Static LED/label positions; config offsets nudge the final artwork. */
-  const choicePositions = useMemo(
+  /* Geometry for each choice: dot position and label position. */
+  const choiceGeometry = useMemo(
     () =>
-      LED_DEGREES_FROM_TOP.map((degreesFromTop) => {
-        const trigDegrees = ledAngleToTrigDegrees(degreesFromTop);
+      CHOICE_ANGLES.map((clockAngle) => {
+        const mathAngle = clockAngleToMathAngle(clockAngle);
         return {
-          led: svgPoint(LED_ORBIT_RADIUS, trigDegrees),
-          labelPoint: svgPoint(LED_ORBIT_RADIUS + 16, trigDegrees),
+          dotPosition: polarToCartesian(CHOICE_ORBIT_RADIUS, mathAngle),
+          labelPosition: polarToCartesian(CHOICE_ORBIT_RADIUS + 16, mathAngle),
         };
       }),
     [],
   );
 
-  const initialDotPoint = svgPoint(
-    INDICATOR_DOT_DISTANCE,
-    DEFAULT_INDICATOR_TRIG_DEGREES,
-  );
+  const idleDotPosition = polarToCartesian(DOT_ORBIT_RADIUS, IDLE_DOT_ANGLE);
 
   return (
     <div
@@ -114,15 +110,20 @@ export default function KnobJackCell({
       <div className="cell-label">{label}</div>
 
       <div className={styles.knobWrap}>
-        {/* One SVG keeps knob, LEDs, labels, and active dot scaling together. */}
+        {/* One SVG keeps knob, choice dots, labels, and indicator dot scaling together. */}
         <svg
           className={styles.knobSvg}
-          viewBox={`0 0 ${KNOB_SVG_WIDTH} ${KNOB_CANVAS_SIZE}`}
+          viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           width="100%"
         >
           <defs>
-            {/* Unique gradient id avoids collisions between knob instances. */}
-            <radialGradient id={`kg-${sectionId}`} cx="40%" cy="35%" r="60%">
+            {/* Per-instance gradient id prevents collisions between knob instances. */}
+            <radialGradient
+              id={`knob-gradient-${sectionId}`}
+              cx="40%"
+              cy="35%"
+              r="60%"
+            >
               <stop offset="0%" stopColor="#5a5a5a" />
               <stop offset="100%" stopColor="#1a1a1a" />
             </radialGradient>
@@ -135,13 +136,13 @@ export default function KnobJackCell({
             r={KNOB_RADIUS + 3}
           />
 
-          {/* Knob face: clicking it clears this section's active state. */}
+          {/* Knob face: clicking it deselects the active link in this section. */}
           <circle
             className={styles.knobFace}
             cx={KNOB_CENTER_X}
             cy={KNOB_CENTER_Y}
             r={KNOB_RADIUS}
-            fill={`url(#kg-${sectionId})`}
+            fill={`url(#knob-gradient-${sectionId})`}
             tabIndex={0}
             role="button"
             aria-label={`${label} deselect`}
@@ -154,14 +155,12 @@ export default function KnobJackCell({
 
           {tickMarks}
 
-          {/* Moving indicator dot: positioned by the effect above. */}
+          {/* Indicator dot: glows and tracks the active choice position. */}
           <circle
-            ref={dotRef}
-            className={`${styles.indicatorDot} ${
-              isActive ? styles.indicatorDotActive : ""
-            }`}
-            cx={initialDotPoint.x}
-            cy={initialDotPoint.y}
+            ref={indicatorDotRef}
+            className={`${styles.indicatorDot} ${isActive ? styles.indicatorDotActive : ""}`}
+            cx={idleDotPosition.x}
+            cy={idleDotPosition.y}
             r={5}
             aria-hidden="true"
           />
@@ -174,15 +173,15 @@ export default function KnobJackCell({
             aria-hidden="true"
           />
 
-          {/* Choice groups: each LED + label behaves as one selectable control. */}
+          {/* Choice groups: each dot + label is one selectable navigation target. */}
           {links.map((link, linkIndex) => {
             const isSelected = isActive && linkIndex === activeLinkIndex;
-            const ledOffset = sectionOffsets.led[linkIndex] ?? { x: 0, y: 0 };
+            const dotOffset = sectionOffsets.led[linkIndex] ?? { x: 0, y: 0 };
             const labelOffset = sectionOffsets.label[linkIndex] ?? {
               x: 0,
               y: 0,
             };
-            const { led, labelPoint } = choicePositions[linkIndex]!;
+            const { dotPosition, labelPosition } = choiceGeometry[linkIndex]!;
 
             return (
               <g
@@ -201,20 +200,16 @@ export default function KnobJackCell({
                 aria-current={isSelected ? "page" : undefined}
               >
                 <circle
-                  className={`${styles.choiceLed} ${
-                    isSelected ? styles.choiceLedActive : ""
-                  }`}
-                  cx={led.x + ledOffset.x}
-                  cy={led.y + ledOffset.y}
+                  className={`${styles.choiceDot} ${isSelected ? styles.choiceDotActive : ""}`}
+                  cx={dotPosition.x + dotOffset.x}
+                  cy={dotPosition.y + dotOffset.y}
                   r={5}
                 />
 
                 <text
-                  className={`${styles.choiceText} ${
-                    isSelected ? styles.choiceTextActive : ""
-                  }`}
-                  x={labelPoint.x + labelOffset.x}
-                  y={labelPoint.y + labelOffset.y}
+                  className={`${styles.choiceText} ${isSelected ? styles.choiceTextActive : ""}`}
+                  x={labelPosition.x + labelOffset.x}
+                  y={labelPosition.y + labelOffset.y}
                   dominantBaseline="middle"
                   textAnchor="start"
                 >
@@ -226,15 +221,11 @@ export default function KnobJackCell({
         </svg>
       </div>
 
-      {/* Jack port overlay; uses parent knob's --glow variable and bitmap assets. */}
-      <div className={styles.jackPort}>
-        <div
-          className={`${styles.port} ${isActive ? styles.portActive : ""}`}
-        />
-        <div
-          className={`${styles.plug} ${isActive ? styles.plugActive : ""}`}
-        />
-      </div>
+      {showJackPort ? (
+        <div className={styles.jackPort} aria-hidden="true">
+          <div className={styles.jackSocket} />
+        </div>
+      ) : null}
     </div>
   );
 }

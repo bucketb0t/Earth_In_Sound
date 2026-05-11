@@ -1,13 +1,10 @@
 /*
- * Shared knob cell styles with integrated jack port overlay.
- * Section wrappers provide labels and glow values; this file owns the
- * reusable SVG machinery and the corner jack port/plug bitmap overlay.
+ * Shared knob cell styles.
+ * Section wrappers provide plaque and glow values; this file owns the
+ * reusable SVG machinery and the optional top-right jack artwork.
  */
 
-/* ─── Knob cell layout ──────────────────────────────────────────────────── */
-
 .knobCell {
-  /* Shared knob mechanics; section wrappers provide plaque and glow values. */
   flex: 0 0 auto;
   overflow: visible;
   background-repeat: no-repeat;
@@ -25,8 +22,6 @@
   display: block;
   overflow: visible;
 }
-
-/* ─── Knob face ─────────────────────────────────────────────────────────── */
 
 .shadowRing {
   fill: #111;
@@ -57,13 +52,11 @@
   fill: #0a0a0a;
 }
 
-/* ─── Choice LEDs & labels ──────────────────────────────────────────────── */
-
 .choiceGroup {
   cursor: pointer;
 }
 
-.choiceLed {
+.choiceDot {
   fill: #111;
   stroke: #2a2a2a;
   transition:
@@ -72,10 +65,12 @@
     filter 0.25s;
 }
 
-.choiceLedActive {
+.choiceDotActive {
   fill: var(--glow);
   stroke: var(--glow);
-  filter: drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 8px var(--glow-soft));
+  filter:
+    drop-shadow(0 0 4px var(--glow))
+    drop-shadow(0 0 8px var(--glow-soft));
 }
 
 .choiceText {
@@ -91,10 +86,8 @@
   fill: var(--glow);
 }
 
-/* ─── Jack port overlay ─────────────────────────────────────────────────── */
-
 .jackPort {
-  /* Full-cell overlay; does not affect knob SVG layout. */
+  /* Full-cell overlay; only the top-right socket is visible. */
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -102,50 +95,15 @@
   pointer-events: none;
 }
 
-.port {
-  /* Hand-tuned bitmap socket position for the current navbar artwork. */
+.jackSocket {
+  /* Adjust top/right to fine-tune the art alignment against the plaque. */
   position: absolute;
-  right: calc(-2px * var(--artwork-cell-scale));
-  bottom: calc(58px * var(--artwork-cell-scale));
-  width: calc(42px * var(--artwork-cell-scale));
-  height: calc(42px * var(--artwork-cell-scale));
-  pointer-events: none;
-  background-image: url("../../NavbarAssets/PNG/JackPortNavbar.png");
+  top: calc(-16px * var(--artwork-cell-scale));
+  right: calc(-16px * var(--artwork-cell-scale));
+  width: calc(48px * var(--artwork-cell-scale));
+  height: calc(48px * var(--artwork-cell-scale));
+  background-image: url("/NavbarAssets/PNG/JackPortNavbar.png");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  transition:
-    filter 0.25s ease,
-    opacity 0.25s ease;
-}
-
-.portActive {
-  filter: drop-shadow(0 0 6px var(--glow));
-}
-
-.plug {
-  /* Hidden until active; positioned to visually meet the socket. */
-  position: absolute;
-  right: calc(-2px * var(--artwork-cell-scale));
-  bottom: calc(31px * var(--artwork-cell-scale));
-  width: calc(42px * var(--artwork-cell-scale));
-  height: calc(96px * var(--artwork-cell-scale));
-  pointer-events: none;
-  visibility: hidden;
-  opacity: 0;
-  background-image: url("../../NavbarAssets/PNG/JackPlugNavbar.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  transform: translateY(calc(20px * var(--artwork-cell-scale)));
-  transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease,
-    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.plugActive {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
 }

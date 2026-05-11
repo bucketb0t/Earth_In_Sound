@@ -34,6 +34,7 @@ export interface NavbarState {
   cartCount: number;
   storeText: string;
   storeAnimating: boolean;
+  isStorePressed: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
   contentRef: RefObject<HTMLDivElement | null>;
   scale: number;
@@ -103,6 +104,7 @@ export function useNavbar(): NavbarState {
   const [isCartPressed, setIsCartPressed] = useState(false);
   const [storeText, setStoreText] = useState("STORE");
   const [storeAnimating, setStoreAnimating] = useState(false);
+  const [isStorePressed, setIsStorePressed] = useState(false);
 
   /*
    * Measure before paint, then keep scale synced to the real cell edges.
@@ -157,6 +159,7 @@ export function useNavbar(): NavbarState {
     setEisSliderPos(clampedEisLinkIndex);
     setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
     setIsCartPressed(false);
+    setIsStorePressed(false);
   }, []);
 
   const knobNavTo = useCallback(
@@ -166,6 +169,7 @@ export function useNavbar(): NavbarState {
         linkIndex: clampSectionLinkIndex(sectionId, linkIndex),
       });
       setIsCartPressed(false);
+      setIsStorePressed(false);
     },
     [],
   );
@@ -173,6 +177,7 @@ export function useNavbar(): NavbarState {
   const knobFaceClick = useCallback((sectionId: KnobSectionId): void => {
     setActivePage((prev) => (prev?.section === sectionId ? null : prev));
     setIsCartPressed(false);
+    setIsStorePressed(false);
   }, []);
 
   const goHome = useCallback((): void => {
@@ -182,12 +187,17 @@ export function useNavbar(): NavbarState {
   const toggleLogin = useCallback((): void => {
     setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
     setIsCartPressed(false);
+    setIsStorePressed(false);
   }, []);
 
-  /* Store animation is non-reentrant; pressing Store also releases Cart. */
+  /*
+   * Store behaves like a latched page button.
+   * Once activated it stays visually pressed until another section is opened.
+   */
   const storePress = useCallback((): void => {
     setIsCartPressed(false);
-    if (storeAnimating) return;
+    if (storeAnimating || isStorePressed) return;
+    setIsStorePressed(true);
     setStoreAnimating(true);
 
     let storeFrameIndex = 0;
@@ -207,9 +217,10 @@ export function useNavbar(): NavbarState {
     }
 
     advanceStoreFrame();
-  }, [storeAnimating]);
+  }, [isStorePressed, storeAnimating]);
 
   const cartPress = useCallback((): void => {
+    setIsStorePressed(false);
     if (cartCount <= 0) return;
     setIsCartPressed(true);
   }, [cartCount]);
@@ -225,6 +236,7 @@ export function useNavbar(): NavbarState {
     contentRef,
     scale,
     isScaleReady,
+    isStorePressed,
     eisNavTo,
     knobNavTo,
     knobFaceClick,

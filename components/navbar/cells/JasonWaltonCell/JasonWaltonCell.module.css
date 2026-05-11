@@ -1,6 +1,6 @@
 /*
  * Jason Walton cell artwork.
- * Keeps Jason-specific plaque and glow values out of the shared KnobCell.
+ * Keeps Jason-specific plaque and glow values out of the shared knob shell.
  */
 
 .jasonWaltonCell {
@@ -8,5 +8,5 @@
   --glow: #4daaff;
   --glow-soft: #4daaff66;
 
-  background-image: url("../../NavbarAssets/SVG/JWWPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/JWWPlaqueNavbar.svg");
 }

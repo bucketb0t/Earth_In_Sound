@@ -1,6 +1,6 @@
 /*
  * I Hate Music cell artwork.
- * Keeps podcast-specific plaque and glow values out of the shared KnobCell.
+ * Keeps podcast-specific plaque and glow values out of the shared knob shell.
  */
 
 .iHateMusicCell {
@@ -8,5 +8,5 @@
   --glow: #ff4d4d;
   --glow-soft: #ff4d4d66;
 
-  background-image: url("../../NavbarAssets/SVG/IHMPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/IHMPlaqueNavbar.svg");
 }

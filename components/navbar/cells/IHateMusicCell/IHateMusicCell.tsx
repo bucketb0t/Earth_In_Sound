@@ -1,7 +1,7 @@
 "use client";
 
 import { IHM_LINKS } from "../../config";
-import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
+import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
 import styles from "./IHateMusicCell.module.css";
 
 /**
@@ -10,11 +10,12 @@ import styles from "./IHateMusicCell.module.css";
  */
 export default function IHateMusicCell() {
   return (
-    <KnobCell
+    <KnobJackCell
       sectionId="ihm"
       label="I Hate Music"
       links={IHM_LINKS}
       className={styles.iHateMusicCell}
+      showJackPort
     />
   );
 }

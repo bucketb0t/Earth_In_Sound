@@ -10,7 +10,7 @@
   flex: 0 0 auto;
   min-width: 0;
   /* Height drives the plaque; width follows the SVG ratio. */
-  background-image: url("../../NavbarAssets/SVG/AccountPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/AccountPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -91,8 +91,7 @@
   width: min(100%, var(--account-control-width));
   min-height: calc(22px * var(--artwork-cell-scale));
   margin-top: calc(6px * var(--artwork-cell-scale));
-  padding:
-    calc(3px * var(--artwork-cell-scale))
+  padding: calc(3px * var(--artwork-cell-scale))
     calc(6px * var(--artwork-cell-scale));
   background: #030f03;
   border: 1px solid #1a2e1a;

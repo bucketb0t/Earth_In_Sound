@@ -1,7 +1,7 @@
 "use client";
 
 import { JW_LINKS } from "../../config";
-import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
+import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
 import styles from "./JasonWaltonCell.module.css";
 
 /**
@@ -10,7 +10,7 @@ import styles from "./JasonWaltonCell.module.css";
  */
 export default function JasonWaltonCell() {
   return (
-    <KnobCell
+    <KnobJackCell
       sectionId="jw"
       label="Jason Walton"
       links={JW_LINKS}

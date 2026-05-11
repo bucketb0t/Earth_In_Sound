@@ -1,6 +1,5 @@
 "use client";
 
-import localFont from "next/font/local";
 import { useLayoutEffect, useRef } from "react";
 
 import {
@@ -19,11 +18,6 @@ import JasonWaltonCell from "../../cells/JasonWaltonCell/JasonWaltonCell";
 import StoreCell from "../../cells/StoreCell/StoreCell";
 
 import styles from "./NavbarStyle.module.css";
-
-const futuraHeavy = localFont({
-  src: "../../NavbarAssets/Fonts/FuturaHeavy_GeneralCaps.ttf",
-  variable: "--font-futura-heavy",
-});
 
 /**
  * Navbar shell.
@@ -88,7 +82,7 @@ export default function Navbar() {
         {/* Interactive faceplate: excludes the reserved baseline height. */}
         <div
           ref={rootRef}
-          className={`${futuraHeavy.variable} ${styles.navbarRoot}`}
+          className={styles.navbarRoot}
           role="navigation"
           aria-label="Earth In Sound site navigation"
         >

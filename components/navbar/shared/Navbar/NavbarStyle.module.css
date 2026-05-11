@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "FuturaHeavy";
+  src: url("/NavbarAssets/Fonts/FuturaHeavy_GeneralCaps.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
  * Navbar shell styles.
  * Banner and baseline artwork live here because they belong to the whole bar.
@@ -37,7 +45,7 @@
   top: 0;
   height: var(--navbar-shell-height);
   z-index: 0;
-  background-image: url("../../NavbarAssets/SVG/BaseBannerNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/BaseBannerNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -51,7 +59,7 @@
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
   z-index: 10;
   height: var(--navbar-line-height);
-  background-image: url("../../NavbarAssets/SVG/BaseLineNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/BaseLineNavbar.svg");
   background-repeat: no-repeat;
   background-position: left top;
   background-size: 100% 100%;
@@ -74,7 +82,7 @@
   transform: translateX(-50%) scale(var(--navbar-scale));
   transform-origin: top center;
   background: transparent;
-  font-family: var(--font-futura-heavy), sans-serif;
+  font-family: "FuturaHeavy", sans-serif;
 }
 
 .navbarInner {

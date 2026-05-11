@@ -1,16 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 
 import { EIS_LINKS } from "../../config";
 import { useNavbarContext } from "../../state";
 import styles from "./EISLogoCell.module.css";
-
-/* Cell-owned artwork; Navbar.tsx stays structural. */
-import earthInSoundLogoHover from "../../NavbarAssets/SVG/EarthInSoundLogoHooverNavbar.svg";
-import earthInSoundLogoOff from "../../NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg";
 
 /* Local section constants used by active styles and slider math. */
 const LAST_EIS_INDEX = EIS_LINKS.length - 1;
@@ -190,25 +185,8 @@ export default function EISLogoCell() {
           aria-label="Earth In Sound, go to home"
         >
           <span className={styles.logoFrame} aria-hidden="true">
-            <Image
-              className={`${styles.logoImage} ${styles.logoImageOff}`}
-              src={earthInSoundLogoOff}
-              alt=""
-              width={130}
-              height={90}
-              unoptimized
-              priority
-            />
-
-            <Image
-              className={`${styles.logoImage} ${styles.logoImageHover}`}
-              src={earthInSoundLogoHover}
-              alt=""
-              width={130}
-              height={90}
-              unoptimized
-              priority
-            />
+            <span className={`${styles.logoImage} ${styles.logoImageOff}`} />
+            <span className={`${styles.logoImage} ${styles.logoImageHover}`} />
           </span>
         </button>
 

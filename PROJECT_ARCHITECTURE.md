@@ -27,7 +27,6 @@ app/
 components/navbar/
   config.ts
   state.ts
-  NavbarAssets/
   cells/
     AccountCell/
       AccountCell.tsx
@@ -51,12 +50,16 @@ components/navbar/
     Navbar/
       Navbar.tsx
       NavbarStyle.module.css
-    KnobCell/
-      KnobCell.tsx
-      KnobCell.module.css
-    JackLEDPort/
-      JackLEDPort.tsx
-      JackLEDPort.module.css
+    KnobJackCell/
+      KnobJackCell.tsx
+      KnobJackCell.module.css
+
+public/
+  NavbarAssets/
+    Animations/
+    Fonts/
+    PNG/
+    SVG/
 ```
 
 ## File Roles
@@ -83,9 +86,9 @@ offsets, and store animation frames.
 store animation, cart state, account state, and the keyboard activation
 helper for custom controls.
 
-`components/navbar/NavbarAssets/` stores local navbar artwork, fonts, videos,
-SVGs, and bitmap assets. Assets stay here unless a future section becomes large
-enough to justify its own asset folder.
+`public/NavbarAssets/` stores navbar artwork, fonts, videos, SVGs, and bitmap
+assets. CSS modules and media elements reference them with root-relative URLs
+such as `/NavbarAssets/SVG/...`.
 
 ## Navbar Shell
 
@@ -94,7 +97,6 @@ enough to justify its own asset folder.
 - creates the navbar context provider
 - measures and scales the shell through `useNavbar()`
 - syncs runtime CSS variables needed for scale, width, height, and baseline
-- imports the local navbar font
 - defines the visual cell order
 
 `components/navbar/shared/Navbar/NavbarStyle.module.css` owns the shared
@@ -124,13 +126,11 @@ because they share one plaque. The logo calls `goHome()`. The slider supports
 pointer dragging, keyboard navigation, and resize-aware snapping.
 
 `JasonWaltonCell` and `IHateMusicCell` are section wrappers. They provide the
-section id, label, and link list to the shared `KnobCell`.
+section id, label, and link list to the shared `KnobJackCell`.
 
-`KnobCell` renders the reusable rotary SVG control: knob face, tick marks,
-orbiting LEDs, link labels, active indicator dot, and the shared jack overlay.
-
-`JackLEDPort` renders the shared corner LED, jack socket, and plug bitmap
-overlay for knob cells.
+`KnobJackCell` renders the reusable rotary SVG control: knob face, tick marks,
+choice dots, link labels, the active indicator dot, and the optional top-right
+jack socket overlay used by I Hate Music.
 
 `AccountCell` renders the login switch and username display.
 
@@ -170,11 +170,9 @@ flowchart TD
   Provider --> Utility["Account / Store / Cart"]
 
   EIS --> EISCSS["EISLogoCell.module.css"]
-  JW --> Knob["shared/KnobCell"]
+  JW --> Knob["shared/KnobJackCell"]
   IHM --> Knob
-  Knob --> KnobCSS["KnobCell.module.css"]
-  Knob --> Jack["shared/JackLEDPort"]
-  Jack --> JackCSS["JackLEDPort.module.css"]
+  Knob --> KnobCSS["KnobJackCell.module.css"]
   Utility --> UtilityCSS["cell CSS Modules"]
 
   EIS --> EISNav["eisNavTo(index) / goHome()"]

@@ -5,7 +5,7 @@
 
 @font-face {
   font-family: "DS-DIGIB Cart";
-  src: url("../../NavbarAssets/Fonts/DS-DIGIB_Cart.TTF") format("truetype");
+  src: url("/NavbarAssets/Fonts/DS-DIGIB_Cart.TTF") format("truetype");
   font-display: swap;
 }
 
@@ -16,7 +16,7 @@
   min-width: 0;
   /* Final navbar edge spacing lives here, separate from artwork sizing logic. */
   margin-right: calc(16px * var(--artwork-cell-scale));
-  background-image: url("../../NavbarAssets/SVG/CartPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -29,7 +29,7 @@
   transform: translate(0, calc(-3px * var(--artwork-cell-scale)));
   width: calc(48px * var(--artwork-cell-scale));
   height: calc(24px * var(--artwork-cell-scale));
-  background-image: url("../../NavbarAssets/SVG/CartCounterNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartCounterNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -55,7 +55,7 @@
   transform: translate(0, calc(6px * var(--artwork-cell-scale)));
   border: 0;
   background-color: transparent;
-  background-image: url("../../NavbarAssets/SVG/CartButtonOffNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartButtonOffNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -63,10 +63,10 @@
 }
 
 .cartButton:hover {
-  background-image: url("../../NavbarAssets/SVG/CartButtonHooverNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartButtonHooverNavbar.svg");
 }
 
 .cartButtonPressed,
 .cartButtonPressed:hover {
-  background-image: url("../../NavbarAssets/SVG/CartButtonOnNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartButtonOnNavbar.svg");
 }
