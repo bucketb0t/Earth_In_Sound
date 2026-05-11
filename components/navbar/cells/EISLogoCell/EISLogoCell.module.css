@@ -6,11 +6,11 @@
 .eisLogoCell {
   --glow: #22c55e;
   --glow-soft: #22c55e66;
-  --eis-logo-width: calc(125px * var(--artwork-cell-scale));
+  --eis-logo-max-width: calc(125px * var(--artwork-cell-scale));
   --eis-logo-rendered-width: clamp(
     calc(72px * var(--artwork-cell-scale)),
     39cqw,
-    var(--eis-logo-width)
+    var(--eis-logo-max-width)
   );
   --eis-logo-rendered-height: clamp(
     calc(50px * var(--artwork-cell-scale)),
@@ -42,6 +42,7 @@
     2.2cqw,
     calc(6px * var(--artwork-cell-scale))
   );
+  --eis-track-width: calc(8px * var(--artwork-cell-scale));
   --eis-thumb-size: calc(12px * var(--artwork-cell-scale));
   --eis-rendered-thumb-height: clamp(
     calc(8px * var(--artwork-cell-scale)),
@@ -109,7 +110,7 @@
 }
 
 .logoFrame {
-  /* Stable box for the two overlaid logo states. */
+  /* Stable logo slot; off/hover artwork layers fill this same box. */
   position: relative;
   display: block;
   width: min(var(--eis-logo-rendered-width), 88%);
@@ -118,6 +119,7 @@
 }
 
 .logoImage {
+  display: block;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -135,7 +137,7 @@
 
 .logoImageHover {
   opacity: 0;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoHooverNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoHoverNavbar.svg");
 }
 
 .logoButton:hover .logoImageOff,
@@ -174,7 +176,7 @@
   /* Custom rail artwork on a real measured element for drag math. */
   position: relative;
   flex-shrink: 0;
-  width: calc(8px * var(--artwork-cell-scale));
+  width: var(--eis-track-width);
   height: var(--eis-slider-height);
   background-image: url("/NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
   background-repeat: no-repeat;

@@ -11,6 +11,9 @@
 
 .cartCell {
   --cell-plaque-aspect: 115 / 142.28;
+  --cart-counter-width: calc(48px * var(--artwork-cell-scale));
+  --cart-counter-height: calc(24px * var(--artwork-cell-scale));
+  --cart-button-size: calc(54px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   min-width: 0;
@@ -23,12 +26,13 @@
 }
 
 .cartCounter {
+  /* Counter box owns both display artwork and the future item count text. */
   display: flex;
   align-items: center;
   justify-content: center;
   transform: translate(0, calc(-3px * var(--artwork-cell-scale)));
-  width: calc(48px * var(--artwork-cell-scale));
-  height: calc(24px * var(--artwork-cell-scale));
+  width: var(--cart-counter-width);
+  height: var(--cart-counter-height);
   background-image: url("/NavbarAssets/SVG/CartCounterNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
@@ -49,8 +53,9 @@
 }
 
 .cartButton {
-  width: calc(54px * var(--artwork-cell-scale));
-  height: calc(54px * var(--artwork-cell-scale));
+  /* Button size is also the clickable hit target, by design. */
+  width: var(--cart-button-size);
+  height: var(--cart-button-size);
   transform: translate(0, calc(6px * var(--artwork-cell-scale)));
   border: 0;
   background-color: transparent;

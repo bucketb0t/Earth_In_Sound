@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -13,8 +12,6 @@ import {
 } from "react";
 import {
   SECTION_LINKS,
-  STORE_FRAME_INTERVAL,
-  STORE_FRAMES,
   type KnobSectionId,
   type SectionId,
 } from "./config";
@@ -32,8 +29,6 @@ export interface NavbarState {
   eisSliderPos: number;
   isLoggedIn: boolean;
   cartCount: number;
-  storeText: string;
-  storeAnimating: boolean;
   isStorePressed: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
   contentRef: RefObject<HTMLDivElement | null>;
@@ -93,7 +88,6 @@ function clampSectionLinkIndex(
 export function useNavbar(): NavbarState {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const storeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
@@ -102,8 +96,6 @@ export function useNavbar(): NavbarState {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount] = useState(INITIAL_CART_COUNT);
   const [isCartPressed, setIsCartPressed] = useState(false);
-  const [storeText, setStoreText] = useState("STORE");
-  const [storeAnimating, setStoreAnimating] = useState(false);
   const [isStorePressed, setIsStorePressed] = useState(false);
 
   /*
@@ -143,15 +135,6 @@ export function useNavbar(): NavbarState {
     observer.observe(shellElement);
     observer.observe(contentElement);
     return () => observer.disconnect();
-  }, []);
-
-  /* Clear any pending store animation timer when the navbar unmounts. */
-  useEffect(() => {
-    return () => {
-      if (storeTimerRef.current !== null) {
-        clearTimeout(storeTimerRef.current);
-      }
-    };
   }, []);
 
   const eisNavTo = useCallback((linkIndex: number): void => {
@@ -196,28 +179,8 @@ export function useNavbar(): NavbarState {
    */
   const storePress = useCallback((): void => {
     setIsCartPressed(false);
-    if (storeAnimating || isStorePressed) return;
     setIsStorePressed(true);
-    setStoreAnimating(true);
-
-    let storeFrameIndex = 0;
-    function advanceStoreFrame(): void {
-      if (storeFrameIndex >= STORE_FRAMES.length) {
-        setStoreText("STORE");
-        setStoreAnimating(false);
-        storeTimerRef.current = null;
-        return;
-      }
-
-      setStoreText(STORE_FRAMES[storeFrameIndex++]!);
-      storeTimerRef.current = setTimeout(
-        advanceStoreFrame,
-        STORE_FRAME_INTERVAL,
-      );
-    }
-
-    advanceStoreFrame();
-  }, [isStorePressed, storeAnimating]);
+  }, []);
 
   const cartPress = useCallback((): void => {
     setIsStorePressed(false);
@@ -230,8 +193,6 @@ export function useNavbar(): NavbarState {
     eisSliderPos,
     isLoggedIn,
     cartCount,
-    storeText,
-    storeAnimating,
     shellRef,
     contentRef,
     scale,

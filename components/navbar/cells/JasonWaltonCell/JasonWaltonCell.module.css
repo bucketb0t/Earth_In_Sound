@@ -8,5 +8,55 @@
   --glow: #4daaff;
   --glow-soft: #4daaff66;
 
-  background-image: url("/NavbarAssets/SVG/JWWPlaqueNavbar.svg");
+  flex: 0 0 auto;
+  overflow: visible;
+  background-image: url("/NavbarAssets/SVG/JWW-IHM-PlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
+}
+
+.jasonWaltonLogo {
+  /*
+   * Slot values reserve layout space. Art values draw the SVG inside that
+   * slot, so changing logo scale cannot push the knob module around.
+   */
+  --jww-logo-slot-width: calc(104px * var(--artwork-cell-scale));
+  --jww-logo-slot-height: calc(24px * var(--artwork-cell-scale));
+  /*
+   * The original 104x24 background box rendered the JWW SVG height-first.
+   * These values preserve that visible size while making scaling explicit.
+   */
+  --jww-logo-art-width: calc(93.69px * var(--artwork-cell-scale));
+  --jww-logo-art-height: var(--jww-logo-slot-height);
+  --jww-logo-art-scale: 1;
+
+  position: relative;
+  width: var(--jww-logo-slot-width);
+  height: var(--jww-logo-slot-height);
+  margin-bottom: calc(4px * var(--artwork-cell-scale));
+  transform: translate(
+    calc(12px * var(--artwork-cell-scale)),
+    calc(12px * var(--artwork-cell-scale))
+  );
+}
+
+.jasonWaltonLogo::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--jww-logo-art-width);
+  height: var(--jww-logo-art-height);
+  background-image: url("/NavbarAssets/SVG/JWWLogoNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transform: translate(-50%, -50%) scale(var(--jww-logo-art-scale));
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.jasonWaltonKnob {
+  background-image: url("/NavbarAssets/SVG/JWWKnobNavbar.svg");
 }

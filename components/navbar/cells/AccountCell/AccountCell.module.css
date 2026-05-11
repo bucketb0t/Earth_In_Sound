@@ -3,9 +3,15 @@
  * SVG assets live in CSS; TSX only chooses state classes and labels.
  */
 
+@font-face {
+  font-family: "DePixelKleinUsername";
+  src: url("/NavbarAssets/Fonts/DePixelKlein_Username.ttf") format("truetype");
+  font-display: swap;
+}
+
 .accountCell {
   --cell-plaque-aspect: 165 / 141;
-  --account-row-width: calc(112px * var(--artwork-cell-scale));
+  --account-control-width: calc(112px * var(--artwork-cell-scale));
   --account-button-size: calc(24px * var(--artwork-cell-scale));
   --account-led-size: calc(10px * var(--artwork-cell-scale));
   --account-status-height: calc(28px * var(--artwork-cell-scale));
@@ -24,10 +30,11 @@
   grid-template-columns: var(--account-button-size) minmax(0, 1fr);
   align-items: center;
   gap: calc(6px * var(--artwork-cell-scale));
-  width: min(100%, var(--account-row-width));
+  width: min(100%, var(--account-control-width));
 }
 
 .accountToggleButton {
+  /* Switch size is also its clickable hit target. */
   appearance: none;
   display: block;
   width: var(--account-button-size);
@@ -91,11 +98,12 @@
 }
 
 .accountScreenButton {
+  /* Screen button shares the login-row width so both account rows align. */
   appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(100%, var(--account-row-width));
+  width: min(100%, var(--account-control-width));
   min-height: var(--account-screen-height);
   margin-top: calc(7px * var(--artwork-cell-scale));
   padding: 0 calc(8px * var(--artwork-cell-scale));
@@ -105,23 +113,157 @@
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  color: #142314;
+  color: #8ead8e;
   cursor: pointer;
   font: inherit;
 }
 
 .accountScreenButtonOn {
   background-image: url("/NavbarAssets/SVG/AccountScreenOnNavbar.svg");
-  color: #22c55e;
+  color: #000000;
 }
 
-.accountScreenButton span {
+.accountScreenText {
   display: block;
   overflow: hidden;
+  position: relative;
   max-width: 100%;
-  font-size: calc(9px * var(--artwork-cell-scale));
+  font-family: "DePixelKleinUsername", monospace;
+  font-size: calc(12px * var(--artwork-cell-scale));
   line-height: 1;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/*
+ * Logged-out screen interference.
+ * The class marks Sign Up as glitch-capable; hover selectors below activate
+ * the motion so the idle screen stays readable.
+ */
+.accountScreenButton:hover .accountScreenTextGlitch {
+  text-shadow:
+    calc(0.5px * var(--artwork-cell-scale)) 0 #314831,
+    calc(-0.5px * var(--artwork-cell-scale)) 0 #c6dac6;
+  animation: accountSignalDropout 1.35s steps(1, end) both;
+}
+
+.accountScreenTextGlitch::before,
+.accountScreenTextGlitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.accountScreenButton:hover .accountScreenTextGlitch::before {
+  clip-path: inset(16% 0 58% 0);
+  opacity: 0.4;
+  transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  animation: accountSignalUpperBand 1s steps(1, end) both;
+}
+
+.accountScreenButton:hover .accountScreenTextGlitch::after {
+  clip-path: inset(54% 0 18% 0);
+  opacity: 0.32;
+  transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  animation: accountSignalLowerBand 1.18s steps(1, end) both;
+}
+
+@keyframes accountSignalDropout {
+  0%,
+  8%,
+  28%,
+  52%,
+  70%,
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+    text-shadow:
+      calc(0.5px * var(--artwork-cell-scale)) 0 #314831,
+      calc(-0.5px * var(--artwork-cell-scale)) 0 #c6dac6;
+  }
+
+  9% {
+    opacity: 0.78;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  29% {
+    opacity: 0.88;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  53% {
+    opacity: 0.68;
+    transform: translateY(calc(1px * var(--artwork-cell-scale)));
+    text-shadow: none;
+  }
+
+  71% {
+    opacity: 0.92;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+}
+
+@keyframes accountSignalUpperBand {
+  0%,
+  18%,
+  48%,
+  76%,
+  100% {
+    clip-path: inset(16% 0 58% 0);
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  19% {
+    clip-path: inset(8% 0 68% 0);
+    opacity: 0.42;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  49% {
+    clip-path: inset(30% 0 48% 0);
+    opacity: 0.34;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  77% {
+    clip-path: inset(4% 0 74% 0);
+    opacity: 0.38;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+}
+
+@keyframes accountSignalLowerBand {
+  0%,
+  22%,
+  44%,
+  82%,
+  100% {
+    clip-path: inset(54% 0 18% 0);
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  23% {
+    clip-path: inset(58% 0 20% 0);
+    opacity: 0.38;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  45% {
+    clip-path: inset(42% 0 32% 0);
+    opacity: 0.3;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  83% {
+    clip-path: inset(70% 0 8% 0);
+    opacity: 0.36;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
 }

@@ -8,5 +8,55 @@
   --glow: #ff4d4d;
   --glow-soft: #ff4d4d66;
 
-  background-image: url("/NavbarAssets/SVG/IHMPlaqueNavbar.svg");
+  flex: 0 0 auto;
+  overflow: visible;
+  background-image: url("/NavbarAssets/SVG/JWW-IHM-PlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
+}
+
+.iHateMusicLogo {
+  /*
+   * Slot values reserve layout space. Art values draw the SVG inside that
+   * slot, so changing logo scale cannot push the knob module around.
+   */
+  --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
+  --ihm-logo-slot-height: calc(24px * var(--artwork-cell-scale));
+  /*
+   * The original 104x24 background box rendered the IHM SVG width-first.
+   * These values preserve that visible size while making scaling explicit.
+   */
+  --ihm-logo-art-width: var(--ihm-logo-slot-width);
+  --ihm-logo-art-height: calc(14.65px * var(--artwork-cell-scale));
+  --ihm-logo-art-scale: 1;
+
+  position: relative;
+  width: var(--ihm-logo-slot-width);
+  height: var(--ihm-logo-slot-height);
+  margin-bottom: calc(4px * var(--artwork-cell-scale));
+  transform: translate(
+    calc(12px * var(--artwork-cell-scale)),
+    calc(12px * var(--artwork-cell-scale))
+  );
+}
+
+.iHateMusicLogo::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--ihm-logo-art-width);
+  height: var(--ihm-logo-art-height);
+  background-image: url("/NavbarAssets/SVG/IHMLogoNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transform: translate(-50%, -50%) scale(var(--ihm-logo-art-scale));
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.iHateMusicKnob {
+  background-image: url("/NavbarAssets/SVG/IHMKnobNavbar.svg");
 }

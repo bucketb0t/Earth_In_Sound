@@ -78,13 +78,13 @@ navbar primitives such as `.navbar-cell`, `.led`, and `.link-label`, and the
 reduced-motion media query.
 
 `components/navbar/config.ts` is the static source of truth for section ids,
-link labels, SVG geometry, navbar design dimensions, baseline thickness, knob
-offsets, and store animation frames.
+link labels, SVG geometry, navbar design dimensions, baseline thickness, and
+knob offsets.
 
 `components/navbar/state.ts` owns shared React behavior. It defines
 `NavbarContext`, `useNavbar()`, navigation actions, responsive measurement,
-store animation, cart state, account state, and the keyboard activation
-helper for custom controls.
+latched store/cart state, account state, and the keyboard activation helper
+for custom controls.
 
 `public/NavbarAssets/` stores navbar artwork, fonts, videos, SVGs, and bitmap
 assets. CSS modules and media elements reference them with root-relative URLs
@@ -128,14 +128,14 @@ pointer dragging, keyboard navigation, and resize-aware snapping.
 `JasonWaltonCell` and `IHateMusicCell` are section wrappers. They provide the
 section id, label, and link list to the shared `KnobJackCell`.
 
-`KnobJackCell` renders the reusable rotary SVG control: knob face, tick marks,
-choice dots, link labels, the active indicator dot, and the optional top-right
-jack socket overlay used by I Hate Music.
+`KnobJackCell` renders the reusable rotary SVG control: knob hit target, hidden
+legacy tick geometry, choice dots, link labels, section knob artwork, and the
+optional top-right jack socket overlay used by I Hate Music.
 
 `AccountCell` renders the login switch and username display.
 
-`StoreCell` runs the store scramble animation and releases the cart pressed
-state when Store is selected.
+`StoreCell` shows the idle store artwork, plays the hover video once, and keeps
+the pressed store video looping until another navbar action clears it.
 
 `CartCell` renders the item-count badge and cart button. The button can hold
 its pressed state until another navbar action clears it.
@@ -149,6 +149,9 @@ its pressed state until another navbar action clears it.
   navbar scale variables and slider thumb position.
 - New cell artwork should go in the owning cell folder unless it is truly
   shared across multiple cells.
+- Decorative artwork that should not move nearby controls uses a slot/art
+  split: slot variables reserve layout space, while art variables control the
+  visible SVG layer inside that slot.
 
 ## Flow Chart
 
@@ -193,7 +196,7 @@ flowchart TD
    `toggleLogin()`, `storePress()`, or `cartPress()`.
 3. `state.ts` updates shared React state.
 4. Context consumers re-render with the new active section, slider position,
-   account state, store text, or cart pressed state.
+   account state, store pressed state, or cart pressed state.
 5. CSS Modules render the visual state through classes, pseudo-elements, and
    component-local styles.
 

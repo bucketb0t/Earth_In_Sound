@@ -5,16 +5,16 @@ import { useNavbarContext } from "../../state";
 import styles from "./StoreCell.module.css";
 
 // Public media paths keep the navbar assets centralized under /public.
-const HOVER_VIDEO_URL = "/NavbarAssets/Animations/StoreHooverNavbar.mp4";
+const HOVER_VIDEO_URL = "/NavbarAssets/Animations/StoreHoverNavbar.mp4";
 const PRESSED_VIDEO_URL = "/NavbarAssets/Animations/StoreOnNavbar.mp4";
 
 /**
  * Store cell.
- * Shows a static PNG by default, a looping hover video on mouse-over,
+ * Shows a static PNG by default, a one-shot hover video on mouse-over,
  * and a looping active video while Store stays latched as pressed.
  */
 export default function StoreCell() {
-  const { storeAnimating, isStorePressed, storePress } = useNavbarContext();
+  const { isStorePressed, storePress } = useNavbarContext();
   const [isHovered, setIsHovered] = useState(false);
 
   const hoverVideoRef = useRef<HTMLVideoElement>(null);
@@ -25,34 +25,31 @@ export default function StoreCell() {
     const video = hoverVideoRef.current;
     if (!video) return;
 
-    if (isHovered && !storeAnimating && !isStorePressed) {
+    if (isHovered && !isStorePressed) {
       video.currentTime = 0;
       void video.play();
     } else {
       video.pause();
       video.currentTime = 0;
     }
-  }, [isHovered, isStorePressed, storeAnimating]);
+  }, [isHovered, isStorePressed]);
 
   /*
    * The pressed video owns the screen while Store is latched.
-   * It starts from frame 0 on activation, then loops until navigation clears
-   * the pressed state.
+   * It starts from frame 0 when pressed, then loops until navigation clears it.
    */
   useEffect(() => {
     const video = pressedVideoRef.current;
     if (!video) return;
 
     if (isStorePressed) {
-      if (storeAnimating) {
-        video.currentTime = 0;
-      }
+      video.currentTime = 0;
       void video.play();
     } else {
       video.pause();
       video.currentTime = 0;
     }
-  }, [isStorePressed, storeAnimating]);
+  }, [isStorePressed]);
 
   return (
     <button
@@ -62,21 +59,18 @@ export default function StoreCell() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-label="Store"
-      aria-busy={storeAnimating}
       aria-pressed={isStorePressed}
     >
       <div className={styles.screenContainer}>
         {/* Default state: static artwork shown when idle and not hovered. */}
         <div
           aria-hidden="true"
-          className={`${styles.screenAsset} ${
-            styles.screenAssetStatic
-          } ${
+          className={`${styles.screenAsset} ${styles.screenAssetStatic} ${
             !isHovered && !isStorePressed ? styles.screenAssetVisible : ""
           }`}
         />
 
-        {/* Hover state: loops while the cursor is over the idle store cell. */}
+        {/* Hover state: plays once while the cursor is over the idle store cell. */}
         <video
           ref={hoverVideoRef}
           src={HOVER_VIDEO_URL}
@@ -85,7 +79,6 @@ export default function StoreCell() {
           }`}
           muted
           playsInline
-          loop
           preload="auto"
         />
 

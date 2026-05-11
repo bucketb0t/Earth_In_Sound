@@ -42,16 +42,6 @@ a {
 
 /* Shared navbar primitives; cell-specific artwork stays in each component. */
 
-.cell-label {
-  font-size: calc(8px * var(--artwork-cell-scale));
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #ffffff;
-  margin-bottom: calc(6px * var(--artwork-cell-scale));
-  text-align: center;
-  white-space: nowrap;
-}
-
 .navbar-cell {
   display: flex;
   flex-direction: column;

@@ -7,6 +7,8 @@
 .storeCell {
   /* Native button reset; the whole cell is the store trigger. */
   --cell-plaque-aspect: 339 / 141;
+  --store-screen-width: calc(208px * var(--artwork-cell-scale));
+  --store-screen-height: calc(130px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   min-width: 0;
@@ -29,10 +31,10 @@
 }
 
 .screenContainer {
-  /* Stacking context: all three assets overlap the same area. */
+  /* Stable screen box; each idle/hover/pressed asset paints inside it. */
   position: relative;
-  width: calc(208px * var(--artwork-cell-scale));
-  height: calc(130px * var(--artwork-cell-scale));
+  width: var(--store-screen-width);
+  height: var(--store-screen-height);
 }
 
 .screenAsset {

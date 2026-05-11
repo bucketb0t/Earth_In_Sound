@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import {
-  DEFAULT_INDICATOR_TRIG_DEGREES as IDLE_DOT_ANGLE,
-  INDICATOR_DOT_DISTANCE as DOT_ORBIT_RADIUS,
   KNOB_CANVAS_SIZE as SVG_HEIGHT,
   KNOB_CENTER_X,
   KNOB_CENTER_Y,
@@ -22,49 +20,28 @@ import styles from "./KnobJackCell.module.css";
 
 export interface KnobJackCellProps {
   sectionId: KnobSectionId;
-  label: string;
+  sectionLabel: string;
   links: readonly string[];
-  className?: string;
+  knobArtworkClassName: string;
   showJackPort?: boolean;
 }
 
 /**
- * Shared rotary knob cell.
- * Renders knob face, choice dots, labels, active dot, and an optional jack.
+ * Shared rotary knob and jack module.
+ * Section wrappers own plaque artwork and logo/title placement.
  */
 export default function KnobJackCell({
   sectionId,
-  label,
+  sectionLabel,
   links,
-  className = "",
+  knobArtworkClassName,
   showJackPort = false,
 }: KnobJackCellProps) {
   const { activePage, knobNavTo, knobFaceClick } = useNavbarContext();
 
-  const indicatorDotRef = useRef<SVGCircleElement>(null);
   const isActive = activePage?.section === sectionId;
   const activeLinkIndex = isActive ? activePage.linkIndex : -1;
   const sectionOffsets = KNOB_OFFSETS[sectionId];
-
-  /* Move the indicator dot around the knob face when active/inactive. */
-  useEffect(() => {
-    const dot = indicatorDotRef.current;
-    if (!dot) return;
-
-    if (isActive) {
-      const activeDotPosition = polarToCartesian(
-        DOT_ORBIT_RADIUS,
-        clockAngleToMathAngle(CHOICE_ANGLES[activeLinkIndex]!),
-      );
-      dot.setAttribute("cx", String(activeDotPosition.x));
-      dot.setAttribute("cy", String(activeDotPosition.y));
-      return;
-    }
-
-    const idleDotPosition = polarToCartesian(DOT_ORBIT_RADIUS, IDLE_DOT_ANGLE);
-    dot.setAttribute("cx", String(idleDotPosition.x));
-    dot.setAttribute("cy", String(idleDotPosition.y));
-  }, [isActive, activeLinkIndex]);
 
   /* Static tick marks around the knob face. */
   const tickMarks = useMemo(
@@ -101,16 +78,25 @@ export default function KnobJackCell({
     [],
   );
 
-  const idleDotPosition = polarToCartesian(DOT_ORBIT_RADIUS, IDLE_DOT_ANGLE);
+  const knobTurnClass =
+    isActive && activeLinkIndex === 0
+      ? styles.knobArtworkTurnTop
+      : isActive && activeLinkIndex === 1
+        ? styles.knobArtworkTurnMiddle
+        : isActive && activeLinkIndex === 2
+          ? styles.knobArtworkTurnBottom
+          : styles.knobArtworkIdle;
 
   return (
-    <div
-      className={`navbar-cell navbar-cell--start ${styles.knobCell} ${className}`}
-    >
-      <div className="cell-label">{label}</div>
-
+    <div className={styles.knobJackModule}>
       <div className={styles.knobWrap}>
-        {/* One SVG keeps knob, choice dots, labels, and indicator dot scaling together. */}
+        {/* Section-specific artwork is visible; the SVG circle below remains the hit target. */}
+        <div
+          className={`${styles.knobArtwork} ${knobTurnClass} ${knobArtworkClassName}`}
+          aria-hidden="true"
+        />
+
+        {/* One SVG keeps the hit target, choice dots, and labels scaling together. */}
         <svg
           className={styles.knobSvg}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -145,7 +131,7 @@ export default function KnobJackCell({
             fill={`url(#knob-gradient-${sectionId})`}
             tabIndex={0}
             role="button"
-            aria-label={`${label} deselect`}
+            aria-label={`${sectionLabel} deselect`}
             aria-pressed={isActive}
             onClick={() => knobFaceClick(sectionId)}
             onKeyDown={(event) =>
@@ -154,16 +140,6 @@ export default function KnobJackCell({
           />
 
           {tickMarks}
-
-          {/* Indicator dot: glows and tracks the active choice position. */}
-          <circle
-            ref={indicatorDotRef}
-            className={`${styles.indicatorDot} ${isActive ? styles.indicatorDotActive : ""}`}
-            cx={idleDotPosition.x}
-            cy={idleDotPosition.y}
-            r={5}
-            aria-hidden="true"
-          />
 
           <circle
             className={styles.centerCap}
@@ -195,7 +171,7 @@ export default function KnobJackCell({
                 }
                 tabIndex={0}
                 role="button"
-                aria-label={`${label}: ${link}`}
+                aria-label={`${sectionLabel}: ${link}`}
                 aria-pressed={isSelected}
                 aria-current={isSelected ? "page" : undefined}
               >
@@ -203,7 +179,7 @@ export default function KnobJackCell({
                   className={`${styles.choiceDot} ${isSelected ? styles.choiceDotActive : ""}`}
                   cx={dotPosition.x + dotOffset.x}
                   cy={dotPosition.y + dotOffset.y}
-                  r={5}
+                  r={3.5}
                 />
 
                 <text

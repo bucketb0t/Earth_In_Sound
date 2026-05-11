@@ -49,7 +49,14 @@ export default function AccountCell() {
         }`}
         aria-label={isLoggedIn ? "Open account page" : "Sign up"}
       >
-        <span>{screenLabel}</span>
+        <span
+          className={`${styles.accountScreenText} ${
+            isLoggedIn ? "" : styles.accountScreenTextGlitch
+          }`}
+          data-text={screenLabel}
+        >
+          {screenLabel}
+        </span>
       </button>
     </div>
   );

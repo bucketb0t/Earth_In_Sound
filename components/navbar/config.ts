@@ -20,18 +20,19 @@ export const SECTION_LINKS: Record<SectionId, readonly string[]> = {
 
 /* Knob geometry: visual angles are clockwise from top; SVG math is converted. */
 export const LED_DEGREES_FROM_TOP: readonly [number, number, number] = [
-  45, 90, 135,
+  61, 91, 121,
 ] as const;
 
-export const KNOB_RADIUS = 18;
-export const LED_ORBIT_RADIUS = 30;
-export const INDICATOR_DOT_DISTANCE = 10.5;
+// Matches the visible knob SVG box in KnobJackCell.module.css.
+export const KNOB_ARTWORK_SIZE = 48;
+// The SVG hit circle follows the visible artwork diameter.
+export const KNOB_RADIUS = KNOB_ARTWORK_SIZE / 2;
+export const LED_ORBIT_RADIUS = 44;
 export const KNOB_CANVAS_SIZE = 80;
 export const KNOB_SVG_WIDTH = 160;
 
 export const KNOB_CENTER_X = KNOB_CANVAS_SIZE / 2;
 export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
-export const DEFAULT_INDICATOR_TRIG_DEGREES = 90;
 
 /* Responsive shell: total height includes the baseline artwork. */
 export const DESIGN_HEIGHT = 120;
@@ -40,15 +41,6 @@ export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
 export const BASE_LINE_HEIGHT = 8;
 // The current cell artwork was tuned at this interactive faceplate height.
 export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
-
-/**
- * Returns a CSS length that follows the navbar artwork scale.
- * Use this from TS/TSX when a future component needs the same sizing rule
- * as CSS modules that use calc(<px> * var(--artwork-cell-scale)).
- */
-export function artworkScaledPx(px: number): string {
-  return `calc(${px}px * var(--artwork-cell-scale))`;
-}
 
 /* Per-knob SVG nudges; CSS modules own visual sizes and colors. */
 export const KNOB_OFFSETS = {
@@ -59,9 +51,9 @@ export const KNOB_OFFSETS = {
       { x: 3, y: -9 },
     ],
     led: [
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
+      { x: 3, y: -1 },
+      { x: 3, y: 0 },
+      { x: 3, y: 1 },
     ],
   },
   ihm: {
@@ -71,9 +63,9 @@ export const KNOB_OFFSETS = {
       { x: 3, y: -9 },
     ],
     led: [
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
+      { x: 3, y: -1 },
+      { x: 3, y: 0 },
+      { x: 3, y: 1 },
     ],
   },
 } as const;
@@ -98,19 +90,3 @@ export function svgPoint(radius: number, trigDegrees: number): SvgPoint {
     y: KNOB_CENTER_Y - radius * Math.sin(radians),
   };
 }
-
-/* Store scramble frames; ASCII avoids encoding surprises in source control. */
-export const STORE_FRAMES: readonly string[] = [
-  "##",
-  "**",
-  "//",
-  "--",
-  "S",
-  "T",
-  "O",
-  "R",
-  "E",
-  "STORE",
-] as const;
-
-export const STORE_FRAME_INTERVAL = 110;

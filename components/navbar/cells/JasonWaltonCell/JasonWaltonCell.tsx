@@ -1,20 +1,30 @@
 "use client";
 
 import { JW_LINKS } from "../../config";
-import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
+import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
 import styles from "./JasonWaltonCell.module.css";
 
 /**
  * Jason Walton section.
- * Thin wrapper that feeds Jason-specific identity and links into the knob.
+ * Owns Jason-specific plaque/logo artwork and feeds behavior into the knob.
  */
 export default function JasonWaltonCell() {
   return (
-    <KnobJackCell
-      sectionId="jw"
-      label="Jason Walton"
-      links={JW_LINKS}
-      className={styles.jasonWaltonCell}
-    />
+    <div
+      className={`navbar-cell navbar-cell--start ${styles.jasonWaltonCell}`}
+    >
+      <div
+        className={styles.jasonWaltonLogo}
+        role="img"
+        aria-label="Jason Walton"
+      />
+
+      <KnobCell
+        sectionId="jw"
+        sectionLabel="Jason Walton"
+        links={JW_LINKS}
+        knobArtworkClassName={styles.jasonWaltonKnob}
+      />
+    </div>
   );
 }

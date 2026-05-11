@@ -6,16 +6,24 @@ import styles from "./IHateMusicCell.module.css";
 
 /**
  * I Hate Music podcast section.
- * Thin wrapper that feeds podcast-specific identity and links into the knob.
+ * Owns IHM-specific plaque/logo artwork and feeds behavior into the knob.
  */
 export default function IHateMusicCell() {
   return (
-    <KnobJackCell
-      sectionId="ihm"
-      label="I Hate Music"
-      links={IHM_LINKS}
-      className={styles.iHateMusicCell}
-      showJackPort
-    />
+    <div className={`navbar-cell navbar-cell--start ${styles.iHateMusicCell}`}>
+      <div
+        className={styles.iHateMusicLogo}
+        role="img"
+        aria-label="I Hate Music"
+      />
+
+      <KnobJackCell
+        sectionId="ihm"
+        sectionLabel="I Hate Music"
+        links={IHM_LINKS}
+        knobArtworkClassName={styles.iHateMusicKnob}
+        showJackPort
+      />
+    </div>
   );
 }

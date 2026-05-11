@@ -1,59 +1,114 @@
 /*
- * Shared knob cell styles.
- * Section wrappers provide plaque and glow values; this file owns the
- * reusable SVG machinery and the optional top-right jack artwork.
+ * Shared knob/jack styles.
+ * Section wrappers provide plaque, logo/title, and glow values.
  */
 
-.knobCell {
-  flex: 0 0 auto;
+.knobJackModule {
+  /* Keep 48px synced with KNOB_ARTWORK_SIZE in config.ts. */
+  --knob-artwork-size: calc(48px * var(--artwork-cell-scale));
+  --jack-socket-size: calc(48px * var(--artwork-cell-scale));
+
+  width: 100%;
   overflow: visible;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: auto var(--cell-plaque-height);
 }
 
 .knobWrap {
   /* Limits the SVG to its designed coordinate width. */
+  position: relative;
   width: 100%;
   max-width: calc(160px * var(--artwork-cell-scale));
+  transform: translate(
+    calc(-2px * var(--artwork-cell-scale)),
+    calc(10px * var(--artwork-cell-scale))
+  );
+}
+
+.knobArtwork {
+  /*
+   * Visible knob art sits on the SVG hit circle center.
+   * Change KNOB_ARTWORK_SIZE in config.ts if this size changes.
+   */
+  position: absolute;
+  left: 25%;
+  top: 50%;
+  z-index: 0;
+  width: var(--knob-artwork-size);
+  aspect-ratio: 1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.knobArtworkIdle {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.knobArtworkTurnTop {
+  transform: translate(-50%, -50%) rotate(60deg);
+}
+
+.knobArtworkTurnMiddle {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.knobArtworkTurnBottom {
+  transform: translate(-50%, -50%) rotate(120deg);
 }
 
 .knobSvg {
+  position: relative;
+  z-index: 1;
   display: block;
   overflow: visible;
 }
 
 .shadowRing {
   fill: #111;
+  opacity: 0;
 }
 
 .knobFace {
+  fill: transparent;
   cursor: pointer;
-  stroke: #333;
+  outline: none;
+  stroke: transparent;
   stroke-width: 1px;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.knobFace:focus,
+.knobFace:focus-visible,
+.knobFace:active {
+  outline: none;
+  stroke: transparent;
 }
 
 .tick {
   stroke: #333;
   stroke-width: 1px;
-}
-
-.indicatorDot {
-  fill: #888;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.indicatorDotActive {
-  fill: var(--glow);
-  filter: drop-shadow(0 0 4px var(--glow));
+  opacity: 0;
 }
 
 .centerCap {
   fill: #0a0a0a;
+  opacity: 0;
 }
 
 .choiceGroup {
   cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.choiceGroup:focus,
+.choiceGroup:focus-visible,
+.choiceGroup:active {
+  outline: none;
 }
 
 .choiceDot {
@@ -68,9 +123,7 @@
 .choiceDotActive {
   fill: var(--glow);
   stroke: var(--glow);
-  filter:
-    drop-shadow(0 0 4px var(--glow))
-    drop-shadow(0 0 8px var(--glow-soft));
+  filter: drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 8px var(--glow-soft));
 }
 
 .choiceText {
@@ -100,8 +153,8 @@
   position: absolute;
   top: calc(-16px * var(--artwork-cell-scale));
   right: calc(-16px * var(--artwork-cell-scale));
-  width: calc(48px * var(--artwork-cell-scale));
-  height: calc(48px * var(--artwork-cell-scale));
+  width: var(--jack-socket-size);
+  height: var(--jack-socket-size);
   background-image: url("/NavbarAssets/PNG/JackPortNavbar.png");
   background-repeat: no-repeat;
   background-position: center;
