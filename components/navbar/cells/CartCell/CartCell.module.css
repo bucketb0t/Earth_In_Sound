@@ -33,7 +33,6 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  color: #163a20;
   font-family: "DS-DIGIB Cart", monospace;
   font-size: calc(17px * var(--artwork-cell-scale));
   line-height: 1;
@@ -43,10 +42,10 @@
 
 .cartCounterVisible {
   opacity: 1;
-  color: #22c55e;
+  color: #b3131b;
   text-shadow:
-    0 0 calc(4px * var(--artwork-cell-scale)) #22c55e,
-    0 0 calc(8px * var(--artwork-cell-scale)) #22c55e88;
+    0 0 calc(4px * var(--artwork-cell-scale)) #b3131b,
+    0 0 calc(8px * var(--artwork-cell-scale)) #b3131b88;
 }
 
 .cartButton {
@@ -63,7 +62,7 @@
 }
 
 .cartButton:hover {
-  background-image: url("/NavbarAssets/SVG/CartButtonHooverNavbar.svg");
+  background-image: url("/NavbarAssets/SVG/CartButtonHoverNavbar.svg");
 }
 
 .cartButtonPressed,

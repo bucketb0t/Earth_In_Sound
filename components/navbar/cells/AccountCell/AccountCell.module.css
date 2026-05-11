@@ -1,122 +1,127 @@
 /*
  * Account cell styles.
- * Controls the login toggle and username LCD display.
+ * SVG assets live in CSS; TSX only chooses state classes and labels.
  */
 
 .accountCell {
-  --account-control-width: calc(108px * var(--artwork-cell-scale));
   --cell-plaque-aspect: 165 / 141;
+  --account-row-width: calc(112px * var(--artwork-cell-scale));
+  --account-button-size: calc(24px * var(--artwork-cell-scale));
+  --account-led-size: calc(10px * var(--artwork-cell-scale));
+  --account-status-height: calc(28px * var(--artwork-cell-scale));
+  --account-screen-height: calc(30px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   min-width: 0;
-  /* Height drives the plaque; width follows the SVG ratio. */
   background-image: url("/NavbarAssets/SVG/AccountPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
 }
 
-.loginControl {
+.loginRow {
   display: grid;
-  grid-template-columns:
-    calc(22px * var(--artwork-cell-scale))
-    minmax(calc(64px * var(--artwork-cell-scale)), 1fr);
-  align-items: stretch;
-  gap: calc(4px * var(--artwork-cell-scale));
-  width: min(100%, var(--account-control-width));
-  padding: 0;
-  appearance: none;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font: inherit;
+  grid-template-columns: var(--account-button-size) minmax(0, 1fr);
+  align-items: center;
+  gap: calc(6px * var(--artwork-cell-scale));
+  width: min(100%, var(--account-row-width));
 }
 
-.loginSwitchPlate {
-  min-height: calc(24px * var(--artwork-cell-scale));
-  background: linear-gradient(145deg, #1d1d1d, #080808);
-  border: 1px solid #2b2b2b;
-  box-shadow:
-    inset 0 1px 2px #555,
-    inset 0 -2px 3px #000;
+.accountToggleButton {
+  appearance: none;
+  display: block;
+  width: var(--account-button-size);
+  height: var(--account-button-size);
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+}
+
+.accountToggleButtonOff {
+  background-image: url("/NavbarAssets/SVG/AccountButtonOffNavbar.svg");
+}
+
+.accountToggleButtonOn {
+  background-image: url("/NavbarAssets/SVG/AccountButtonOnNavbar.svg");
+}
+
+.accountToggleButton:focus-visible,
+.accountScreenButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: calc(2px * var(--artwork-cell-scale));
 }
 
 .loginStatusPanel {
   display: flex;
   align-items: center;
-  gap: calc(8px * var(--artwork-cell-scale));
-  min-height: calc(24px * var(--artwork-cell-scale));
-  padding: 0 calc(10px * var(--artwork-cell-scale));
-  background: linear-gradient(180deg, #202020, #111);
-  border: 1px solid #2a2a2a;
-  box-shadow:
-    inset 0 1px 2px #555,
-    inset 0 -2px 4px #000;
+  gap: calc(7px * var(--artwork-cell-scale));
+  min-width: 0;
+  min-height: var(--account-status-height);
 }
 
-.loginLed {
-  width: calc(8px * var(--artwork-cell-scale));
-  height: calc(8px * var(--artwork-cell-scale));
+.accountLed {
+  display: block;
   flex: 0 0 auto;
-  border-radius: 50%;
-  transition:
-    background 0.2s,
-    box-shadow 0.2s;
+  width: var(--account-led-size);
+  height: var(--account-led-size);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
-.loginLedOff {
-  background: #ef4444;
-  box-shadow: 0 0 5px #ef444488;
+.accountLedOff {
+  background-image: url("/NavbarAssets/SVG/AccountLightOffNavbar.svg");
 }
 
-.loginLedOn {
-  background: #22c55e;
-  box-shadow: 0 0 5px #22c55e88;
+.accountLedOn {
+  background-image: url("/NavbarAssets/SVG/AccountLightOnNavbar.svg");
 }
 
 .loginText {
-  font-size: calc(9px * var(--artwork-cell-scale));
+  min-width: 0;
+  color: #ffffff;
+  font-size: calc(10px * var(--artwork-cell-scale));
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #ffffff;
 }
 
-.accountDisplay {
-  /* LCD-style chip sized here so AccountCell.tsx stays markup-only. */
+.accountScreenButton {
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(100%, var(--account-control-width));
-  min-height: calc(22px * var(--artwork-cell-scale));
-  margin-top: calc(6px * var(--artwork-cell-scale));
-  padding: calc(3px * var(--artwork-cell-scale))
-    calc(6px * var(--artwork-cell-scale));
-  background: #030f03;
-  border: 1px solid #1a2e1a;
-  border-radius: 4px;
-  box-shadow: inset 0 1px 4px #000;
-  transition: box-shadow 0.3s;
+  width: min(100%, var(--account-row-width));
+  min-height: var(--account-screen-height);
+  margin-top: calc(7px * var(--artwork-cell-scale));
+  padding: 0 calc(8px * var(--artwork-cell-scale));
+  border: 0;
+  background-color: transparent;
+  background-image: url("/NavbarAssets/SVG/AccountScreenOffNavbar.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  color: #142314;
+  cursor: pointer;
+  font: inherit;
 }
 
-.accountDisplay span {
-  font-family: "Courier New", monospace;
-  font-size: calc(9px * var(--artwork-cell-scale));
-  letter-spacing: 0.05em;
-  color: #1a2e1a;
-  transition:
-    color 0.2s,
-    text-shadow 0.2s;
-}
-
-.accountDisplayOn {
-  box-shadow:
-    inset 0 1px 4px #000,
-    0 0 6px #22c55e22;
-}
-
-.accountDisplayOn span {
+.accountScreenButtonOn {
+  background-image: url("/NavbarAssets/SVG/AccountScreenOnNavbar.svg");
   color: #22c55e;
-  text-shadow: 0 0 6px #22c55e88;
+}
+
+.accountScreenButton span {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: calc(9px * var(--artwork-cell-scale));
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }

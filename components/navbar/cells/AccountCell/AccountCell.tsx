@@ -5,45 +5,52 @@ import styles from "./AccountCell.module.css";
 
 /**
  * Account cell.
- * Hardware-style login switch plus username display.
+ * Hardware-style auth control plus future account/signup screen button.
  */
 export default function AccountCell() {
   const { isLoggedIn, toggleLogin } = useNavbarContext();
+  const toggleLabel = isLoggedIn ? "Log Out" : "Login";
+  const screenLabel = isLoggedIn ? "JasonW" : "Sign up";
 
   return (
     <div className={`navbar-cell navbar-cell--center ${styles.accountCell}`}>
-      {/* Login control: one accessible button styled like two hardware panels. */}
-      <button
-        type="button"
-        className={styles.loginControl}
-        onClick={toggleLogin}
-        role="switch"
-        aria-checked={isLoggedIn}
-        aria-label={isLoggedIn ? "Logout" : "Login"}
-      >
-        <span className={styles.loginSwitchPlate} aria-hidden="true" />
+      <div className={styles.loginRow}>
+        {/* The artwork button is the real login/logout toggle. */}
+        <button
+          type="button"
+          className={`${styles.accountToggleButton} ${
+            isLoggedIn
+              ? styles.accountToggleButtonOn
+              : styles.accountToggleButtonOff
+          }`}
+          onClick={toggleLogin}
+          role="switch"
+          aria-checked={isLoggedIn}
+          aria-label={toggleLabel}
+        />
 
+        {/* The LED and label mirror the toggle state without adding behavior. */}
         <span className={styles.loginStatusPanel}>
           <span
-            className={`${styles.loginLed} ${
-              isLoggedIn ? styles.loginLedOn : styles.loginLedOff
+            className={`${styles.accountLed} ${
+              isLoggedIn ? styles.accountLedOn : styles.accountLedOff
             }`}
             aria-hidden="true"
           />
-          <span className={styles.loginText}>
-            {isLoggedIn ? "Logout" : "Login"}
-          </span>
+          <span className={styles.loginText}>{toggleLabel}</span>
         </span>
-      </button>
-
-      {/* Username display: dim placeholder when logged out, bright name when on. */}
-      <div
-        className={`${styles.accountDisplay} ${
-          isLoggedIn ? styles.accountDisplayOn : ""
-        }`}
-      >
-        <span>{isLoggedIn ? "JasonW" : "------"}</span>
       </div>
+
+      {/* Future account/signup route trigger; visual state follows login state. */}
+      <button
+        type="button"
+        className={`${styles.accountScreenButton} ${
+          isLoggedIn ? styles.accountScreenButtonOn : ""
+        }`}
+        aria-label={isLoggedIn ? "Open account page" : "Sign up"}
+      >
+        <span>{screenLabel}</span>
+      </button>
     </div>
   );
 }
