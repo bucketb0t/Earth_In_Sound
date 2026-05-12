@@ -40,6 +40,7 @@ export interface NavbarState {
   knobFacePress: (sectionId: KnobSectionId) => void;
   goHome: () => void;
   toggleLogin: () => void;
+  resetActiveNavbarControls: () => void;
   storePress: () => void;
   cartPress: () => void;
 }
@@ -146,6 +147,16 @@ export function useNavbar(): NavbarState {
     setIsStorePressed(false);
   }, []);
 
+  /*
+   * Utility cells are outside the EIS/JWW/IHM section selector.
+   * Accessing one clears the active section, returning knobs to idle and
+   * hiding section cables, then releases any latched utility button.
+   */
+  const resetActiveNavbarControls = useCallback((): void => {
+    setActivePage(null);
+    releaseLatchedButtons();
+  }, [releaseLatchedButtons]);
+
   const eisNavTo = useCallback((linkIndex: number): void => {
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
     setEisSliderPos(clampedEisLinkIndex);
@@ -181,19 +192,21 @@ export function useNavbar(): NavbarState {
 
   const toggleLogin = useCallback((): void => {
     setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
-    releaseLatchedButtons();
-  }, [releaseLatchedButtons]);
+    resetActiveNavbarControls();
+  }, [resetActiveNavbarControls]);
 
   /*
    * Store behaves like a latched page button.
    * Once activated it stays visually pressed until another section is opened.
    */
   const storePress = useCallback((): void => {
+    setActivePage(null);
     setIsCartPressed(false);
     setIsStorePressed(true);
   }, []);
 
   const cartPress = useCallback((): void => {
+    setActivePage(null);
     setIsStorePressed(false);
     if (cartCount <= 0) return;
     setIsCartPressed(true);
@@ -214,6 +227,7 @@ export function useNavbar(): NavbarState {
     knobFacePress,
     goHome,
     toggleLogin,
+    resetActiveNavbarControls,
     storePress,
     cartPress,
     isCartPressed,

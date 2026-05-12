@@ -82,12 +82,12 @@ export const KNOB_LAYOUT = {
  */
 const SHARED_KNOB_OFFSETS = {
   label: [
-    { x: -2, y: 6 },
+    { x: -2, y: 9 },
     { x: -4, y: 3 },
     { x: -2, y: -3 },
   ],
   led: [
-    { x: 3, y: -2 },
+    { x: 3, y: 1 },
     { x: 3, y: 2 },
     { x: 3, y: 4 },
   ],
