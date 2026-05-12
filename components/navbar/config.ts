@@ -46,9 +46,9 @@ export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
 export const KNOB_OFFSETS = {
   jw: {
     label: [
-      { x: 3, y: 9 },
-      { x: -3, y: 0 },
-      { x: 3, y: -9 },
+      { x: -2, y: 7 },
+      { x: -4, y: 1 },
+      { x: -2, y: -6 },
     ],
     led: [
       { x: 3, y: -1 },
@@ -58,9 +58,9 @@ export const KNOB_OFFSETS = {
   },
   ihm: {
     label: [
-      { x: 3, y: 9 },
-      { x: -3, y: 0 },
-      { x: 3, y: -9 },
+      { x: -2, y: 7 },
+      { x: -4, y: 1 },
+      { x: -2, y: -6 },
     ],
     led: [
       { x: 3, y: -1 },

@@ -127,9 +127,11 @@
 }
 
 .choiceText {
-  font-family: "Courier New", monospace;
+  /* Inherits the navbar-wide Futura font while keeping SVG text local. */
+  font-family: inherit;
   font-size: calc(8px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   fill: #ffffff;
   user-select: none;
   transition: fill 0.2s;

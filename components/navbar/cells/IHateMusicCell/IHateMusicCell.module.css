@@ -29,15 +29,14 @@
    */
   --ihm-logo-art-width: var(--ihm-logo-slot-width);
   --ihm-logo-art-height: calc(14.65px * var(--artwork-cell-scale));
-  --ihm-logo-art-scale: 1;
+  --ihm-logo-art-scale: 1.1;
 
   position: relative;
   width: var(--ihm-logo-slot-width);
   height: var(--ihm-logo-slot-height);
-  margin-bottom: calc(4px * var(--artwork-cell-scale));
   transform: translate(
-    calc(12px * var(--artwork-cell-scale)),
-    calc(12px * var(--artwork-cell-scale))
+    calc(16px * var(--artwork-cell-scale)),
+    calc(10px * var(--artwork-cell-scale))
   );
 }
 

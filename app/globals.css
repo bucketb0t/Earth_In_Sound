@@ -15,7 +15,7 @@
   --background: #1a1a1a;
   --foreground: #ccc;
   --focus-ring: #22c55e;
-  --cell-plaque-height: 90%;
+  --cell-plaque-height: 95%;
   --artwork-cell-scale: 1;
 }
 
@@ -46,8 +46,7 @@ a {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding:
-    calc(10px * var(--artwork-cell-scale))
+  padding: calc(10px * var(--artwork-cell-scale))
     calc(8px * var(--artwork-cell-scale));
   position: relative;
   min-width: 0;
@@ -85,6 +84,7 @@ a {
 .link-label {
   font-size: calc(9px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: #ffffff;
   transition: color 0.2s;
   cursor: pointer;

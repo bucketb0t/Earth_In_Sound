@@ -30,12 +30,12 @@
   --eis-led-size: clamp(
     calc(6px * var(--artwork-cell-scale)),
     3.5cqw,
-    calc(10px * var(--artwork-cell-scale))
+    calc(8px * var(--artwork-cell-scale))
   );
   --eis-link-font-size: clamp(
-    calc(7px * var(--artwork-cell-scale)),
+    calc(6px * var(--artwork-cell-scale)),
     3.2cqw,
-    calc(9px * var(--artwork-cell-scale))
+    calc(8px * var(--artwork-cell-scale))
   );
   --eis-link-gap: clamp(
     calc(3px * var(--artwork-cell-scale)),
@@ -259,6 +259,7 @@
 
 .eisLinkLabel {
   font-size: var(--eis-link-font-size);
+  text-transform: uppercase;
 }
 
 .eisLinkLabelOn {

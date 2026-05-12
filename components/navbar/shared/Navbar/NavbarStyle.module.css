@@ -83,6 +83,7 @@
   transform-origin: top center;
   background: transparent;
   font-family: "FuturaHeavy", sans-serif;
+  text-transform: uppercase;
 }
 
 .navbarInner {

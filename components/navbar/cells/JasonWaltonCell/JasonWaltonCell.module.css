@@ -29,15 +29,14 @@
    */
   --jww-logo-art-width: calc(93.69px * var(--artwork-cell-scale));
   --jww-logo-art-height: var(--jww-logo-slot-height);
-  --jww-logo-art-scale: 1;
+  --jww-logo-art-scale: 1.2;
 
   position: relative;
   width: var(--jww-logo-slot-width);
   height: var(--jww-logo-slot-height);
-  margin-bottom: calc(4px * var(--artwork-cell-scale));
   transform: translate(
-    calc(12px * var(--artwork-cell-scale)),
-    calc(12px * var(--artwork-cell-scale))
+    calc(16px * var(--artwork-cell-scale)),
+    calc(10px * var(--artwork-cell-scale))
   );
 }
 
