@@ -29,8 +29,14 @@ export default function AccountCell() {
           aria-label={toggleLabel}
         />
 
-        {/* The LED and label mirror the toggle state without adding behavior. */}
-        <span className={styles.loginStatusPanel}>
+        {/* The status plate is also a button, synced with the side switch. */}
+        <button
+          type="button"
+          className={styles.loginStatusPanel}
+          onClick={toggleLogin}
+          aria-label={toggleLabel}
+          aria-pressed={isLoggedIn}
+        >
           <span
             className={`${styles.accountLed} ${
               isLoggedIn ? styles.accountLedOn : styles.accountLedOff
@@ -38,7 +44,7 @@ export default function AccountCell() {
             aria-hidden="true"
           />
           <span className={styles.loginText}>{toggleLabel}</span>
-        </span>
+        </button>
       </div>
 
       {/* Future account/signup route trigger; visual state follows login state. */}

@@ -43,6 +43,8 @@
     )
   );
   height: var(--account-button-size);
+
+  margin-left: calc(2px * var(--artwork-cell-scale));
 }
 
 .accountToggleButton {
@@ -70,6 +72,7 @@
 }
 
 .accountToggleButton:focus-visible,
+.loginStatusPanel:focus-visible,
 .accountScreenButton:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: calc(2px * var(--artwork-cell-scale));
@@ -78,8 +81,9 @@
 .loginStatusPanel {
   /*
    * Only the LED/text panel receives AccountLogNavbar. The background is
-   * right-aligned so the switch area from the source SVG is clipped away.
+   * clipped to this button, so it stays separate from the side switch.
    */
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -88,11 +92,16 @@
   height: var(--account-button-size);
   padding-inline: calc(8px * var(--artwork-cell-scale))
     calc(8px * var(--artwork-cell-scale));
+  border: 0;
   min-width: 0;
+  background-color: transparent;
   background-image: url("/NavbarAssets/SVG/AccountLogNavbar.svg");
   background-repeat: no-repeat;
   background-position: left center;
-  background-size: auto 100%;
+  background-size: contain;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
   overflow: hidden;
 }
 
