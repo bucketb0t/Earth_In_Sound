@@ -87,7 +87,7 @@ const SHARED_KNOB_OFFSETS = {
     { x: -2, y: -3 },
   ],
   led: [
-    { x: 3, y: 1 },
+    { x: 3, y: 0 },
     { x: 3, y: 2 },
     { x: 3, y: 4 },
   ],
