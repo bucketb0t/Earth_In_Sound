@@ -34,7 +34,7 @@ export const KNOB_CENTER_X = KNOB_CANVAS_SIZE / 2;
 export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
 
 /* Responsive shell: total height includes the baseline artwork. */
-export const DESIGN_HEIGHT = 120;
+export const DESIGN_HEIGHT = 132;
 export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
 // Unscaled visual thickness of BaseLineNavbar.svg.
 export const BASE_LINE_HEIGHT = 8;
@@ -82,14 +82,14 @@ export const KNOB_LAYOUT = {
  */
 const SHARED_KNOB_OFFSETS = {
   label: [
-    { x: -2, y: 9 },
+    { x: -2, y: 7.5 },
     { x: -4, y: 3 },
-    { x: -2, y: -3 },
+    { x: -2, y: -1.5 },
   ],
   led: [
-    { x: 3, y: 0 },
+    { x: 3, y: -1 },
     { x: 3, y: 2 },
-    { x: 3, y: 4 },
+    { x: 3, y: 5 },
   ],
 } as const;
 

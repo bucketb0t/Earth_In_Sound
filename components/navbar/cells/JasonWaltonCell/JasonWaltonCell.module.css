@@ -25,7 +25,7 @@
   --jww-logo-slot-height: var(--knob-logo-band-height);
   --jww-logo-art-width: calc(154px * var(--artwork-cell-scale));
   --jww-logo-art-height: calc(37.4px * var(--artwork-cell-scale));
-  --jww-logo-scale: 0.725;
+  --jww-logo-scale: 0.7;
 
   position: relative;
   appearance: none;

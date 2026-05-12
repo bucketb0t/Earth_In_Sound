@@ -40,7 +40,7 @@
   -webkit-tap-highlight-color: transparent;
   transform: translate(
     calc(16px * var(--artwork-cell-scale)),
-    calc(4px * var(--artwork-cell-scale))
+    calc(2px * var(--artwork-cell-scale))
   );
 }
 
