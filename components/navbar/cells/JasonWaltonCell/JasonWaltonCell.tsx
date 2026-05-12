@@ -2,6 +2,7 @@
 
 import { JW_LINKS } from "../../config";
 import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
+import { useNavbarContext } from "../../state";
 import styles from "./JasonWaltonCell.module.css";
 
 /**
@@ -9,14 +10,17 @@ import styles from "./JasonWaltonCell.module.css";
  * Owns Jason-specific plaque/logo artwork and feeds behavior into the knob.
  */
 export default function JasonWaltonCell() {
+  const { knobNavTo } = useNavbarContext();
+
   return (
     <div
       className={`navbar-cell navbar-cell--start ${styles.jasonWaltonCell}`}
     >
-      <div
+      <button
+        type="button"
         className={styles.jasonWaltonLogo}
-        role="img"
-        aria-label="Jason Walton"
+        aria-label="Jason Walton, go to Biography"
+        onClick={() => knobNavTo("jw", 0)}
       />
 
       <KnobCell
@@ -24,6 +28,7 @@ export default function JasonWaltonCell() {
         sectionLabel="Jason Walton"
         links={JW_LINKS}
         knobArtworkClassName={styles.jasonWaltonKnob}
+        showJackPort
       />
     </div>
   );

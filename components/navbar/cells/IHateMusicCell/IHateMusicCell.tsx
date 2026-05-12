@@ -2,6 +2,7 @@
 
 import { IHM_LINKS } from "../../config";
 import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
+import { useNavbarContext } from "../../state";
 import styles from "./IHateMusicCell.module.css";
 
 /**
@@ -9,12 +10,15 @@ import styles from "./IHateMusicCell.module.css";
  * Owns IHM-specific plaque/logo artwork and feeds behavior into the knob.
  */
 export default function IHateMusicCell() {
+  const { knobNavTo } = useNavbarContext();
+
   return (
     <div className={`navbar-cell navbar-cell--start ${styles.iHateMusicCell}`}>
-      <div
+      <button
+        type="button"
         className={styles.iHateMusicLogo}
-        role="img"
-        aria-label="I Hate Music"
+        aria-label="I Hate Music, go to Podcast"
+        onClick={() => knobNavTo("ihm", 0)}
       />
 
       <KnobJackCell

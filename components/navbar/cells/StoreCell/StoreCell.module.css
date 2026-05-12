@@ -7,8 +7,6 @@
 .storeCell {
   /* Native button reset; the whole cell is the store trigger. */
   --cell-plaque-aspect: 339 / 141;
-  --store-screen-width: calc(208px * var(--artwork-cell-scale));
-  --store-screen-height: calc(130px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   min-width: 0;
@@ -33,8 +31,8 @@
 .screenContainer {
   /* Stable screen box; each idle/hover/pressed asset paints inside it. */
   position: relative;
-  width: var(--store-screen-width);
-  height: var(--store-screen-height);
+  width: calc(220px * var(--artwork-cell-scale));
+  aspect-ratio: 208 / 130;
 }
 
 .screenAsset {

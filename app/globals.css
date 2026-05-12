@@ -69,15 +69,14 @@ a {
 
 .led {
   width: calc(10px * var(--artwork-cell-scale));
-  height: calc(10px * var(--artwork-cell-scale));
+  aspect-ratio: 1;
   border-radius: 50%;
   background: #111;
   border: 1px solid #2a2a2a;
   flex-shrink: 0;
   transition:
     background 0.25s,
-    border-color 0.25s,
-    box-shadow 0.25s;
+    border-color 0.25s;
   cursor: pointer;
 }
 

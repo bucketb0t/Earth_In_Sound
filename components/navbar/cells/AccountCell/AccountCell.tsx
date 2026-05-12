@@ -9,7 +9,7 @@ import styles from "./AccountCell.module.css";
  */
 export default function AccountCell() {
   const { isLoggedIn, toggleLogin } = useNavbarContext();
-  const toggleLabel = isLoggedIn ? "Log Out" : "Login";
+  const toggleLabel = isLoggedIn ? "Log Out" : "Log In";
   const screenLabel = isLoggedIn ? "JasonW" : "Sign up";
 
   return (

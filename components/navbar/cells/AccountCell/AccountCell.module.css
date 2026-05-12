@@ -11,11 +11,9 @@
 
 .accountCell {
   --cell-plaque-aspect: 165 / 141;
-  --account-control-width: calc(112px * var(--artwork-cell-scale));
+  --account-log-panel-width: calc(95px * var(--artwork-cell-scale));
+  --account-row-gap: calc(2px * var(--artwork-cell-scale));
   --account-button-size: calc(24px * var(--artwork-cell-scale));
-  --account-led-size: calc(10px * var(--artwork-cell-scale));
-  --account-status-height: calc(28px * var(--artwork-cell-scale));
-  --account-screen-height: calc(30px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   min-width: 0;
@@ -26,11 +24,25 @@
 }
 
 .loginRow {
+  /*
+   * The row only aligns the independent switch with the login status plate.
+   * AccountLogNavbar is applied to .loginStatusPanel, not to this wrapper,
+   * so it cannot paint behind the toggle button.
+  */
   display: grid;
-  grid-template-columns: var(--account-button-size) minmax(0, 1fr);
+  grid-template-columns: var(--account-button-size) var(
+      --account-log-panel-width
+    );
   align-items: center;
-  gap: calc(6px * var(--artwork-cell-scale));
-  width: min(100%, var(--account-control-width));
+  gap: var(--account-row-gap);
+  width: min(
+    100%,
+    calc(
+      var(--account-button-size) + var(--account-row-gap) +
+        var(--account-log-panel-width)
+    )
+  );
+  height: var(--account-button-size);
 }
 
 .accountToggleButton {
@@ -38,14 +50,15 @@
   appearance: none;
   display: block;
   width: var(--account-button-size);
-  height: var(--account-button-size);
+  aspect-ratio: 1;
   padding: 0;
   border: 0;
   background-color: transparent;
-  background-position: center;
+  background-position: right center;
   background-repeat: no-repeat;
   background-size: contain;
   cursor: pointer;
+  align-self: center;
 }
 
 .accountToggleButtonOff {
@@ -63,18 +76,31 @@
 }
 
 .loginStatusPanel {
+  /*
+   * Only the LED/text panel receives AccountLogNavbar. The background is
+   * right-aligned so the switch area from the source SVG is clipped away.
+   */
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: calc(7px * var(--artwork-cell-scale));
+  width: var(--account-log-panel-width);
+  height: var(--account-button-size);
+  padding-inline: calc(8px * var(--artwork-cell-scale))
+    calc(8px * var(--artwork-cell-scale));
   min-width: 0;
-  min-height: var(--account-status-height);
+  background-image: url("/NavbarAssets/SVG/AccountLogNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: auto 100%;
+  overflow: hidden;
 }
 
 .accountLed {
   display: block;
   flex: 0 0 auto;
-  width: var(--account-led-size);
-  height: var(--account-led-size);
+  width: calc(10px * var(--artwork-cell-scale));
+  aspect-ratio: 1;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -89,6 +115,8 @@
 }
 
 .loginText {
+  display: flex;
+  align-items: center;
   min-width: 0;
   color: #ffffff;
   font-size: calc(10px * var(--artwork-cell-scale));
@@ -103,10 +131,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: min(100%, var(--account-control-width));
-  min-height: var(--account-screen-height);
+  width: min(100%, calc(112px * var(--artwork-cell-scale)));
+  min-height: calc(30px * var(--artwork-cell-scale));
   margin-top: calc(7px * var(--artwork-cell-scale));
-  padding: 0 calc(8px * var(--artwork-cell-scale));
+  padding: 0 calc(5px * var(--artwork-cell-scale));
   border: 0;
   background-color: transparent;
   background-image: url("/NavbarAssets/SVG/AccountScreenOffNavbar.svg");
@@ -128,8 +156,8 @@
   overflow: hidden;
   position: relative;
   max-width: 100%;
-  font-family: "DePixelKleinUsername", monospace;
-  font-size: calc(12px * var(--artwork-cell-scale));
+  font-family: "DePixelKleinUsername";
+  font-size: calc(10px * var(--artwork-cell-scale));
   line-height: 1;
   text-overflow: ellipsis;
   text-transform: uppercase;

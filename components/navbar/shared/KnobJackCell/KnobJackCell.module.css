@@ -1,13 +1,13 @@
 /*
  * Shared knob/jack styles.
- * Section wrappers provide plaque, logo/title, and glow values.
+ * Section wrappers provide plaque, logo/title, and active text color.
  */
 
 .knobJackModule {
-  /* Keep 48px synced with KNOB_ARTWORK_SIZE in config.ts. */
-  --knob-artwork-size: calc(48px * var(--artwork-cell-scale));
-  --jack-socket-size: calc(48px * var(--artwork-cell-scale));
-
+  /*
+   * Knob/jack placement values come from config.ts through CSS variables.
+   * This file owns rendering, assets, and interaction visuals.
+   */
   width: 100%;
   overflow: visible;
 }
@@ -16,10 +16,10 @@
   /* Limits the SVG to its designed coordinate width. */
   position: relative;
   width: 100%;
-  max-width: calc(160px * var(--artwork-cell-scale));
+  max-width: var(--knob-max-width);
   transform: translate(
-    calc(-2px * var(--artwork-cell-scale)),
-    calc(10px * var(--artwork-cell-scale))
+    var(--knob-module-offset-x),
+    var(--knob-module-offset-y)
   );
 }
 
@@ -28,9 +28,12 @@
    * Visible knob art sits on the SVG hit circle center.
    * Change KNOB_ARTWORK_SIZE in config.ts if this size changes.
    */
+  --knob-rotation: 0deg;
+  --knob-press-scale: 1;
+
   position: absolute;
-  left: 25%;
-  top: 50%;
+  left: var(--knob-artwork-left);
+  top: var(--knob-artwork-top);
   z-index: 0;
   width: var(--knob-artwork-size);
   aspect-ratio: 1;
@@ -38,25 +41,38 @@
   background-position: center;
   background-size: contain;
   pointer-events: none;
-  transform: translate(-50%, -50%) rotate(0deg);
+  transform: translate(-50%, -50%) scale(var(--knob-press-scale))
+    rotate(var(--knob-rotation));
   transform-origin: center;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    filter 0.12s ease,
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .knobArtworkIdle {
-  transform: translate(-50%, -50%) rotate(0deg);
+  --knob-rotation: var(--knob-rotation-idle);
 }
 
 .knobArtworkTurnTop {
-  transform: translate(-50%, -50%) rotate(60deg);
+  --knob-rotation: var(--knob-rotation-top);
 }
 
 .knobArtworkTurnMiddle {
-  transform: translate(-50%, -50%) rotate(90deg);
+  --knob-rotation: var(--knob-rotation-middle);
 }
 
 .knobArtworkTurnBottom {
-  transform: translate(-50%, -50%) rotate(120deg);
+  --knob-rotation: var(--knob-rotation-bottom);
+}
+
+.knobWrap:has(.knobFace:active) .knobArtwork {
+  /*
+   * Pressing the invisible hit circle scales the visible SVG inward without
+   * disturbing the current rotation stop.
+   */
+  --knob-press-scale: var(--knob-press-scale-active);
+
+  filter: brightness(0.92);
 }
 
 .knobSvg {
@@ -78,6 +94,7 @@
   stroke: transparent;
   stroke-width: 1px;
   pointer-events: all;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -111,19 +128,27 @@
   outline: none;
 }
 
-.choiceDot {
-  fill: #111;
-  stroke: #2a2a2a;
-  transition:
-    fill 0.25s,
-    stroke 0.25s,
-    filter 0.25s;
+.choiceLightObject {
+  overflow: visible;
+  pointer-events: none;
 }
 
-.choiceDotActive {
-  fill: var(--glow);
-  stroke: var(--glow);
-  filter: drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 8px var(--glow-soft));
+.choiceLight {
+  /*
+   * Knob LEDs use the plaque selection artwork while the SVG group keeps
+   * ownership of click/keyboard behavior and exact polar positioning.
+   */
+  width: 100%;
+  height: 100%;
+  background-image: url("/NavbarAssets/SVG/PlaquesSelectionLightOffNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition: background-image 0.2s;
+}
+
+.choiceLightOn {
+  background-image: url("/NavbarAssets/SVG/PlaquesSelectionLightOnNavbar.svg");
 }
 
 .choiceText {
@@ -150,15 +175,43 @@
   pointer-events: none;
 }
 
-.jackSocket {
-  /* Adjust top/right to fine-tune the art alignment against the plaque. */
+.jackAnchor {
+  /*
+   * The anchor itself has no size. Its top/right point is the shared socket
+   * center, so moving this one point moves the port and cable together.
+   */
   position: absolute;
-  top: calc(-16px * var(--artwork-cell-scale));
-  right: calc(-16px * var(--artwork-cell-scale));
-  width: var(--jack-socket-size);
-  height: var(--jack-socket-size);
-  background-image: url("/NavbarAssets/PNG/JackPortNavbar.png");
+  top: var(--jack-anchor-top);
+  right: var(--jack-anchor-right);
+  width: 0;
+  height: 0;
+}
+
+.jackPlug,
+.jackSocket {
+  position: absolute;
+  right: 0;
+  top: 0;
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
+}
+
+.jackPlug {
+  background-image: url("/NavbarAssets/SVG/JackPlugNavbar.svg");
+  width: var(--jack-plug-width);
+  height: var(--jack-plug-height);
+  transform: translate(
+    calc(50% + var(--jack-plug-tip-x)),
+    calc(-50% + var(--jack-plug-tip-y))
+  );
+  z-index: 2;
+}
+
+.jackSocket {
+  background-image: url("/NavbarAssets/SVG/JackPortNavbar.svg");
+  width: var(--jack-socket-width);
+  aspect-ratio: 1;
+  transform: translate(50%, -50%);
+  z-index: 1;
 }

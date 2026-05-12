@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import {
   KNOB_CANVAS_SIZE as SVG_HEIGHT,
   KNOB_CENTER_X,
   KNOB_CENTER_Y,
+  KNOB_LAYOUT,
   KNOB_OFFSETS,
   KNOB_RADIUS,
   KNOB_SVG_WIDTH as SVG_WIDTH,
@@ -17,6 +19,43 @@ import {
 } from "../../config";
 import { activateOnEnterOrSpace, useNavbarContext } from "../../state";
 import styles from "./KnobJackCell.module.css";
+
+function scaledPx(value: number): string {
+  return `calc(${value}px * var(--artwork-cell-scale))`;
+}
+
+/*
+ * CSS variable handoff for the shared knob/jack layout.
+ * config.ts stays the tuning source; CSS modules still own visuals and assets.
+ */
+const knobJackLayoutVars = {
+  "--knob-max-width": scaledPx(KNOB_LAYOUT.module.maxWidth),
+  "--knob-module-offset-x": scaledPx(KNOB_LAYOUT.module.offset.x),
+  "--knob-module-offset-y": scaledPx(KNOB_LAYOUT.module.offset.y),
+  "--knob-artwork-size": scaledPx(KNOB_LAYOUT.artwork.size),
+  "--knob-artwork-left": `${KNOB_LAYOUT.artwork.leftPercent}%`,
+  "--knob-artwork-top": `${KNOB_LAYOUT.artwork.topPercent}%`,
+  "--knob-press-scale-active": KNOB_LAYOUT.artwork.pressedScale,
+  "--knob-rotation-idle": `${KNOB_LAYOUT.artwork.rotation.idle}deg`,
+  "--knob-rotation-top": `${KNOB_LAYOUT.artwork.rotation.top}deg`,
+  "--knob-rotation-middle": `${KNOB_LAYOUT.artwork.rotation.middle}deg`,
+  "--knob-rotation-bottom": `${KNOB_LAYOUT.artwork.rotation.bottom}deg`,
+  "--jack-socket-width": scaledPx(KNOB_LAYOUT.jack.socketWidth),
+  "--jack-plug-width": scaledPx(KNOB_LAYOUT.jack.plugWidth),
+  "--jack-plug-height": scaledPx(KNOB_LAYOUT.jack.plugHeight),
+  "--jack-anchor-top": scaledPx(KNOB_LAYOUT.jack.anchor.top),
+  "--jack-anchor-right": scaledPx(KNOB_LAYOUT.jack.anchor.right),
+  "--jack-plug-tip-x": KNOB_LAYOUT.jack.plugTipCorrection.x,
+  "--jack-plug-tip-y": KNOB_LAYOUT.jack.plugTipCorrection.y,
+} as CSSProperties;
+
+interface KnobDragState {
+  active: boolean;
+  pointerId: number;
+  startY: number;
+  startLinkIndex: number;
+  moved: boolean;
+}
 
 export interface KnobJackCellProps {
   sectionId: KnobSectionId;
@@ -37,7 +76,15 @@ export default function KnobJackCell({
   knobArtworkClassName,
   showJackPort = false,
 }: KnobJackCellProps) {
-  const { activePage, knobNavTo, knobFaceClick } = useNavbarContext();
+  const { activePage, knobNavTo, knobFacePress } = useNavbarContext();
+  const dragState = useRef<KnobDragState>({
+    active: false,
+    pointerId: -1,
+    startY: 0,
+    startLinkIndex: 0,
+    moved: false,
+  });
+  const suppressNextClick = useRef(false);
 
   const isActive = activePage?.section === sectionId;
   const activeLinkIndex = isActive ? activePage.linkIndex : -1;
@@ -87,8 +134,68 @@ export default function KnobJackCell({
           ? styles.knobArtworkTurnBottom
           : styles.knobArtworkIdle;
 
+  const moveKnobToLink = useCallback(
+    (linkIndex: number): void => {
+      const lastLinkIndex = links.length - 1;
+      const clampedLinkIndex = Math.max(0, Math.min(lastLinkIndex, linkIndex));
+      knobNavTo(sectionId, clampedLinkIndex);
+    },
+    [knobNavTo, links.length, sectionId],
+  );
+
+  const onKnobPointerDown = (
+    event: PointerEvent<SVGCircleElement>,
+  ): void => {
+    dragState.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startLinkIndex: isActive ? activeLinkIndex : 0,
+      moved: false,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const onKnobPointerMove = (
+    event: PointerEvent<SVGCircleElement>,
+  ): void => {
+    const drag = dragState.current;
+    if (!drag.active || drag.pointerId !== event.pointerId) return;
+
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaY) <= 4) return;
+
+    const stepOffset = Math.round(deltaY / KNOB_LAYOUT.dragStepPx);
+
+    drag.moved = true;
+    suppressNextClick.current = true;
+    moveKnobToLink(drag.startLinkIndex + stepOffset);
+  };
+
+  const finishKnobDrag = (event: PointerEvent<SVGCircleElement>): void => {
+    const drag = dragState.current;
+    if (!drag.active || drag.pointerId !== event.pointerId) return;
+
+    dragState.current = { ...drag, active: false };
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const onKnobClick = (): void => {
+    if (suppressNextClick.current) {
+      suppressNextClick.current = false;
+      return;
+    }
+
+    knobFacePress(sectionId);
+  };
+
   return (
-    <div className={styles.knobJackModule}>
+    <div className={styles.knobJackModule} style={knobJackLayoutVars}>
       <div className={styles.knobWrap}>
         {/* Section-specific artwork is visible; the SVG circle below remains the hit target. */}
         <div
@@ -122,7 +229,7 @@ export default function KnobJackCell({
             r={KNOB_RADIUS + 3}
           />
 
-          {/* Knob face: clicking it deselects the active link in this section. */}
+          {/* Knob face: click cycles stops; vertical drag selects by physical position. */}
           <circle
             className={styles.knobFace}
             cx={KNOB_CENTER_X}
@@ -131,11 +238,15 @@ export default function KnobJackCell({
             fill={`url(#knob-gradient-${sectionId})`}
             tabIndex={0}
             role="button"
-            aria-label={`${sectionLabel} deselect`}
+            aria-label={`${sectionLabel} knob`}
             aria-pressed={isActive}
-            onClick={() => knobFaceClick(sectionId)}
+            onClick={onKnobClick}
+            onPointerDown={onKnobPointerDown}
+            onPointerMove={onKnobPointerMove}
+            onPointerUp={finishKnobDrag}
+            onPointerCancel={finishKnobDrag}
             onKeyDown={(event) =>
-              activateOnEnterOrSpace(event, () => knobFaceClick(sectionId))
+              activateOnEnterOrSpace(event, () => knobFacePress(sectionId))
             }
           />
 
@@ -175,12 +286,28 @@ export default function KnobJackCell({
                 aria-pressed={isSelected}
                 aria-current={isSelected ? "page" : undefined}
               >
-                <circle
-                  className={`${styles.choiceDot} ${isSelected ? styles.choiceDotActive : ""}`}
-                  cx={dotPosition.x + dotOffset.x}
-                  cy={dotPosition.y + dotOffset.y}
-                  r={3.5}
-                />
+                <foreignObject
+                  className={styles.choiceLightObject}
+                  x={
+                    dotPosition.x +
+                    dotOffset.x -
+                    KNOB_LAYOUT.choiceLightSize / 2
+                  }
+                  y={
+                    dotPosition.y +
+                    dotOffset.y -
+                    KNOB_LAYOUT.choiceLightSize / 2
+                  }
+                  width={KNOB_LAYOUT.choiceLightSize}
+                  height={KNOB_LAYOUT.choiceLightSize}
+                  aria-hidden="true"
+                >
+                  <div
+                    className={`${styles.choiceLight} ${
+                      isSelected ? styles.choiceLightOn : ""
+                    }`}
+                  />
+                </foreignObject>
 
                 <text
                   className={`${styles.choiceText} ${isSelected ? styles.choiceTextActive : ""}`}
@@ -199,7 +326,11 @@ export default function KnobJackCell({
 
       {showJackPort ? (
         <div className={styles.jackPort} aria-hidden="true">
-          <div className={styles.jackSocket} />
+          {/* One anchor keeps the socket and cable mirrored between JWW and IHM. */}
+          <div className={styles.jackAnchor}>
+            <div className={styles.jackSocket} />
+            {isActive ? <div className={styles.jackPlug} /> : null}
+          </div>
         </div>
       ) : null}
     </div>

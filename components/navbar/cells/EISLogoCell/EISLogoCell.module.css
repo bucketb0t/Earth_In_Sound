@@ -5,18 +5,7 @@
 
 .eisLogoCell {
   --glow: #22c55e;
-  --glow-soft: #22c55e66;
-  --eis-logo-max-width: calc(125px * var(--artwork-cell-scale));
-  --eis-logo-rendered-width: clamp(
-    calc(72px * var(--artwork-cell-scale)),
-    39cqw,
-    var(--eis-logo-max-width)
-  );
-  --eis-logo-rendered-height: clamp(
-    calc(50px * var(--artwork-cell-scale)),
-    27cqw,
-    calc(84px * var(--artwork-cell-scale))
-  );
+  --eis-logo-scale: 1.125;
   --eis-slider-height: clamp(
     calc(36px * var(--artwork-cell-scale)),
     26cqw,
@@ -28,9 +17,9 @@
     calc(16px * var(--artwork-cell-scale))
   );
   --eis-led-size: clamp(
-    calc(6px * var(--artwork-cell-scale)),
+    calc(12px * var(--artwork-cell-scale)),
     3.5cqw,
-    calc(8px * var(--artwork-cell-scale))
+    calc(16px * var(--artwork-cell-scale))
   );
   --eis-link-font-size: clamp(
     calc(6px * var(--artwork-cell-scale)),
@@ -42,12 +31,10 @@
     2.2cqw,
     calc(6px * var(--artwork-cell-scale))
   );
-  --eis-track-width: calc(8px * var(--artwork-cell-scale));
-  --eis-thumb-size: calc(12px * var(--artwork-cell-scale));
   --eis-rendered-thumb-height: clamp(
     calc(8px * var(--artwork-cell-scale)),
     5cqw,
-    var(--eis-thumb-size)
+    calc(12px * var(--artwork-cell-scale))
   );
   --eis-rendered-thumb-width: calc(var(--eis-rendered-thumb-height) * 1.82);
   --cell-plaque-aspect: 413 / 142.28;
@@ -110,12 +97,23 @@
 }
 
 .logoFrame {
-  /* Stable logo slot; off/hover artwork layers fill this same box. */
+  /*
+   * One responsive width controls the logo box; aspect-ratio keeps the artwork
+   * proportional. Increase --eis-logo-scale to enlarge both axes together.
+   */
   position: relative;
   display: block;
-  width: min(var(--eis-logo-rendered-width), 88%);
-  height: var(--eis-logo-rendered-height);
+  width: min(
+    clamp(
+      calc(72px * var(--artwork-cell-scale)),
+      39cqw,
+      calc(125px * var(--artwork-cell-scale))
+    ),
+    88%
+  );
   aspect-ratio: 130 / 90;
+  transform: scale(var(--eis-logo-scale));
+  transform-origin: center;
 }
 
 .logoImage {
@@ -176,7 +174,7 @@
   /* Custom rail artwork on a real measured element for drag math. */
   position: relative;
   flex-shrink: 0;
-  width: var(--eis-track-width);
+  width: calc(8px * var(--artwork-cell-scale));
   height: var(--eis-slider-height);
   background-image: url("/NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
   background-repeat: no-repeat;
@@ -210,7 +208,6 @@
 
 .eisThumb:focus-visible {
   outline: none;
-  filter: drop-shadow(0 0 6px var(--glow));
 }
 
 .eisLinks {
@@ -240,21 +237,29 @@
 }
 
 .eisLinkRow:focus-visible {
-  outline: 2px solid var(--glow);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .eisLed {
+  /*
+   * EIS has its own LED artwork.
+   * The global .led class supplies sizing behavior; this class supplies art.
+  */
   width: var(--eis-led-size);
-  height: var(--eis-led-size);
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: url("/NavbarAssets/SVG/EarthInSoundLightOffNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
 .eisLedOn {
-  background: var(--glow);
-  border-color: var(--glow);
-  box-shadow:
-    0 0 6px var(--glow),
-    0 0 12px var(--glow-soft);
+  background-color: transparent;
+  background-image: url("/NavbarAssets/SVG/EarthInSoundLightOnNavbar.svg");
 }
 
 .eisLinkLabel {

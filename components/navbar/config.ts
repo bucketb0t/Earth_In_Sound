@@ -20,19 +20,25 @@ export const SECTION_LINKS: Record<SectionId, readonly string[]> = {
 
 /* Knob geometry: visual angles are clockwise from top; SVG math is converted. */
 export const LED_DEGREES_FROM_TOP: readonly [number, number, number] = [
-  61, 91, 121,
+  60, 90, 120,
 ] as const;
 
 // Matches the visible knob SVG box in KnobJackCell.module.css.
 export const KNOB_ARTWORK_SIZE = 48;
 // The SVG hit circle follows the visible artwork diameter.
 export const KNOB_RADIUS = KNOB_ARTWORK_SIZE / 2;
-export const LED_ORBIT_RADIUS = 44;
+export const LED_ORBIT_RADIUS = 42;
 export const KNOB_CANVAS_SIZE = 80;
 export const KNOB_SVG_WIDTH = 160;
 
 export const KNOB_CENTER_X = KNOB_CANVAS_SIZE / 2;
 export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
+
+/*
+ * Shared knob/jack tuning.
+ * These numbers drive the physical placement of the visible knob art, LEDs,
+ * labels, and jack hardware. CSS owns assets/styles; this object owns layout.
+ */
 
 /* Responsive shell: total height includes the baseline artwork. */
 export const DESIGN_HEIGHT = 120;
@@ -42,33 +48,56 @@ export const BASE_LINE_HEIGHT = 8;
 // The current cell artwork was tuned at this interactive faceplate height.
 export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
 
-/* Per-knob SVG nudges; CSS modules own visual sizes and colors. */
-export const KNOB_OFFSETS = {
-  jw: {
-    label: [
-      { x: -2, y: 7 },
-      { x: -4, y: 1 },
-      { x: -2, y: -6 },
-    ],
-    led: [
-      { x: 3, y: -1 },
-      { x: 3, y: 0 },
-      { x: 3, y: 1 },
-    ],
+export const KNOB_LAYOUT = {
+  dragStepPx: 18,
+  choiceLightSize: 11,
+  module: {
+    maxWidth: 160,
+    offset: { x: -2, y: 10 },
   },
-  ihm: {
-    label: [
-      { x: -2, y: 7 },
-      { x: -4, y: 1 },
-      { x: -2, y: -6 },
-    ],
-    led: [
-      { x: 3, y: -1 },
-      { x: 3, y: 0 },
-      { x: 3, y: 1 },
-    ],
+  artwork: {
+    size: 52.5,
+    leftPercent: 23,
+    topPercent: 52,
+    pressedScale: 0.92,
+    rotation: {
+      idle: 0,
+      top: 60,
+      middle: 90,
+      bottom: 120,
+    },
+  },
+  jack: {
+    socketWidth: 13.44,
+    plugWidth: 19.2,
+    plugHeight: 48,
+    anchor: { top: 20, right: 22 },
+    plugTipCorrection: { x: "17%", y: "-17%" },
   },
 } as const;
+
+/*
+ * Shared knob SVG nudges.
+ * JWW and IHM intentionally read the same object so LEDs and labels stay on
+ * matching lines whenever these values are tuned.
+ */
+const SHARED_KNOB_OFFSETS = {
+  label: [
+    { x: -2, y: 6 },
+    { x: -4, y: 3 },
+    { x: -2, y: -3 },
+  ],
+  led: [
+    { x: 3, y: -2 },
+    { x: 3, y: 2 },
+    { x: 3, y: 4 },
+  ],
+} as const;
+
+export const KNOB_OFFSETS: Record<KnobSectionId, typeof SHARED_KNOB_OFFSETS> = {
+  jw: SHARED_KNOB_OFFSETS,
+  ihm: SHARED_KNOB_OFFSETS,
+};
 
 export interface SvgPoint {
   x: number;

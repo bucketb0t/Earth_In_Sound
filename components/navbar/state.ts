@@ -37,7 +37,7 @@ export interface NavbarState {
   isCartPressed: boolean;
   eisNavTo: (linkIndex: number) => void;
   knobNavTo: (sectionId: KnobSectionId, linkIndex: number) => void;
-  knobFaceClick: (sectionId: KnobSectionId) => void;
+  knobFacePress: (sectionId: KnobSectionId) => void;
   goHome: () => void;
   toggleLogin: () => void;
   storePress: () => void;
@@ -157,8 +157,14 @@ export function useNavbar(): NavbarState {
     [],
   );
 
-  const knobFaceClick = useCallback((sectionId: KnobSectionId): void => {
-    setActivePage((prev) => (prev?.section === sectionId ? null : prev));
+  const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
+    setActivePage((prev) => {
+      const linkCount = SECTION_LINKS[sectionId].length;
+      const nextLinkIndex =
+        prev?.section === sectionId ? (prev.linkIndex + 1) % linkCount : 0;
+
+      return { section: sectionId, linkIndex: nextLinkIndex };
+    });
     setIsCartPressed(false);
     setIsStorePressed(false);
   }, []);
@@ -200,7 +206,7 @@ export function useNavbar(): NavbarState {
     isStorePressed,
     eisNavTo,
     knobNavTo,
-    knobFaceClick,
+    knobFacePress,
     goHome,
     toggleLogin,
     storePress,

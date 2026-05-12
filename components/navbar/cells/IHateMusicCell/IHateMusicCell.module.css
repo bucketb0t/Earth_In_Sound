@@ -1,12 +1,12 @@
 /*
  * I Hate Music cell artwork.
- * Keeps podcast-specific plaque and glow values out of the shared knob shell.
+ * Keeps podcast-specific plaque and active text color out of the shared knob shell.
  */
 
 .iHateMusicCell {
   --cell-plaque-aspect: 280 / 142.28;
-  --glow: #ff4d4d;
-  --glow-soft: #ff4d4d66;
+  --glow: #22c55e;
+  --knob-logo-band-height: calc(37.4px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   overflow: visible;
@@ -18,42 +18,63 @@
 
 .iHateMusicLogo {
   /*
-   * Slot values reserve layout space. Art values draw the SVG inside that
-   * slot, so changing logo scale cannot push the knob module around.
+   * The button slot controls layout. The art variables below control only the
+   * visible IHM logo, so resizing it will not push the knob or JWW logo.
    */
   --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
-  --ihm-logo-slot-height: calc(24px * var(--artwork-cell-scale));
-  /*
-   * The original 104x24 background box rendered the IHM SVG width-first.
-   * These values preserve that visible size while making scaling explicit.
-   */
-  --ihm-logo-art-width: var(--ihm-logo-slot-width);
+  --ihm-logo-slot-height: var(--knob-logo-band-height);
+  --ihm-logo-art-width: calc(104px * var(--artwork-cell-scale));
   --ihm-logo-art-height: calc(14.65px * var(--artwork-cell-scale));
-  --ihm-logo-art-scale: 1.1;
+  --ihm-logo-art-top: calc(12px * var(--artwork-cell-scale));
+  --ihm-logo-scale: 1;
 
   position: relative;
+  appearance: none;
+  border: 0;
+  padding: 0;
   width: var(--ihm-logo-slot-width);
   height: var(--ihm-logo-slot-height);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
   transform: translate(
     calc(16px * var(--artwork-cell-scale)),
-    calc(10px * var(--artwork-cell-scale))
+    calc(4px * var(--artwork-cell-scale))
   );
+}
+
+.iHateMusicLogo:focus,
+.iHateMusicLogo:focus-visible,
+.iHateMusicLogo:active {
+  outline: none;
 }
 
 .iHateMusicLogo::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: var(--ihm-logo-art-top);
   width: var(--ihm-logo-art-width);
   height: var(--ihm-logo-art-height);
   background-image: url("/NavbarAssets/SVG/IHMLogoNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
-  transform: translate(-50%, -50%) scale(var(--ihm-logo-art-scale));
+  background-size: 100% 100%;
+  transform: translate(-50%, -50%) scale(var(--ihm-logo-scale));
   transform-origin: center;
+  transition: filter 0.18s ease;
   pointer-events: none;
+}
+
+.iHateMusicLogo:hover::before,
+.iHateMusicLogo:focus-visible::before {
+  filter: drop-shadow(
+      0 0 calc(2px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.55)
+    )
+    drop-shadow(
+      0 0 calc(5px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.25)
+    );
 }
 
 .iHateMusicKnob {

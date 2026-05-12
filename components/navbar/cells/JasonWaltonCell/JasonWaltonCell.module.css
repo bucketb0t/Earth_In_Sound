@@ -1,12 +1,12 @@
 /*
  * Jason Walton cell artwork.
- * Keeps Jason-specific plaque and glow values out of the shared knob shell.
+ * Keeps Jason-specific plaque and active text color out of the shared knob shell.
  */
 
 .jasonWaltonCell {
   --cell-plaque-aspect: 280 / 142.28;
-  --glow: #4daaff;
-  --glow-soft: #4daaff66;
+  --glow: #22c55e;
+  --knob-logo-band-height: calc(37.4px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;
   overflow: visible;
@@ -18,26 +18,35 @@
 
 .jasonWaltonLogo {
   /*
-   * Slot values reserve layout space. Art values draw the SVG inside that
-   * slot, so changing logo scale cannot push the knob module around.
+   * The button slot controls layout. The art variables below control only the
+   * visible JWW logo, so resizing it will not push the knob or IHM logo.
    */
-  --jww-logo-slot-width: calc(104px * var(--artwork-cell-scale));
-  --jww-logo-slot-height: calc(24px * var(--artwork-cell-scale));
-  /*
-   * The original 104x24 background box rendered the JWW SVG height-first.
-   * These values preserve that visible size while making scaling explicit.
-   */
-  --jww-logo-art-width: calc(93.69px * var(--artwork-cell-scale));
-  --jww-logo-art-height: var(--jww-logo-slot-height);
-  --jww-logo-art-scale: 1.2;
+  --jww-logo-slot-width: calc(146px * var(--artwork-cell-scale));
+  --jww-logo-slot-height: var(--knob-logo-band-height);
+  --jww-logo-art-width: calc(154px * var(--artwork-cell-scale));
+  --jww-logo-art-height: calc(37.4px * var(--artwork-cell-scale));
+  --jww-logo-scale: 0.725;
 
   position: relative;
+  appearance: none;
+  border: 0;
+  padding: 0;
   width: var(--jww-logo-slot-width);
   height: var(--jww-logo-slot-height);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
   transform: translate(
-    calc(16px * var(--artwork-cell-scale)),
-    calc(10px * var(--artwork-cell-scale))
+    calc(-4px * var(--artwork-cell-scale)),
+    calc(8px * var(--artwork-cell-scale))
   );
+}
+
+.jasonWaltonLogo:focus,
+.jasonWaltonLogo:focus-visible,
+.jasonWaltonLogo:active {
+  outline: none;
 }
 
 .jasonWaltonLogo::before {
@@ -50,10 +59,21 @@
   background-image: url("/NavbarAssets/SVG/JWWLogoNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
-  transform: translate(-50%, -50%) scale(var(--jww-logo-art-scale));
+  background-size: 100% 100%;
+  transform: translate(-50%, -50%) scale(var(--jww-logo-scale));
   transform-origin: center;
+  transition: filter 0.18s ease;
   pointer-events: none;
+}
+
+.jasonWaltonLogo:hover::before,
+.jasonWaltonLogo:focus-visible::before {
+  filter: drop-shadow(
+      0 0 calc(2px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.55)
+    )
+    drop-shadow(
+      0 0 calc(5px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.25)
+    );
 }
 
 .jasonWaltonKnob {
