@@ -12,7 +12,6 @@ import {
   KNOB_SVG_WIDTH as SVG_WIDTH,
   LED_DEGREES_FROM_TOP as CHOICE_ANGLES,
   LED_ORBIT_RADIUS as CHOICE_ORBIT_RADIUS,
-  degreesToRadians,
   ledAngleToTrigDegrees as clockAngleToMathAngle,
   svgPoint as polarToCartesian,
   type KnobSectionId,
@@ -54,7 +53,6 @@ interface KnobDragState {
   pointerId: number;
   startY: number;
   startLinkIndex: number;
-  moved: boolean;
 }
 
 export interface KnobJackCellProps {
@@ -82,35 +80,12 @@ export default function KnobJackCell({
     pointerId: -1,
     startY: 0,
     startLinkIndex: 0,
-    moved: false,
   });
   const suppressNextClick = useRef(false);
 
   const isActive = activePage?.section === sectionId;
   const activeLinkIndex = isActive ? activePage.linkIndex : -1;
   const sectionOffsets = KNOB_OFFSETS[sectionId];
-
-  /* Static tick marks around the knob face. */
-  const tickMarks = useMemo(
-    () =>
-      Array.from({ length: 8 }, (_, tickIndex) => {
-        const angleRadians = degreesToRadians(tickIndex * 45);
-        const cosine = Math.cos(angleRadians);
-        const sine = Math.sin(angleRadians);
-
-        return (
-          <line
-            key={tickIndex}
-            className={styles.tick}
-            x1={KNOB_CENTER_X + (KNOB_RADIUS - 4) * cosine}
-            y1={KNOB_CENTER_Y - (KNOB_RADIUS - 4) * sine}
-            x2={KNOB_CENTER_X + (KNOB_RADIUS + 1) * cosine}
-            y2={KNOB_CENTER_Y - (KNOB_RADIUS + 1) * sine}
-          />
-        );
-      }),
-    [],
-  );
 
   /* Geometry for each choice: dot position and label position. */
   const choiceGeometry = useMemo(
@@ -119,7 +94,10 @@ export default function KnobJackCell({
         const mathAngle = clockAngleToMathAngle(clockAngle);
         return {
           dotPosition: polarToCartesian(CHOICE_ORBIT_RADIUS, mathAngle),
-          labelPosition: polarToCartesian(CHOICE_ORBIT_RADIUS + 16, mathAngle),
+          labelPosition: polarToCartesian(
+            CHOICE_ORBIT_RADIUS + KNOB_LAYOUT.labelOrbitGap,
+            mathAngle,
+          ),
         };
       }),
     [],
@@ -151,7 +129,6 @@ export default function KnobJackCell({
       pointerId: event.pointerId,
       startY: event.clientY,
       startLinkIndex: isActive ? activeLinkIndex : 0,
-      moved: false,
     };
 
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -169,7 +146,6 @@ export default function KnobJackCell({
 
     const stepOffset = Math.round(deltaY / KNOB_LAYOUT.dragStepPx);
 
-    drag.moved = true;
     suppressNextClick.current = true;
     moveKnobToLink(drag.startLinkIndex + stepOffset);
   };
@@ -209,33 +185,12 @@ export default function KnobJackCell({
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           width="100%"
         >
-          <defs>
-            {/* Per-instance gradient id prevents collisions between knob instances. */}
-            <radialGradient
-              id={`knob-gradient-${sectionId}`}
-              cx="40%"
-              cy="35%"
-              r="60%"
-            >
-              <stop offset="0%" stopColor="#5a5a5a" />
-              <stop offset="100%" stopColor="#1a1a1a" />
-            </radialGradient>
-          </defs>
-
-          <circle
-            className={styles.shadowRing}
-            cx={KNOB_CENTER_X}
-            cy={KNOB_CENTER_Y}
-            r={KNOB_RADIUS + 3}
-          />
-
           {/* Knob face: click cycles stops; vertical drag selects by physical position. */}
           <circle
             className={styles.knobFace}
             cx={KNOB_CENTER_X}
             cy={KNOB_CENTER_Y}
             r={KNOB_RADIUS}
-            fill={`url(#knob-gradient-${sectionId})`}
             tabIndex={0}
             role="button"
             aria-label={`${sectionLabel} knob`}
@@ -248,16 +203,6 @@ export default function KnobJackCell({
             onKeyDown={(event) =>
               activateOnEnterOrSpace(event, () => knobFacePress(sectionId))
             }
-          />
-
-          {tickMarks}
-
-          <circle
-            className={styles.centerCap}
-            cx={KNOB_CENTER_X}
-            cy={KNOB_CENTER_Y}
-            r={5}
-            aria-hidden="true"
           />
 
           {/* Choice groups: each dot + label is one selectable navigation target. */}

@@ -78,8 +78,8 @@ navbar primitives such as `.navbar-cell`, `.led`, and `.link-label`, and the
 reduced-motion media query.
 
 `components/navbar/config.ts` is the static source of truth for section ids,
-link labels, SVG geometry, navbar design dimensions, baseline thickness, and
-knob offsets.
+link labels, SVG geometry, navbar design dimensions, baseline thickness, knob
+layout tuning, and LED/label offsets.
 
 `components/navbar/state.ts` owns shared React behavior. It defines
 `NavbarContext`, `useNavbar()`, navigation actions, responsive measurement,
@@ -128,9 +128,9 @@ pointer dragging, keyboard navigation, and resize-aware snapping.
 `JasonWaltonCell` and `IHateMusicCell` are section wrappers. They provide the
 section id, label, and link list to the shared `KnobJackCell`.
 
-`KnobJackCell` renders the reusable rotary SVG control: knob hit target, hidden
-legacy tick geometry, choice dots, link labels, section knob artwork, and the
-optional top-right jack socket overlay used by I Hate Music.
+`KnobJackCell` renders the reusable rotary control: invisible knob hit target,
+choice lights, link labels, section knob artwork, and the optional top-right
+jack socket/cable overlay used by Jason Walton and I Hate Music.
 
 `AccountCell` renders the login switch and username display.
 
@@ -144,9 +144,9 @@ its pressed state until another navbar action clears it.
 
 - Component-level visual styling lives in CSS Modules.
 - `globals.css` is only for shared primitives and page-level defaults.
-- No component uses `style={...}` for visual styling.
-- Runtime DOM style updates are allowed only for measured behavior, such as
-  navbar scale variables and slider thumb position.
+- Component files do not contain CSS blocks. `style={...}` is reserved for CSS
+  custom-property handoffs and measured behavior, such as navbar scale
+  variables, knob layout variables, and slider thumb position.
 - New cell artwork should go in the owning cell folder unless it is truly
   shared across multiple cells.
 - Decorative artwork that should not move nearby controls uses a slot/art

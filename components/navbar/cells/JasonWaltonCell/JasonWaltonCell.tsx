@@ -1,7 +1,7 @@
 "use client";
 
 import { JW_LINKS } from "../../config";
-import KnobCell from "../../shared/KnobJackCell/KnobJackCell";
+import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
 import { useNavbarContext } from "../../state";
 import styles from "./JasonWaltonCell.module.css";
 
@@ -23,7 +23,7 @@ export default function JasonWaltonCell() {
         onClick={() => knobNavTo("jw", 0)}
       />
 
-      <KnobCell
+      <KnobJackCell
         sectionId="jw"
         sectionLabel="Jason Walton"
         links={JW_LINKS}

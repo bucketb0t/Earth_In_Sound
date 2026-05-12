@@ -8,6 +8,16 @@ import styles from "./StoreCell.module.css";
 const HOVER_VIDEO_URL = "/NavbarAssets/Animations/StoreHoverNavbar.mp4";
 const PRESSED_VIDEO_URL = "/NavbarAssets/Animations/StoreOnNavbar.mp4";
 
+function resetVideo(video: HTMLVideoElement): void {
+  video.pause();
+  video.currentTime = 0;
+}
+
+function playVideoFromStart(video: HTMLVideoElement): void {
+  video.currentTime = 0;
+  void video.play();
+}
+
 /**
  * Store cell.
  * Shows a static PNG by default, a one-shot hover video on mouse-over,
@@ -26,12 +36,11 @@ export default function StoreCell() {
     if (!video) return;
 
     if (isHovered && !isStorePressed) {
-      video.currentTime = 0;
-      void video.play();
-    } else {
-      video.pause();
-      video.currentTime = 0;
+      playVideoFromStart(video);
+      return;
     }
+
+    resetVideo(video);
   }, [isHovered, isStorePressed]);
 
   /*
@@ -43,12 +52,11 @@ export default function StoreCell() {
     if (!video) return;
 
     if (isStorePressed) {
-      video.currentTime = 0;
-      void video.play();
-    } else {
-      video.pause();
-      video.currentTime = 0;
+      playVideoFromStart(video);
+      return;
     }
+
+    resetVideo(video);
   }, [isStorePressed]);
 
   return (

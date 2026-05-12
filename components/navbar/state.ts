@@ -137,13 +137,21 @@ export function useNavbar(): NavbarState {
     return () => observer.disconnect();
   }, []);
 
+  /*
+   * Store and Cart are latched visual buttons. Any normal navigation action
+   * releases them so only the currently accessed navbar area stays pressed.
+   */
+  const releaseLatchedButtons = useCallback((): void => {
+    setIsCartPressed(false);
+    setIsStorePressed(false);
+  }, []);
+
   const eisNavTo = useCallback((linkIndex: number): void => {
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
     setEisSliderPos(clampedEisLinkIndex);
     setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
-    setIsCartPressed(false);
-    setIsStorePressed(false);
-  }, []);
+    releaseLatchedButtons();
+  }, [releaseLatchedButtons]);
 
   const knobNavTo = useCallback(
     (sectionId: KnobSectionId, linkIndex: number): void => {
@@ -151,10 +159,9 @@ export function useNavbar(): NavbarState {
         section: sectionId,
         linkIndex: clampSectionLinkIndex(sectionId, linkIndex),
       });
-      setIsCartPressed(false);
-      setIsStorePressed(false);
+      releaseLatchedButtons();
     },
-    [],
+    [releaseLatchedButtons],
   );
 
   const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
@@ -165,9 +172,8 @@ export function useNavbar(): NavbarState {
 
       return { section: sectionId, linkIndex: nextLinkIndex };
     });
-    setIsCartPressed(false);
-    setIsStorePressed(false);
-  }, []);
+    releaseLatchedButtons();
+  }, [releaseLatchedButtons]);
 
   const goHome = useCallback((): void => {
     eisNavTo(0);
@@ -175,9 +181,8 @@ export function useNavbar(): NavbarState {
 
   const toggleLogin = useCallback((): void => {
     setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
-    setIsCartPressed(false);
-    setIsStorePressed(false);
-  }, []);
+    releaseLatchedButtons();
+  }, [releaseLatchedButtons]);
 
   /*
    * Store behaves like a latched page button.

@@ -1,6 +1,6 @@
 /**
  * Static navbar configuration.
- * Central place for labels, SVG geometry, navbar sizing, and animation frames.
+ * Central place for labels, SVG geometry, navbar sizing, and artwork tuning.
  */
 
 // State keys used by the EIS slider and shared knob sections.
@@ -23,9 +23,8 @@ export const LED_DEGREES_FROM_TOP: readonly [number, number, number] = [
   60, 90, 120,
 ] as const;
 
-// Matches the visible knob SVG box in KnobJackCell.module.css.
+// Diameter of the invisible SVG hit circle used for knob click/drag events.
 export const KNOB_ARTWORK_SIZE = 48;
-// The SVG hit circle follows the visible artwork diameter.
 export const KNOB_RADIUS = KNOB_ARTWORK_SIZE / 2;
 export const LED_ORBIT_RADIUS = 42;
 export const KNOB_CANVAS_SIZE = 80;
@@ -33,12 +32,6 @@ export const KNOB_SVG_WIDTH = 160;
 
 export const KNOB_CENTER_X = KNOB_CANVAS_SIZE / 2;
 export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
-
-/*
- * Shared knob/jack tuning.
- * These numbers drive the physical placement of the visible knob art, LEDs,
- * labels, and jack hardware. CSS owns assets/styles; this object owns layout.
- */
 
 /* Responsive shell: total height includes the baseline artwork. */
 export const DESIGN_HEIGHT = 120;
@@ -48,9 +41,15 @@ export const BASE_LINE_HEIGHT = 8;
 // The current cell artwork was tuned at this interactive faceplate height.
 export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
 
+/*
+ * Shared knob/jack tuning.
+ * These numbers drive the physical placement of the visible knob art, LEDs,
+ * labels, and jack hardware. CSS owns assets/styles; this object owns layout.
+ */
 export const KNOB_LAYOUT = {
   dragStepPx: 18,
   choiceLightSize: 11,
+  labelOrbitGap: 16,
   module: {
     maxWidth: 160,
     offset: { x: -2, y: 10 },
