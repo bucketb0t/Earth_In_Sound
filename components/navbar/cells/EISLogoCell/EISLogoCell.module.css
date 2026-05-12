@@ -37,6 +37,14 @@
     calc(12px * var(--artwork-cell-scale))
   );
   --eis-rendered-thumb-width: calc(var(--eis-rendered-thumb-height) * 1.82);
+  --eis-logo-frame-width: min(
+    clamp(
+      calc(72px * var(--artwork-cell-scale)),
+      39cqw,
+      calc(125px * var(--artwork-cell-scale))
+    ),
+    88%
+  );
   --cell-plaque-aspect: 413 / 142.28;
 
   container-type: inline-size;
@@ -75,11 +83,12 @@
 }
 
 .logoButton {
-  /* Native button behavior with browser chrome removed. */
+  /* Button hit area follows the logo frame instead of the whole grid column. */
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  justify-self: center;
+  width: var(--eis-logo-frame-width);
   min-width: 0;
   padding: clamp(
       calc(4px * var(--artwork-cell-scale)),
@@ -98,19 +107,12 @@
 
 .logoFrame {
   /*
-   * One responsive width controls the logo box; aspect-ratio keeps the artwork
-   * proportional. Increase --eis-logo-scale to enlarge both axes together.
+   * The button owns the responsive width; the frame fills it so the artwork
+   * cannot collapse when the hit area is narrowed to the logo.
    */
   position: relative;
   display: block;
-  width: min(
-    clamp(
-      calc(72px * var(--artwork-cell-scale)),
-      39cqw,
-      calc(125px * var(--artwork-cell-scale))
-    ),
-    88%
-  );
+  width: 100%;
   aspect-ratio: 130 / 90;
   transform: scale(var(--eis-logo-scale));
   transform-origin: center;
@@ -222,9 +224,11 @@
 }
 
 .eisLinkRow {
-  /* Real buttons styled as hardware LED/label rows. */
+  /* Hit area follows the LED + label row instead of the full grid width. */
   display: flex;
   align-items: center;
+  justify-self: start;
+  width: fit-content;
   padding: 0;
   appearance: none;
   cursor: pointer;

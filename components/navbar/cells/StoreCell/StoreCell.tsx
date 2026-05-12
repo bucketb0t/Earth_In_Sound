@@ -60,16 +60,16 @@ export default function StoreCell() {
   }, [isStorePressed]);
 
   return (
-    <button
-      type="button"
-      className={`navbar-cell navbar-cell--center ${styles.storeCell}`}
-      onClick={storePress}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      aria-label="Store"
-      aria-pressed={isStorePressed}
-    >
-      <div className={styles.screenContainer}>
+    <div className={`navbar-cell navbar-cell--center ${styles.storeCell}`}>
+      <button
+        type="button"
+        className={styles.screenButton}
+        onClick={storePress}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        aria-label="Store"
+        aria-pressed={isStorePressed}
+      >
         {/* Default state: static artwork shown when idle and not hovered. */}
         <div
           aria-hidden="true"
@@ -102,7 +102,7 @@ export default function StoreCell() {
           loop
           preload="auto"
         />
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }

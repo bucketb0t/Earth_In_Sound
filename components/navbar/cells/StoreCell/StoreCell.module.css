@@ -1,38 +1,41 @@
 /*
  * Store cell styles.
- * The cell is a button; the screen container holds three stacked assets
- * and fades the active one into view.
+ * The plaque is decorative; only the screen artwork is clickable.
  */
 
 .storeCell {
-  /* Native button reset; the whole cell is the store trigger. */
   --cell-plaque-aspect: 339 / 141;
 
   flex: 0 0 auto;
   min-width: 0;
-  appearance: none;
-  cursor: pointer;
-  user-select: none;
   background-color: transparent;
   background-image: url("/NavbarAssets/SVG/StorePlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
+}
+
+.screenButton {
+  /*
+   * Stable screen box and real hit target. Keeping this as the only button
+   * prevents clicks on empty plaque space from triggering Store.
+   */
+  position: relative;
+  appearance: none;
+  width: calc(220px * var(--artwork-cell-scale));
+  aspect-ratio: 208 / 130;
+  padding: 0;
   border: 0;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
   color: inherit;
   font: inherit;
 }
 
-.storeCell:focus-visible {
+.screenButton:focus-visible {
   outline: 2px solid #22c55e;
   outline-offset: -2px;
-}
-
-.screenContainer {
-  /* Stable screen box; each idle/hover/pressed asset paints inside it. */
-  position: relative;
-  width: calc(220px * var(--artwork-cell-scale));
-  aspect-ratio: 208 / 130;
 }
 
 .screenAsset {
@@ -43,6 +46,7 @@
   height: 100%;
   object-fit: contain;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s ease;
 }
 
