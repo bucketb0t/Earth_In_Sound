@@ -147,7 +147,8 @@
 }
 
 .choiceTextActive {
-  fill: var(--glow);
+  /* Active section text stays white; the LED artwork carries selection state. */
+  fill: #ffffff;
 }
 
 .jackPort {

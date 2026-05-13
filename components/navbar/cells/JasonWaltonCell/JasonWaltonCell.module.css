@@ -1,11 +1,10 @@
 /*
  * Jason Walton cell artwork.
- * Keeps Jason-specific plaque and active text color out of the shared knob shell.
+ * Keeps Jason-specific plaque, logo, and knob artwork out of the shared shell.
  */
 
 .jasonWaltonCell {
   --cell-plaque-aspect: 280 / 142.28;
-  --glow: #22c55e;
   --knob-logo-band-height: calc(37.4px * var(--artwork-cell-scale));
 
   flex: 0 0 auto;

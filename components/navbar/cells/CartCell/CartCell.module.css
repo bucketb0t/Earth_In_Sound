@@ -28,14 +28,14 @@
   align-items: center;
   justify-content: center;
   transform: translate(0, calc(-3px * var(--artwork-cell-scale)));
-  width: calc(48px * var(--artwork-cell-scale));
+  width: calc(54px * var(--artwork-cell-scale));
   aspect-ratio: 48 / 24;
   background-image: url("/NavbarAssets/SVG/CartCounterNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
   font-family: "DS-DIGIB Cart", monospace;
-  font-size: calc(17px * var(--artwork-cell-scale));
+  font-size: calc(20px * var(--artwork-cell-scale));
   line-height: 1;
   letter-spacing: calc(1px * var(--artwork-cell-scale));
   opacity: 0;

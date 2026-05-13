@@ -4,7 +4,6 @@
  */
 
 .eisLogoCell {
-  --glow: #22c55e;
   --eis-logo-scale: 1.125;
   --eis-slider-height: clamp(
     calc(36px * var(--artwork-cell-scale)),
@@ -103,6 +102,10 @@
   color: inherit;
   font: inherit;
   outline-offset: -2px;
+  transform: translate(
+    calc(4px * var(--artwork-cell-scale)),
+    calc(2px * var(--artwork-cell-scale))
+  );
 }
 
 .logoFrame {
@@ -269,8 +272,10 @@
 .eisLinkLabel {
   font-size: var(--eis-link-font-size);
   text-transform: uppercase;
+  color: #ffffff;
 }
 
 .eisLinkLabelOn {
-  color: var(--glow);
+  /* Active EIS text stays white; the LED artwork carries selection state. */
+  color: #ffffff;
 }

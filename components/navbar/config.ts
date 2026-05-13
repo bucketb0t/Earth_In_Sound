@@ -67,11 +67,11 @@ export const KNOB_LAYOUT = {
     },
   },
   jack: {
-    socketWidth: 13.44,
-    plugWidth: 19.2,
+    socketWidth: 18,
+    plugWidth: 24,
     plugHeight: 48,
     anchor: { top: 20, right: 22 },
-    plugTipCorrection: { x: "17%", y: "-17%" },
+    plugTipCorrection: { x: "17%", y: "-20%" },
   },
 } as const;
 
