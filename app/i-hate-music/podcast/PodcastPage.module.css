@@ -224,12 +224,6 @@
   -webkit-line-clamp: unset;
 }
 
-.audioPlayer {
-  display: block;
-  width: 100%;
-  margin: 18px 0;
-}
-
 .acastLink {
   color: #22c55e;
   display: inline-flex;

@@ -3,6 +3,7 @@ import {
   type PodcastEpisode,
   type PodcastShow,
 } from "@/lib/podcast/acast";
+import EpisodeMediaTabs from "./EpisodeMediaTabs";
 import styles from "./PodcastPage.module.css";
 
 // Next requires this route config to stay as a literal value.
@@ -124,14 +125,11 @@ function EpisodeCard({ episode, featured = false }: EpisodeCardProps) {
       <h2>{episode.title}</h2>
       <p>{episode.description}</p>
 
-      {episode.audioUrl && (
-        <audio
-          className={styles.audioPlayer}
-          controls
-          preload="none"
-          src={episode.audioUrl}
-        />
-      )}
+      <EpisodeMediaTabs
+        episodeId={episode.id}
+        audioMimeType={episode.audioMimeType}
+        audioUrl={episode.audioUrl}
+      />
 
       {episode.episodeUrl && (
         <a
