@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Navbar from "@/components/navbar/shared/Navbar/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,12 +14,15 @@ interface RootLayoutProps {
 
 /**
  * Root document shell.
- * Imports global CSS once and leaves interactive UI to child components.
+ * Keeps the navbar mounted above every route so site navigation is universal.
  */
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
-      <body suppressHydrationWarning>{children}</body>
+    <html lang="en" data-scroll-behavior="smooth">
+      <body suppressHydrationWarning>
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }

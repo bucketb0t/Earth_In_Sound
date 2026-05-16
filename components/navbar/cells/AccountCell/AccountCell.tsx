@@ -8,8 +8,7 @@ import styles from "./AccountCell.module.css";
  * Hardware-style auth control plus future account/signup screen button.
  */
 export default function AccountCell() {
-  const { isLoggedIn, resetActiveNavbarControls, toggleLogin } =
-    useNavbarContext();
+  const { isLoggedIn, openAccountPage, toggleLogin } = useNavbarContext();
   const toggleLabel = isLoggedIn ? "Log Out" : "Log In";
   const screenLabel = isLoggedIn ? "JasonW" : "Sign up";
 
@@ -54,7 +53,7 @@ export default function AccountCell() {
         className={`${styles.accountScreenButton} ${
           isLoggedIn ? styles.accountScreenButtonOn : ""
         }`}
-        onClick={resetActiveNavbarControls}
+        onClick={openAccountPage}
         aria-label={isLoggedIn ? "Open account page" : "Sign up"}
       >
         <span

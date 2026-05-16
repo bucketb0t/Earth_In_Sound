@@ -14,6 +14,9 @@
 .navbarShell {
   --navbar-shell-height: 120px;
   --navbar-line-height: 8px;
+  --navbar-layer-banner: 1000;
+  --navbar-layer-cells: 1001;
+  --navbar-layer-baseline: 1002;
 
   position: relative;
   width: 100%;
@@ -44,7 +47,7 @@
    */
   top: 0;
   height: var(--navbar-shell-height);
-  z-index: 0;
+  z-index: var(--navbar-layer-banner);
   background-image: url("/NavbarAssets/SVG/BaseBannerNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
@@ -57,7 +60,7 @@
    * visually edge-to-edge without changing the measured navbar width.
    */
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
-  z-index: 10;
+  z-index: var(--navbar-layer-baseline);
   height: var(--navbar-line-height);
   background-image: url("/NavbarAssets/SVG/BaseLineNavbar.svg");
   background-repeat: no-repeat;
@@ -71,10 +74,14 @@
   --navbar-root-width: 100%;
   --navbar-root-height: 112px;
 
-  position: absolute;
+  /*
+   * The banner and baseline are fixed viewport paint, so the cell layer must
+   * also be fixed. The shell still reserves height in normal document flow.
+   */
+  position: fixed;
   top: 0;
   left: 50%;
-  z-index: 1;
+  z-index: var(--navbar-layer-cells);
   width: var(--navbar-root-width);
   height: var(--navbar-root-height);
   overflow: visible;

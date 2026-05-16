@@ -10,6 +10,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   SECTION_LINKS,
   type KnobSectionId,
@@ -18,11 +19,48 @@ import {
 
 // Seeded until the real cart data source exists; keeps the counter testable now.
 const INITIAL_CART_COUNT = 1;
+const HOME_ROUTE = "/";
+const ACCOUNT_ROUTE = "/account";
+const CART_ROUTE = "/cart";
+const I_HATE_MUSIC_PODCAST_ROUTE = "/i-hate-music/podcast";
+const STORE_ROUTE = "/store";
 
 export interface ActivePage {
   section: SectionId;
   linkIndex: number;
 }
+
+const NAVBAR_LINK_ROUTES: Partial<
+  Record<SectionId, Partial<Record<number, string>>>
+> = {
+  eis: {
+    0: HOME_ROUTE,
+    1: "/about",
+    2: "/contact",
+  },
+  jw: {
+    0: "/jason-walton/biography",
+    1: "/jason-walton/discography",
+    2: "/jason-walton/production",
+  },
+  ihm: {
+    0: I_HATE_MUSIC_PODCAST_ROUTE,
+    1: "/i-hate-music/community",
+    2: "/i-hate-music/patreon",
+  },
+};
+
+const ACTIVE_PAGE_BY_ROUTE: Partial<Record<string, ActivePage>> = {
+  [HOME_ROUTE]: { section: "eis", linkIndex: 0 },
+  "/about": { section: "eis", linkIndex: 1 },
+  "/contact": { section: "eis", linkIndex: 2 },
+  "/jason-walton/biography": { section: "jw", linkIndex: 0 },
+  "/jason-walton/discography": { section: "jw", linkIndex: 1 },
+  "/jason-walton/production": { section: "jw", linkIndex: 2 },
+  [I_HATE_MUSIC_PODCAST_ROUTE]: { section: "ihm", linkIndex: 0 },
+  "/i-hate-music/community": { section: "ihm", linkIndex: 1 },
+  "/i-hate-music/patreon": { section: "ihm", linkIndex: 2 },
+};
 
 export interface NavbarState {
   activePage: ActivePage | null;
@@ -40,6 +78,7 @@ export interface NavbarState {
   knobFacePress: (sectionId: KnobSectionId) => void;
   goHome: () => void;
   toggleLogin: () => void;
+  openAccountPage: () => void;
   resetActiveNavbarControls: () => void;
   storePress: () => void;
   cartPress: () => void;
@@ -82,46 +121,70 @@ function clampSectionLinkIndex(
   return Math.max(0, Math.min(maxLinkIndex, Math.round(requestedLinkIndex)));
 }
 
+function getElementOuterWidth(element: Element): number {
+  if (!(element instanceof HTMLElement)) {
+    return element.getBoundingClientRect().width;
+  }
+
+  const computedStyle = window.getComputedStyle(element);
+  const marginLeft = parseFloat(computedStyle.marginLeft) || 0;
+  const marginRight = parseFloat(computedStyle.marginRight) || 0;
+
+  return element.offsetWidth + marginLeft + marginRight;
+}
+
+function getNavbarContentWidth(contentElement: HTMLDivElement): number {
+  const childWidth = Array.from(contentElement.children).reduce(
+    (totalWidth, childElement) =>
+      totalWidth + getElementOuterWidth(childElement),
+    0,
+  );
+
+  return Math.max(contentElement.scrollWidth, childWidth);
+}
+
 /**
  * Shared navbar state and actions.
  * Coordinates active links, scaling, account/store/cart state, and cell actions.
  */
 export function useNavbar(): NavbarState {
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialActivePage = ACTIVE_PAGE_BY_ROUTE[pathname] ?? null;
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
-  const [activePage, setActivePage] = useState<ActivePage | null>(null);
-  const [eisSliderPos, setEisSliderPos] = useState(0);
+  const [activePage, setActivePage] = useState<ActivePage | null>(
+    () => initialActivePage,
+  );
+  const [eisSliderPos, setEisSliderPos] = useState(
+    () =>
+      initialActivePage?.section === "eis" ? initialActivePage.linkIndex : 0,
+  );
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount] = useState(INITIAL_CART_COUNT);
-  const [isCartPressed, setIsCartPressed] = useState(false);
-  const [isStorePressed, setIsStorePressed] = useState(false);
+  const [isCartPressed, setIsCartPressed] = useState(
+    () => pathname === CART_ROUTE && INITIAL_CART_COUNT > 0,
+  );
+  const [isStorePressed, setIsStorePressed] = useState(
+    () => pathname === STORE_ROUTE,
+  );
 
   /*
    * Measure before paint, then keep scale synced to the real cell edges.
-   * Browser zoom changes CSS pixel width, so the shell width is normalized
-   * by devicePixelRatio before deciding whether the navbar should shrink.
-   * This keeps zoom under browser control while preserving real resize fitting.
+   * The visible CSS viewport is the source of truth: if the window or browser
+   * zoom leaves less room, the full navbar row shrinks to stay accessible.
    */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
 
-    const initialPixelRatio = window.devicePixelRatio || 1;
-
-    const getZoomNeutralShellWidth = (): number => {
-      const currentPixelRatio = window.devicePixelRatio || initialPixelRatio;
-      const zoomRatio = currentPixelRatio / initialPixelRatio;
-
-      return shellElement.getBoundingClientRect().width * zoomRatio;
-    };
-
     const syncScaleFromCellEdges = () => {
-      const shellWidth = getZoomNeutralShellWidth();
-      const contentWidth = contentElement.scrollWidth;
+      const shellWidth = shellElement.getBoundingClientRect().width;
+      const contentWidth = getNavbarContentWidth(contentElement);
       const nextScale =
         contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
 
@@ -135,7 +198,17 @@ export function useNavbar(): NavbarState {
 
     observer.observe(shellElement);
     observer.observe(contentElement);
-    return () => observer.disconnect();
+    window.addEventListener("resize", syncScaleFromCellEdges);
+    window.visualViewport?.addEventListener("resize", syncScaleFromCellEdges);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncScaleFromCellEdges);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        syncScaleFromCellEdges,
+      );
+    };
   }, []);
 
   /*
@@ -157,34 +230,50 @@ export function useNavbar(): NavbarState {
     releaseLatchedButtons();
   }, [releaseLatchedButtons]);
 
+  /*
+   * Routes are attached to the shared navbar actions, not to individual cells.
+   * That keeps logos, labels, sliders, and knob selections in sync.
+   */
+  const navigateToLinkedRoute = useCallback(
+    (sectionId: SectionId, linkIndex: number): void => {
+      const targetRoute = NAVBAR_LINK_ROUTES[sectionId]?.[linkIndex];
+      if (targetRoute) router.push(targetRoute);
+    },
+    [router],
+  );
+
   const eisNavTo = useCallback((linkIndex: number): void => {
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
     setEisSliderPos(clampedEisLinkIndex);
     setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
     releaseLatchedButtons();
-  }, [releaseLatchedButtons]);
+    navigateToLinkedRoute("eis", clampedEisLinkIndex);
+  }, [navigateToLinkedRoute, releaseLatchedButtons]);
 
   const knobNavTo = useCallback(
     (sectionId: KnobSectionId, linkIndex: number): void => {
+      const clampedLinkIndex = clampSectionLinkIndex(sectionId, linkIndex);
       setActivePage({
         section: sectionId,
-        linkIndex: clampSectionLinkIndex(sectionId, linkIndex),
+        linkIndex: clampedLinkIndex,
       });
       releaseLatchedButtons();
+      navigateToLinkedRoute(sectionId, clampedLinkIndex);
     },
-    [releaseLatchedButtons],
+    [navigateToLinkedRoute, releaseLatchedButtons],
   );
 
   const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
-    setActivePage((prev) => {
-      const linkCount = SECTION_LINKS[sectionId].length;
-      const nextLinkIndex =
-        prev?.section === sectionId ? (prev.linkIndex + 1) % linkCount : 0;
+    const linkCount = SECTION_LINKS[sectionId].length;
+    const selectedLinkIndex =
+      activePage?.section === sectionId
+        ? (activePage.linkIndex + 1) % linkCount
+        : 0;
 
-      return { section: sectionId, linkIndex: nextLinkIndex };
-    });
+    setActivePage({ section: sectionId, linkIndex: selectedLinkIndex });
     releaseLatchedButtons();
-  }, [releaseLatchedButtons]);
+    navigateToLinkedRoute(sectionId, selectedLinkIndex);
+  }, [activePage, navigateToLinkedRoute, releaseLatchedButtons]);
 
   const goHome = useCallback((): void => {
     eisNavTo(0);
@@ -195,6 +284,11 @@ export function useNavbar(): NavbarState {
     resetActiveNavbarControls();
   }, [resetActiveNavbarControls]);
 
+  const openAccountPage = useCallback((): void => {
+    resetActiveNavbarControls();
+    router.push(ACCOUNT_ROUTE);
+  }, [resetActiveNavbarControls, router]);
+
   /*
    * Store behaves like a latched page button.
    * Once activated it stays visually pressed until another section is opened.
@@ -203,14 +297,16 @@ export function useNavbar(): NavbarState {
     setActivePage(null);
     setIsCartPressed(false);
     setIsStorePressed(true);
-  }, []);
+    router.push(STORE_ROUTE);
+  }, [router]);
 
   const cartPress = useCallback((): void => {
     setActivePage(null);
     setIsStorePressed(false);
     if (cartCount <= 0) return;
     setIsCartPressed(true);
-  }, [cartCount]);
+    router.push(CART_ROUTE);
+  }, [cartCount, router]);
 
   return {
     activePage,
@@ -227,6 +323,7 @@ export function useNavbar(): NavbarState {
     knobFacePress,
     goHome,
     toggleLogin,
+    openAccountPage,
     resetActiveNavbarControls,
     storePress,
     cartPress,
