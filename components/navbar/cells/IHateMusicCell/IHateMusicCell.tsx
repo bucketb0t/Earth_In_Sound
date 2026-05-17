@@ -19,7 +19,16 @@ export default function IHateMusicCell() {
         className={styles.iHateMusicLogo}
         aria-label="I Hate Music, go to Podcast"
         onClick={() => knobNavTo("ihm", 0)}
-      />
+      >
+        <span className={styles.iHateMusicLogoFrame} aria-hidden="true">
+          <span
+            className={`${styles.iHateMusicLogoImage} ${styles.iHateMusicLogoImageOff}`}
+          />
+          <span
+            className={`${styles.iHateMusicLogoImage} ${styles.iHateMusicLogoImageOn}`}
+          />
+        </span>
+      </button>
 
       <KnobJackCell
         sectionId="ihm"

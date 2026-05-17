@@ -5,8 +5,10 @@ import { useNavbarContext } from "../../state";
 import styles from "./StoreCell.module.css";
 
 // Public media paths keep the navbar assets centralized under /public.
-const HOVER_VIDEO_URL = "/NavbarAssets/Animations/StoreHoverNavbar.mp4";
-const PRESSED_VIDEO_URL = "/NavbarAssets/Animations/StoreOnNavbar.mp4";
+const HOVER_VIDEO_URL =
+  "/NavbarAssets/DesktopAssets/Animations/StoreHoverNavbar.mp4";
+const PRESSED_VIDEO_URL =
+  "/NavbarAssets/DesktopAssets/Animations/StoreOnNavbar.mp4";
 
 function resetVideo(video: HTMLVideoElement): void {
   video.pause();

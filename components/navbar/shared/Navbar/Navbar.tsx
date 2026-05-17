@@ -6,7 +6,6 @@ import {
   ARTWORK_CELL_SCALE_BASE_HEIGHT,
   DESIGN_HEIGHT,
   BASE_LINE_HEIGHT,
-  NAVBAR_VISUAL_WIDTH_PERCENT,
 } from "../../config";
 import { NavbarContext, useNavbar } from "../../state";
 
@@ -27,12 +26,6 @@ export default function Navbar() {
   const navbarState = useNavbar();
   const { shellRef, contentRef, scale, isScaleReady } = navbarState;
   const rootRef = useRef<HTMLDivElement | null>(null);
-
-  // Compensates for transform scale so the final visual width stays exact.
-  const compensatedRootWidth =
-    scale > 0
-      ? `${(NAVBAR_VISUAL_WIDTH_PERCENT / scale).toFixed(4)}%`
-      : `${NAVBAR_VISUAL_WIDTH_PERCENT}%`;
 
   /*
    * Runtime CSS variable sync.
@@ -57,19 +50,19 @@ export default function Navbar() {
       `${BASE_LINE_HEIGHT * scale}px`,
     );
 
-    rootElement.style.setProperty("--navbar-scale", String(scale));
-    rootElement.style.setProperty("--navbar-root-width", compensatedRootWidth);
+    rootElement.style.setProperty("--navbar-root-width", "100%");
     rootElement.style.setProperty(
       "--navbar-root-height",
-      `${DESIGN_HEIGHT - BASE_LINE_HEIGHT}px`,
+      `${(DESIGN_HEIGHT - BASE_LINE_HEIGHT) * scale}px`,
     );
     rootElement.style.setProperty(
       "--artwork-cell-scale",
       String(
-        (DESIGN_HEIGHT - BASE_LINE_HEIGHT) / ARTWORK_CELL_SCALE_BASE_HEIGHT,
+        (scale * (DESIGN_HEIGHT - BASE_LINE_HEIGHT)) /
+          ARTWORK_CELL_SCALE_BASE_HEIGHT,
       ),
     );
-  }, [compensatedRootWidth, scale, shellRef]);
+  }, [scale, shellRef]);
 
   return (
     <NavbarContext.Provider value={navbarState}>

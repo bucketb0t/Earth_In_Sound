@@ -4,8 +4,9 @@
  */
 
 @font-face {
-  font-family: "DePixelKleinUsername";
-  src: url("/NavbarAssets/Fonts/DePixelKlein_Username.ttf") format("truetype");
+  font-family: "PixeargUsername";
+  src: url("/NavbarAssets/DesktopAssets/Fonts/PIXEARG_Username.ttf")
+    format("truetype");
   font-display: swap;
 }
 
@@ -17,7 +18,7 @@
 
   flex: 0 0 auto;
   min-width: 0;
-  background-image: url("/NavbarAssets/SVG/AccountPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -64,11 +65,11 @@
 }
 
 .accountToggleButtonOff {
-  background-image: url("/NavbarAssets/SVG/AccountButtonOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountButtonOffNavbar.svg");
 }
 
 .accountToggleButtonOn {
-  background-image: url("/NavbarAssets/SVG/AccountButtonOnNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountButtonOnNavbar.svg");
 }
 
 .accountToggleButton:focus-visible,
@@ -95,7 +96,7 @@
   border: 0;
   min-width: 0;
   background-color: transparent;
-  background-image: url("/NavbarAssets/SVG/AccountLogNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLogNavbar.svg");
   background-repeat: no-repeat;
   background-position: left center;
   background-size: contain;
@@ -116,11 +117,11 @@
 }
 
 .accountLedOff {
-  background-image: url("/NavbarAssets/SVG/AccountLightOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLightOffNavbar.svg");
 }
 
 .accountLedOn {
-  background-image: url("/NavbarAssets/SVG/AccountLightOnNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLightOnNavbar.svg");
 }
 
 .loginText {
@@ -146,7 +147,7 @@
   padding: 0 calc(5px * var(--artwork-cell-scale));
   border: 0;
   background-color: transparent;
-  background-image: url("/NavbarAssets/SVG/AccountScreenOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountScreenOffNavbar.svg");
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -156,7 +157,7 @@
 }
 
 .accountScreenButtonOn {
-  background-image: url("/NavbarAssets/SVG/AccountScreenOnNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountScreenOnNavbar.svg");
   color: #000000;
 }
 
@@ -165,7 +166,7 @@
   overflow: hidden;
   position: relative;
   max-width: 100%;
-  font-family: "DePixelKleinUsername";
+  font-family: "PixeargUsername";
   font-size: calc(10px * var(--artwork-cell-scale));
   line-height: 1;
   text-overflow: ellipsis;

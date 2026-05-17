@@ -13,15 +13,22 @@ export default function JasonWaltonCell() {
   const { knobNavTo } = useNavbarContext();
 
   return (
-    <div
-      className={`navbar-cell navbar-cell--start ${styles.jasonWaltonCell}`}
-    >
+    <div className={`navbar-cell navbar-cell--start ${styles.jasonWaltonCell}`}>
       <button
         type="button"
         className={styles.jasonWaltonLogo}
         aria-label="Jason Walton, go to Biography"
         onClick={() => knobNavTo("jw", 0)}
-      />
+      >
+        <span className={styles.jasonWaltonLogoFrame} aria-hidden="true">
+          <span
+            className={`${styles.jasonWaltonLogoImage} ${styles.jasonWaltonLogoImageOff}`}
+          />
+          <span
+            className={`${styles.jasonWaltonLogoImage} ${styles.jasonWaltonLogoImageOn}`}
+          />
+        </span>
+      </button>
 
       <KnobJackCell
         sectionId="jw"

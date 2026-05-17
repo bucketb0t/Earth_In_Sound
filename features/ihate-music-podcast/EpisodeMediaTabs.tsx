@@ -208,44 +208,23 @@ export default function EpisodeMediaTabs({
 
         shouldResumeVideoFromAudioRef.current = videoWasPlaying;
         if (!videoWasPlaying) {
-          console.info(
-            "[EIS podcast media] Page hidden, but YouTube was not playing. No Acast handoff needed.",
-          );
           return;
         }
 
-        console.info(
-          "[EIS podcast media] Page hidden: switching YouTube -> Acast audio.",
-          {
-            youtubeTime: youtubePlayer.getCurrentTime(),
-          },
-        );
         youtubePlayer.pauseVideo();
         void playAudioFromTimestamp(
           audioElement,
           youtubePlayer.getCurrentTime(),
         ).catch(() => {
-          console.info(
-            "[EIS podcast media] Acast handoff was blocked by the browser.",
-          );
           shouldResumeVideoFromAudioRef.current = false;
         });
         return;
       }
 
       if (!shouldResumeVideoFromAudioRef.current) {
-        console.info(
-          "[EIS podcast media] Page visible, but there is no active Acast -> YouTube resume pending.",
-        );
         return;
       }
 
-      console.info(
-        "[EIS podcast media] Page visible: switching Acast audio -> YouTube.",
-        {
-          acastTime: audioElement.currentTime,
-        },
-      );
       shouldResumeVideoFromAudioRef.current = false;
       youtubePlayer.seekTo(audioElement.currentTime, true);
       audioElement.pause();

@@ -9,7 +9,7 @@
 
   flex: 0 0 auto;
   overflow: visible;
-  background-image: url("/NavbarAssets/SVG/JWW-IHM-PlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/JWW-IHM-PlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -49,33 +49,69 @@
   outline: none;
 }
 
-.iHateMusicLogo::before {
-  content: "";
+.iHateMusicLogoFrame {
+  /*
+   * Layered logo art mirrors EIS: both states occupy the same measured frame,
+   * then opacity chooses which SVG is visible.
+   */
   position: absolute;
   left: 50%;
   top: var(--ihm-logo-art-top);
   width: var(--ihm-logo-art-width);
   height: var(--ihm-logo-art-height);
-  background-image: url("/NavbarAssets/SVG/IHMLogoNavbar.svg");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
   transform: translate(-50%, -50%) scale(var(--ihm-logo-scale));
   transform-origin: center;
-  transition: filter 0.18s ease;
   pointer-events: none;
 }
 
-.iHateMusicLogo:hover::before,
-.iHateMusicLogo:focus-visible::before {
+.iHateMusicLogoImage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.iHateMusicLogoImageOff {
+  opacity: 1;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMLogoOffNavbar.svg");
+}
+
+.iHateMusicLogoImageOn {
+  opacity: 0;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMLogoHoverNavbar.svg");
+}
+
+.iHateMusicLogo:hover .iHateMusicLogoImageOff,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOff,
+.iHateMusicLogo:active .iHateMusicLogoImageOff {
+  opacity: 0;
+}
+
+.iHateMusicLogo:hover .iHateMusicLogoImageOn,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,
+.iHateMusicLogo:active .iHateMusicLogoImageOn {
+  opacity: 1;
+}
+
+/*
+ * Hover/focus/press use the alternate logo art. The selected page state does
+ * not lock this layer on, so revisiting the logo behaves like the EIS logo.
+ */
+.iHateMusicLogo:hover .iHateMusicLogoImageOn,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,
+.iHateMusicLogo:active .iHateMusicLogoImageOn {
   filter: drop-shadow(
-      0 0 calc(2px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.55)
-    )
-    drop-shadow(
-      0 0 calc(5px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.25)
-    );
+    0 0 calc(2px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.3)
+  );
 }
 
 .iHateMusicKnob {
-  background-image: url("/NavbarAssets/SVG/IHMKnobNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMKnobNavbar.svg");
 }

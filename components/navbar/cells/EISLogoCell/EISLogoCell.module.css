@@ -36,14 +36,7 @@
     calc(12px * var(--artwork-cell-scale))
   );
   --eis-rendered-thumb-width: calc(var(--eis-rendered-thumb-height) * 1.82);
-  --eis-logo-frame-width: min(
-    clamp(
-      calc(72px * var(--artwork-cell-scale)),
-      39cqw,
-      calc(125px * var(--artwork-cell-scale))
-    ),
-    88%
-  );
+  --eis-logo-frame-width: calc(125px * var(--artwork-cell-scale));
   --cell-plaque-aspect: 413 / 142.28;
 
   container-type: inline-size;
@@ -64,7 +57,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundPlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundPlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -81,7 +74,7 @@
   min-width: 0;
 }
 
-.logoButton {
+.eisLogoButton {
   /* Button hit area follows the logo frame instead of the whole grid column. */
   display: flex;
   align-items: center;
@@ -108,7 +101,7 @@
   );
 }
 
-.logoFrame {
+.eisLogoFrame {
   /*
    * The button owns the responsive width; the frame fills it so the artwork
    * cannot collapse when the hit area is narrowed to the logo.
@@ -121,7 +114,7 @@
   transform-origin: center;
 }
 
-.logoImage {
+.eisLogoImage {
   display: block;
   position: absolute;
   inset: 0;
@@ -133,23 +126,23 @@
   transition: opacity 0.18s ease;
 }
 
-.logoImageOff {
+.eisLogoImageOff {
   opacity: 1;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundLogoOffNavbar.svg");
 }
 
-.logoImageHover {
+.eisLogoImageHover {
   opacity: 0;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundLogoHoverNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundLogoHoverNavbar.svg");
 }
 
-.logoButton:hover .logoImageOff,
-.logoButton:focus-visible .logoImageOff {
+.eisLogoButton:hover .eisLogoImageOff,
+.eisLogoButton:focus-visible .eisLogoImageOff {
   opacity: 0;
 }
 
-.logoButton:hover .logoImageHover,
-.logoButton:focus-visible .logoImageHover {
+.eisLogoButton:hover .eisLogoImageHover,
+.eisLogoButton:focus-visible .eisLogoImageHover {
   opacity: 1;
 }
 
@@ -181,7 +174,7 @@
   flex-shrink: 0;
   width: calc(8px * var(--artwork-cell-scale));
   height: var(--eis-slider-height);
-  background-image: url("/NavbarAssets/SVG/EarthInSoundSliderBarNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundSliderBarNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 100% 100%;
@@ -196,7 +189,7 @@
   width: var(--eis-rendered-thumb-width);
   height: var(--eis-rendered-thumb-height);
   cursor: grab;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundSliderThumbNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundSliderThumbNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 100% 100%;
@@ -250,23 +243,26 @@
 
 .eisLed {
   /*
-   * EIS has its own LED artwork.
-   * The global .led class supplies sizing behavior; this class supplies art.
+   * EIS uses its own LED artwork, so this class is intentionally self-contained
+   * and does not mix in the global circular .led primitive.
   */
+  display: block;
   width: var(--eis-led-size);
   aspect-ratio: 1;
+  flex-shrink: 0;
   border: 0;
   border-radius: 0;
   background-color: transparent;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundLightOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundLightOffNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
+  cursor: pointer;
 }
 
 .eisLedOn {
   background-color: transparent;
-  background-image: url("/NavbarAssets/SVG/EarthInSoundLightOnNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/EarthInSoundLightOnNavbar.svg");
 }
 
 .eisLinkLabel {

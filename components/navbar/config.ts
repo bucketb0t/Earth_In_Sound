@@ -35,7 +35,6 @@ export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
 
 /* Responsive shell: total height includes the baseline artwork. */
 export const DESIGN_HEIGHT = 132;
-export const NAVBAR_VISUAL_WIDTH_PERCENT = 100;
 // Unscaled visual thickness of BaseLineNavbar.svg.
 export const BASE_LINE_HEIGHT = 8;
 // The current cell artwork was tuned at this interactive faceplate height.

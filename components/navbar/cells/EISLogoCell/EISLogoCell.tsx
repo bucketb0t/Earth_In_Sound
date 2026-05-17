@@ -180,13 +180,17 @@ export default function EISLogoCell() {
         {/* Logo button: returns EIS to Home while preserving custom artwork. */}
         <button
           type="button"
-          className={styles.logoButton}
+          className={styles.eisLogoButton}
           onClick={goHome}
           aria-label="Earth In Sound, go to home"
         >
-          <span className={styles.logoFrame} aria-hidden="true">
-            <span className={`${styles.logoImage} ${styles.logoImageOff}`} />
-            <span className={`${styles.logoImage} ${styles.logoImageHover}`} />
+          <span className={styles.eisLogoFrame} aria-hidden="true">
+            <span
+              className={`${styles.eisLogoImage} ${styles.eisLogoImageOff}`}
+            />
+            <span
+              className={`${styles.eisLogoImage} ${styles.eisLogoImageHover}`}
+            />
           </span>
         </button>
 
@@ -234,7 +238,7 @@ export default function EISLogoCell() {
                     aria-current={isSelected ? "page" : undefined}
                   >
                     <span
-                      className={`led ${styles.eisLed} ${
+                      className={`${styles.eisLed} ${
                         isSelected ? styles.eisLedOn : ""
                       }`}
                     />

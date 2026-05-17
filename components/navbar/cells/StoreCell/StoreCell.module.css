@@ -9,7 +9,7 @@
   flex: 0 0 auto;
   min-width: 0;
   background-color: transparent;
-  background-image: url("/NavbarAssets/SVG/StorePlaqueNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/StorePlaqueNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: auto var(--cell-plaque-height);
@@ -55,7 +55,7 @@
 }
 
 .screenAssetStatic {
-  background-image: url("/NavbarAssets/PNG/StoreOffNavbar.png");
+  background-image: url("/NavbarAssets/DesktopAssets/PNG/StoreOffNavbar.png");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;

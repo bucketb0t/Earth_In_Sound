@@ -12,6 +12,9 @@ import {
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  ARTWORK_CELL_SCALE_BASE_HEIGHT,
+  BASE_LINE_HEIGHT,
+  DESIGN_HEIGHT,
   SECTION_LINKS,
   type KnobSectionId,
   type SectionId,
@@ -28,6 +31,14 @@ const STORE_ROUTE = "/store";
 export interface ActivePage {
   section: SectionId;
   linkIndex: number;
+}
+
+interface NavbarVisualState {
+  activePage: ActivePage | null;
+  eisSliderPos: number;
+  isCartPressed: boolean;
+  isStorePressed: boolean;
+  sourcePathname: string;
 }
 
 const NAVBAR_LINK_ROUTES: Partial<
@@ -143,6 +154,22 @@ function getNavbarContentWidth(contentElement: HTMLDivElement): number {
   return Math.max(contentElement.scrollWidth, childWidth);
 }
 
+function getRouteVisualState(
+  pathname: string,
+  cartCount: number,
+): NavbarVisualState {
+  const routeActivePage = ACTIVE_PAGE_BY_ROUTE[pathname] ?? null;
+
+  return {
+    activePage: routeActivePage,
+    eisSliderPos:
+      routeActivePage?.section === "eis" ? routeActivePage.linkIndex : 0,
+    isCartPressed: pathname === CART_ROUTE && cartCount > 0,
+    isStorePressed: pathname === STORE_ROUTE,
+    sourcePathname: pathname,
+  };
+}
+
 /**
  * Shared navbar state and actions.
  * Coordinates active links, scaling, account/store/cart state, and cell actions.
@@ -150,27 +177,22 @@ function getNavbarContentWidth(contentElement: HTMLDivElement): number {
 export function useNavbar(): NavbarState {
   const router = useRouter();
   const pathname = usePathname();
-  const initialActivePage = ACTIVE_PAGE_BY_ROUTE[pathname] ?? null;
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const designContentWidthRef = useRef(0);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
-  const [activePage, setActivePage] = useState<ActivePage | null>(
-    () => initialActivePage,
-  );
-  const [eisSliderPos, setEisSliderPos] = useState(
-    () =>
-      initialActivePage?.section === "eis" ? initialActivePage.linkIndex : 0,
-  );
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount] = useState(INITIAL_CART_COUNT);
-  const [isCartPressed, setIsCartPressed] = useState(
-    () => pathname === CART_ROUTE && INITIAL_CART_COUNT > 0,
+  const [visualState, setVisualState] = useState<NavbarVisualState>(() =>
+    getRouteVisualState(pathname, INITIAL_CART_COUNT),
   );
-  const [isStorePressed, setIsStorePressed] = useState(
-    () => pathname === STORE_ROUTE,
-  );
+  const routeVisualState = getRouteVisualState(pathname, cartCount);
+  const currentVisualState =
+    visualState.sourcePathname === pathname ? visualState : routeVisualState;
+  const { activePage, eisSliderPos, isCartPressed, isStorePressed } =
+    currentVisualState;
 
   /*
    * Measure before paint, then keep scale synced to real window resizing.
@@ -187,6 +209,31 @@ export function useNavbar(): NavbarState {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
+
+    const faceplateHeight = DESIGN_HEIGHT - BASE_LINE_HEIGHT;
+    const fullArtworkScale = faceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT;
+
+    /*
+     * The first measurement must represent the unscaled artwork design.
+     * These defaults are written before measuring so the stored width does not
+     * depend on CSS fallback values or on a previously shrunken render.
+     */
+    shellElement.style.setProperty("--navbar-shell-height", `${DESIGN_HEIGHT}px`);
+    shellElement.style.setProperty(
+      "--navbar-line-height",
+      `${BASE_LINE_HEIGHT}px`,
+    );
+
+    if (contentElement.parentElement?.parentElement instanceof HTMLElement) {
+      const rootElement = contentElement.parentElement.parentElement;
+      rootElement.style.setProperty("--navbar-root-height", `${faceplateHeight}px`);
+      rootElement.style.setProperty(
+        "--artwork-cell-scale",
+        String(fullArtworkScale),
+      );
+    }
+
+    designContentWidthRef.current = getNavbarContentWidth(contentElement);
 
     let baselinePixelRatio = window.devicePixelRatio || 1;
     let baselinePhysicalShellWidth =
@@ -223,11 +270,13 @@ export function useNavbar(): NavbarState {
 
     const syncScaleFromCellEdges = () => {
       const shellWidth = getResizeOnlyShellWidth();
-      const contentWidth = getNavbarContentWidth(contentElement);
+      const contentWidth = designContentWidthRef.current;
       const nextScale =
         contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
 
-      setScale(nextScale);
+      setScale((currentScale) =>
+        Math.abs(currentScale - nextScale) > 0.001 ? nextScale : currentScale,
+      );
       setIsScaleReady(true);
     };
 
@@ -236,7 +285,6 @@ export function useNavbar(): NavbarState {
     const observer = new ResizeObserver(syncScaleFromCellEdges);
 
     observer.observe(shellElement);
-    observer.observe(contentElement);
     window.addEventListener("resize", syncScaleFromCellEdges);
     window.visualViewport?.addEventListener("resize", syncScaleFromCellEdges);
 
@@ -251,23 +299,19 @@ export function useNavbar(): NavbarState {
   }, []);
 
   /*
-   * Store and Cart are latched visual buttons. Any normal navigation action
-   * releases them so only the currently accessed navbar area stays pressed.
-   */
-  const releaseLatchedButtons = useCallback((): void => {
-    setIsCartPressed(false);
-    setIsStorePressed(false);
-  }, []);
-
-  /*
    * Utility cells are outside the EIS/JWW/IHM section selector.
-   * Accessing one clears the active section, returning knobs to idle and
-   * hiding section cables, then releases any latched utility button.
+   * Accessing one clears the active section on the current route, returning
+   * knobs to idle and hiding section cables.
    */
   const resetActiveNavbarControls = useCallback((): void => {
-    setActivePage(null);
-    releaseLatchedButtons();
-  }, [releaseLatchedButtons]);
+    setVisualState({
+      ...currentVisualState,
+      activePage: null,
+      isCartPressed: false,
+      isStorePressed: false,
+      sourcePathname: pathname,
+    });
+  }, [currentVisualState, pathname]);
 
   /*
    * Routes are attached to the shared navbar actions, not to individual cells.
@@ -283,23 +327,29 @@ export function useNavbar(): NavbarState {
 
   const eisNavTo = useCallback((linkIndex: number): void => {
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
-    setEisSliderPos(clampedEisLinkIndex);
-    setActivePage({ section: "eis", linkIndex: clampedEisLinkIndex });
-    releaseLatchedButtons();
+    setVisualState({
+      activePage: { section: "eis", linkIndex: clampedEisLinkIndex },
+      eisSliderPos: clampedEisLinkIndex,
+      isCartPressed: false,
+      isStorePressed: false,
+      sourcePathname: pathname,
+    });
     navigateToLinkedRoute("eis", clampedEisLinkIndex);
-  }, [navigateToLinkedRoute, releaseLatchedButtons]);
+  }, [navigateToLinkedRoute, pathname]);
 
   const knobNavTo = useCallback(
     (sectionId: KnobSectionId, linkIndex: number): void => {
       const clampedLinkIndex = clampSectionLinkIndex(sectionId, linkIndex);
-      setActivePage({
-        section: sectionId,
-        linkIndex: clampedLinkIndex,
+      setVisualState({
+        activePage: { section: sectionId, linkIndex: clampedLinkIndex },
+        eisSliderPos: 0,
+        isCartPressed: false,
+        isStorePressed: false,
+        sourcePathname: pathname,
       });
-      releaseLatchedButtons();
       navigateToLinkedRoute(sectionId, clampedLinkIndex);
     },
-    [navigateToLinkedRoute, releaseLatchedButtons],
+    [navigateToLinkedRoute, pathname],
   );
 
   const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
@@ -309,10 +359,15 @@ export function useNavbar(): NavbarState {
         ? (activePage.linkIndex + 1) % linkCount
         : 0;
 
-    setActivePage({ section: sectionId, linkIndex: selectedLinkIndex });
-    releaseLatchedButtons();
+    setVisualState({
+      activePage: { section: sectionId, linkIndex: selectedLinkIndex },
+      eisSliderPos: 0,
+      isCartPressed: false,
+      isStorePressed: false,
+      sourcePathname: pathname,
+    });
     navigateToLinkedRoute(sectionId, selectedLinkIndex);
-  }, [activePage, navigateToLinkedRoute, releaseLatchedButtons]);
+  }, [activePage, navigateToLinkedRoute, pathname]);
 
   const goHome = useCallback((): void => {
     eisNavTo(0);
@@ -333,19 +388,27 @@ export function useNavbar(): NavbarState {
    * Once activated it stays visually pressed until another section is opened.
    */
   const storePress = useCallback((): void => {
-    setActivePage(null);
-    setIsCartPressed(false);
-    setIsStorePressed(true);
+    setVisualState({
+      activePage: null,
+      eisSliderPos: 0,
+      isCartPressed: false,
+      isStorePressed: true,
+      sourcePathname: pathname,
+    });
     router.push(STORE_ROUTE);
-  }, [router]);
+  }, [pathname, router]);
 
   const cartPress = useCallback((): void => {
-    setActivePage(null);
-    setIsStorePressed(false);
     if (cartCount <= 0) return;
-    setIsCartPressed(true);
+    setVisualState({
+      activePage: null,
+      eisSliderPos: 0,
+      isCartPressed: true,
+      isStorePressed: false,
+      sourcePathname: pathname,
+    });
     router.push(CART_ROUTE);
-  }, [cartCount, router]);
+  }, [cartCount, pathname, router]);
 
   return {
     activePage,

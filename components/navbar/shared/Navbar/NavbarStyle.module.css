@@ -1,6 +1,7 @@
 @font-face {
   font-family: "FuturaHeavy";
-  src: url("/NavbarAssets/Fonts/FuturaHeavy_GeneralCaps.ttf") format("truetype");
+  src: url("/NavbarAssets/DesktopAssets/Fonts/FuturaHeavy_GeneralCaps.ttf")
+    format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -12,13 +13,15 @@
  */
 
 .navbarShell {
-  --navbar-shell-height: 120px;
+  --navbar-shell-height: 132px;
   --navbar-line-height: 8px;
   --navbar-layer-banner: 1000;
   --navbar-layer-cells: 1001;
   --navbar-layer-baseline: 1002;
 
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: var(--navbar-layer-banner);
   width: 100%;
   height: var(--navbar-shell-height);
   padding: 0;
@@ -42,13 +45,13 @@
 
 .navbarShell::before {
   /*
-   * Shared banner is viewport paint, not measured layout. Keeping it fixed to
-   * the viewport prevents horizontal scroll width from feeding back into scale.
+   * The banner is viewport paint. The cell layer participates in layout for
+   * natural horizontal scrolling, while this art stays edge-to-edge.
    */
   top: 0;
   height: var(--navbar-shell-height);
   z-index: var(--navbar-layer-banner);
-  background-image: url("/NavbarAssets/SVG/BaseBannerNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/BaseBannerNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -56,38 +59,35 @@
 
 .navbarShell::after {
   /*
-   * The baseline follows the same viewport paint rule as the banner. It stays
-   * visually edge-to-edge without changing the measured navbar width.
+   * The baseline follows the same viewport paint rule as the banner, so it
+   * stays glued to both window edges during zoom and horizontal scrolling.
    */
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
   z-index: var(--navbar-layer-baseline);
   height: var(--navbar-line-height);
-  background-image: url("/NavbarAssets/SVG/BaseLineNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/BaseLineNavbar.svg");
   background-repeat: no-repeat;
   background-position: left top;
   background-size: 100% 100%;
 }
 
 .navbarRoot {
-  --navbar-scale: 1;
-  --artwork-cell-scale: 1;
+  --artwork-cell-scale: 1.1071428571;
   --navbar-root-width: 100%;
-  --navbar-root-height: 112px;
+  --navbar-root-height: 124px;
 
   /*
-   * The banner and baseline are fixed viewport paint, so the cell layer must
-   * also be fixed. The shell still reserves height in normal document flow.
+   * The interactive cell layer is relative so browser zoom can expose natural
+   * horizontal page overflow instead of hiding it behind a fixed overlay.
    */
-  position: fixed;
+  position: relative;
   top: 0;
-  left: 50%;
+  left: 0;
   z-index: var(--navbar-layer-cells);
   width: var(--navbar-root-width);
   height: var(--navbar-root-height);
   overflow: visible;
   isolation: isolate;
-  transform: translateX(-50%) scale(var(--navbar-scale));
-  transform-origin: top center;
   background: transparent;
   font-family: "FuturaHeavy", sans-serif;
   text-transform: uppercase;
@@ -98,7 +98,6 @@
   position: relative;
   z-index: 2;
   display: flex;
-  justify-content: center;
   justify-content: safe center;
   align-items: stretch;
   height: 100%;
@@ -110,6 +109,6 @@
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
   min-width: 0;
 }

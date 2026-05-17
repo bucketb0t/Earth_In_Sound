@@ -124,7 +124,7 @@
    */
   width: 100%;
   height: 100%;
-  background-image: url("/NavbarAssets/SVG/PlaquesSelectionLightOffNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/PlaquesSelectionLightOffNavbar.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
@@ -132,7 +132,7 @@
 }
 
 .choiceLightOn {
-  background-image: url("/NavbarAssets/SVG/PlaquesSelectionLightOnNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/PlaquesSelectionLightOnNavbar.svg");
 }
 
 .choiceText {
@@ -183,7 +183,7 @@
 }
 
 .jackPlug {
-  background-image: url("/NavbarAssets/SVG/JackPlugNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/JackPlugNavbar.svg");
   width: var(--jack-plug-width);
   height: var(--jack-plug-height);
   transform: translate(
@@ -194,7 +194,7 @@
 }
 
 .jackSocket {
-  background-image: url("/NavbarAssets/SVG/JackPortNavbar.svg");
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/JackPortNavbar.svg");
   width: var(--jack-socket-width);
   aspect-ratio: 1;
   transform: translate(50%, -50%);

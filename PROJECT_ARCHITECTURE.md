@@ -124,9 +124,9 @@ layout tuning, and LED/label offsets.
 latched store/cart state, account state, and the keyboard activation helper
 for custom controls.
 
-`public/NavbarAssets/` stores navbar artwork, fonts, videos, SVGs, and bitmap
+`public/NavbarAssets/DesktopAssets/` stores navbar artwork, fonts, videos, SVGs, and bitmap
 assets. CSS modules and media elements reference them with root-relative URLs
-such as `/NavbarAssets/SVG/...`.
+such as `/NavbarAssets/DesktopAssets/SVG/...`.
 
 ## App Router Organization
 
