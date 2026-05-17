@@ -6,10 +6,12 @@ is engineered.
 
 ## Application Shape
 
-The project is a Next.js App Router application. `app/page.tsx` remains a
-Server Component and renders the navbar as the first interactive object on the
-home page. The navbar itself is a Client Component because it uses React state,
-pointer events, keyboard handlers, DOM measurements, and responsive scaling.
+The project is a Next.js App Router application. `app/layout.tsx` mounts the
+navbar once so it stays visible across every route. Route files under `app/`
+stay small and delegate domain-specific page UI to `features/`.
+
+The navbar itself is a Client Component because it uses React state, pointer
+events, keyboard handlers, DOM measurements, and responsive scaling.
 
 Styling is split out of component files into CSS Modules. Global CSS is kept
 small and only owns the reset, theme tokens, reduced-motion behavior, and tiny
@@ -23,6 +25,30 @@ app/
   page.tsx
   page.module.css
   globals.css
+  (site)/
+    about/page.tsx
+    account/page.tsx
+    cart/page.tsx
+    contact/page.tsx
+    store/page.tsx
+    i-hate-music/
+      community/page.tsx
+      patreon/page.tsx
+      podcast/page.tsx
+    jason-walton/
+      biography/page.tsx
+      discography/page.tsx
+      production/page.tsx
+
+features/
+  section-placeholder/
+    SectionPlaceholderPage.tsx
+    SectionPlaceholderPage.module.css
+  ihate-music-podcast/
+    IHateMusicPodcastPage.tsx
+    IHateMusicPodcastPage.module.css
+    EpisodeMediaTabs.tsx
+    EpisodeMediaTabs.module.css
 
 components/navbar/
   config.ts
@@ -64,11 +90,23 @@ public/
 
 ## File Roles
 
-`app/layout.tsx` is the root document shell. It imports global CSS and defines
-site metadata.
+`app/layout.tsx` is the root document shell. It imports global CSS, defines
+site metadata, and mounts the shared navbar above route content.
 
-`app/page.tsx` is the home route. It imports the shared navbar shell from
-`components/navbar/shared/Navbar/Navbar`.
+`app/page.tsx` is the home route. The navbar is already mounted by
+`app/layout.tsx`, so the page file only renders home content.
+
+Nested `app/(site)/**/page.tsx` files are route entries only. The `(site)`
+folder is a route group, so it organizes public site pages without changing
+URLs. Those
+route entries define URL boundaries, metadata, and route-specific data loading,
+then render feature components from `features/`.
+
+`features/section-placeholder/` owns the temporary route shell used
+by unfinished destinations such as About, Store, Cart, and section pages.
+
+`features/ihate-music-podcast/` owns the podcast page UI, episode cards,
+audio/video mini-tabs, and YouTube-to-Acast visibility handoff behavior.
 
 `app/page.module.css` owns page-local layout styling, currently the empty
 content area's padding.
@@ -89,6 +127,24 @@ for custom controls.
 `public/NavbarAssets/` stores navbar artwork, fonts, videos, SVGs, and bitmap
 assets. CSS modules and media elements reference them with root-relative URLs
 such as `/NavbarAssets/SVG/...`.
+
+## App Router Organization
+
+The `app/` folder is reserved for routing. Folders inside `app/` create URLs,
+so route folders should not be moved into `components/`.
+
+`app/(site)/` groups the visible site pages while preserving their public
+paths. For example, `app/(site)/about/page.tsx` still serves `/about`.
+
+`features/` holds domain-level behavior and UI that is larger than a reusable
+button/card component. This keeps future database, store, account, podcast, and
+admin logic from being scattered through generic component folders.
+
+The previous `app/_components/` folder was a valid Next private folder: the
+leading underscore tells Next it should not become a route. It was removed in
+favor of `features/` so page-level/domain UI has one clear home outside the
+router tree. The earlier `components/pages/` name was also removed to avoid
+confusion with `app/(site)` route pages.
 
 ## Navbar Shell
 
@@ -157,7 +213,12 @@ its pressed state until another navbar action clears it.
 
 ```mermaid
 flowchart TD
-  Page["app/page.tsx<br/>Server Component"] --> Navbar["shared/Navbar/Navbar.tsx<br/>Client shell"]
+  Layout["app/layout.tsx<br/>Root shell"] --> Navbar["shared/Navbar/Navbar.tsx<br/>Client shell"]
+  Layout --> Routes["app/(site)/**/page.tsx<br/>Route entries"]
+  Routes --> Features["features<br/>Domain/page modules"]
+  Features --> Podcast["ihate-music-podcast<br/>RSS episode UI + media tabs"]
+  Features --> Placeholder["section-placeholder<br/>Temporary route shells"]
+
   Navbar --> Provider["NavbarContext.Provider"]
   Navbar --> ShellCSS["NavbarStyle.module.css<br/>banner, baseline, rows"]
   Navbar --> State["state.ts<br/>useNavbar state/actions"]

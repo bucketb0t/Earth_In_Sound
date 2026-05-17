@@ -1,26 +1,23 @@
-import {
-  getIHateMusicShow,
-  type PodcastEpisode,
-  type PodcastShow,
-} from "@/lib/podcast/acast";
+import type { PodcastEpisode, PodcastShow } from "@/lib/podcast/acast";
 import EpisodeMediaTabs from "./EpisodeMediaTabs";
-import styles from "./PodcastPage.module.css";
+import styles from "./IHateMusicPodcastPage.module.css";
 
-// Next requires this route config to stay as a literal value.
-export const revalidate = 3600;
+interface IHateMusicPodcastPageProps {
+  show: PodcastShow | null;
+}
 
-export const metadata = {
-  title: "I Hate Music Podcast | Earth In Sound",
-  description: "Latest I Hate Music podcast episodes from Acast.",
-};
+interface EpisodeCardProps {
+  episode: PodcastEpisode;
+  featured?: boolean;
+}
 
 /**
- * I Hate Music podcast route.
- * Reads public Acast RSS data and renders it inside the Earth In Sound site.
+ * Page-level renderer for the I Hate Music podcast route.
+ * The route fetches data; this component owns the visual page structure.
  */
-export default async function PodcastPage() {
-  const show = await loadPodcastShowSafely();
-
+export default function IHateMusicPodcastPage({
+  show,
+}: IHateMusicPodcastPageProps) {
   return (
     <main className={styles.page}>
       {show ? <PodcastContent show={show} /> : <PodcastUnavailable />}
@@ -64,7 +61,7 @@ function PodcastContent({ show }: { show: PodcastShow }) {
 
         {show.imageUrl && (
           <div className={styles.coverFrame}>
-            {/* Public RSS artwork can change host, so this intentionally avoids next/image remote config. */}
+            {/* Public RSS artwork can change host, so this avoids remote image config churn. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={show.imageUrl} alt={`${show.title} cover art`} />
           </div>
@@ -145,11 +142,6 @@ function EpisodeCard({ episode, featured = false }: EpisodeCardProps) {
   );
 }
 
-interface EpisodeCardProps {
-  episode: PodcastEpisode;
-  featured?: boolean;
-}
-
 function PodcastUnavailable() {
   return (
     <section className={styles.unavailable}>
@@ -161,15 +153,6 @@ function PodcastUnavailable() {
       </p>
     </section>
   );
-}
-
-async function loadPodcastShowSafely(): Promise<PodcastShow | null> {
-  try {
-    return await getIHateMusicShow();
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
 }
 
 function getEpisodeDateTime(value: string): string {

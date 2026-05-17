@@ -1,4 +1,4 @@
-import SectionPlaceholderPage from "../_components/SectionPlaceholderPage";
+import SectionPlaceholderPage from "@/features/section-placeholder/SectionPlaceholderPage";
 
 export const metadata = {
   title: "Cart | Earth In Sound",
