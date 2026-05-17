@@ -105,6 +105,11 @@
   width: 100%;
 }
 
+.youtubePlayerMount {
+  height: 100%;
+  width: 100%;
+}
+
 .emptyVideoMessage,
 .invalidVideoMessage,
 .audioUnavailableMessage {

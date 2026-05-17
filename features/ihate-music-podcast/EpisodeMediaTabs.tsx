@@ -9,13 +9,17 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { playAudioFromTimestamp } from "./mediaTiming";
 import styles from "./EpisodeMediaTabs.module.css";
-
-const YOUTUBE_PLAYING_STATE = 1;
-const YOUTUBE_PAUSED_STATE = 2;
-const YOUTUBE_ENDED_STATE = 0;
-const MEDIA_HAVE_METADATA = 1;
-const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+import {
+  createYouTubePlayer,
+  parseYouTubeVideoId,
+  YOUTUBE_ENDED_STATE,
+  YOUTUBE_PAUSED_STATE,
+  YOUTUBE_PLAYING_STATE,
+  type YouTubePlayer,
+  type YouTubePlayerEvent,
+} from "./youtubePlayer";
 
 type MediaMode = "audio" | "video";
 
@@ -24,48 +28,6 @@ interface EpisodeMediaTabsProps {
   audioMimeType: string | null;
   audioUrl: string | null;
 }
-
-interface YouTubePlayerEvent {
-  data: number;
-}
-
-interface YouTubePlayer {
-  destroy: () => void;
-  getCurrentTime: () => number;
-  getPlayerState: () => number;
-  pauseVideo: () => void;
-  playVideo: () => void;
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-}
-
-interface YouTubePlayerOptions {
-  events: {
-    onStateChange: (event: YouTubePlayerEvent) => void;
-  };
-  playerVars: {
-    modestbranding: 1;
-    origin: string;
-    playsinline: 1;
-    rel: 0;
-  };
-  videoId: string;
-}
-
-interface YouTubeApi {
-  Player: new (
-    element: HTMLElement,
-    options: YouTubePlayerOptions,
-  ) => YouTubePlayer;
-}
-
-declare global {
-  interface Window {
-    YT?: YouTubeApi;
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-let youtubeApiPromise: Promise<YouTubeApi> | null = null;
 
 /**
  * Episode-local media controls.
@@ -170,35 +132,51 @@ export default function EpisodeMediaTabs({
     if (!videoHost || !youtubeVideoId || !videoTabIsActive) return;
 
     let componentIsMounted = true;
+    let playerInitTimer: number | null = null;
 
-    loadYouTubeIframeApi()
-      .then((youTubeApi) => {
-        if (!componentIsMounted || !videoHostRef.current) return;
+    /*
+     * Next/React dev mode can run effects twice to detect unsafe side effects.
+     * Deferring one tick lets that cleanup cancel before YouTube starts its
+     * internal postMessage polling, which avoids the localhost-origin warning.
+     */
+    playerInitTimer = window.setTimeout(() => {
+      const currentVideoHost = videoHostRef.current;
+      if (!componentIsMounted || !currentVideoHost) return;
 
-        youtubePlayerRef.current?.destroy();
-        videoHostRef.current.replaceChildren();
-        youtubePlayerRef.current = new youTubeApi.Player(videoHostRef.current, {
-          videoId: youtubeVideoId,
-          playerVars: {
-            modestbranding: 1,
-            origin: window.location.origin,
-            playsinline: 1,
-            rel: 0,
-          },
-          events: {
-            onStateChange: (event) => {
-              stopHiddenHandoffIfVideoStopped(event);
-              if (event.data === YOUTUBE_PLAYING_STATE && !document.hidden) {
-                pauseAudio();
-              }
-            },
-          },
-        });
+      if (!elementHasRenderableSize(currentVideoHost)) {
+        setVideoError("The YouTube player area is not ready yet.");
+        return;
+      }
+
+      const youtubeMount = createYouTubePlayerMount(currentVideoHost);
+
+      createYouTubePlayer({
+        mountElement: youtubeMount,
+        videoId: youtubeVideoId,
+        onStateChange: (event) => {
+          stopHiddenHandoffIfVideoStopped(event);
+          if (event.data === YOUTUBE_PLAYING_STATE && !document.hidden) {
+            pauseAudio();
+          }
+        },
       })
-      .catch(() => setVideoError("The YouTube player could not be loaded."));
+        .then((youTubePlayer) => {
+          if (!componentIsMounted || !videoHostRef.current) {
+            youTubePlayer.destroy();
+            return;
+          }
+
+          youtubePlayerRef.current?.destroy();
+          youtubePlayerRef.current = youTubePlayer;
+        })
+        .catch(() => setVideoError("The YouTube player could not be loaded."));
+    }, 0);
 
     return () => {
       componentIsMounted = false;
+      if (playerInitTimer !== null) {
+        window.clearTimeout(playerInitTimer);
+      }
       youtubePlayerRef.current?.destroy();
       youtubePlayerRef.current = null;
       videoHost.replaceChildren();
@@ -229,20 +207,45 @@ export default function EpisodeMediaTabs({
           youtubePlayer.getPlayerState() === YOUTUBE_PLAYING_STATE;
 
         shouldResumeVideoFromAudioRef.current = videoWasPlaying;
-        if (!videoWasPlaying) return;
+        if (!videoWasPlaying) {
+          console.info(
+            "[EIS podcast media] Page hidden, but YouTube was not playing. No Acast handoff needed.",
+          );
+          return;
+        }
 
+        console.info(
+          "[EIS podcast media] Page hidden: switching YouTube -> Acast audio.",
+          {
+            youtubeTime: youtubePlayer.getCurrentTime(),
+          },
+        );
         youtubePlayer.pauseVideo();
         void playAudioFromTimestamp(
           audioElement,
           youtubePlayer.getCurrentTime(),
         ).catch(() => {
+          console.info(
+            "[EIS podcast media] Acast handoff was blocked by the browser.",
+          );
           shouldResumeVideoFromAudioRef.current = false;
         });
         return;
       }
 
-      if (!shouldResumeVideoFromAudioRef.current) return;
+      if (!shouldResumeVideoFromAudioRef.current) {
+        console.info(
+          "[EIS podcast media] Page visible, but there is no active Acast -> YouTube resume pending.",
+        );
+        return;
+      }
 
+      console.info(
+        "[EIS podcast media] Page visible: switching Acast audio -> YouTube.",
+        {
+          acastTime: audioElement.currentTime,
+        },
+      );
       shouldResumeVideoFromAudioRef.current = false;
       youtubePlayer.seekTo(audioElement.currentTime, true);
       audioElement.pause();
@@ -358,124 +361,14 @@ export default function EpisodeMediaTabs({
   );
 }
 
-function loadYouTubeIframeApi(): Promise<YouTubeApi> {
-  if (window.YT?.Player) return Promise.resolve(window.YT);
-  if (youtubeApiPromise) return youtubeApiPromise;
+function createYouTubePlayerMount(videoHost: HTMLDivElement): HTMLDivElement {
+  const youtubeMount = document.createElement("div");
+  youtubeMount.className = styles.youtubePlayerMount;
 
-  youtubeApiPromise = new Promise((resolve, reject) => {
-    const existingCallback = window.onYouTubeIframeAPIReady;
-    const rejectAndReset = (error: Error): void => {
-      youtubeApiPromise = null;
-      reject(error);
-    };
-
-    window.onYouTubeIframeAPIReady = () => {
-      existingCallback?.();
-      if (window.YT?.Player) {
-        resolve(window.YT);
-      } else {
-        rejectAndReset(new Error("YouTube iframe API loaded without Player."));
-      }
-    };
-
-    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-      const script = document.createElement("script");
-      script.src = "https://www.youtube.com/iframe_api";
-      script.async = true;
-      script.onerror = () =>
-        rejectAndReset(new Error("Unable to load YouTube API."));
-      document.head.append(script);
-    }
-  });
-
-  return youtubeApiPromise;
+  videoHost.replaceChildren(youtubeMount);
+  return youtubeMount;
 }
 
-function parseYouTubeVideoId(value: string): string | null {
-  const trimmedValue = value.trim();
-  if (YOUTUBE_ID_PATTERN.test(trimmedValue)) return trimmedValue;
-
-  try {
-    const url = new URL(trimmedValue);
-    const hostname = url.hostname.replace(/^www\./, "");
-
-    if (hostname === "youtu.be") {
-      return normalizeYouTubeVideoId(url.pathname.split("/")[1]);
-    }
-
-    if (!hostname.endsWith("youtube.com")) return null;
-
-    const watchVideoId = normalizeYouTubeVideoId(url.searchParams.get("v"));
-    if (watchVideoId) return watchVideoId;
-
-    const [, route, routeVideoId] = url.pathname.split("/");
-    if (route === "embed" || route === "shorts" || route === "live") {
-      return normalizeYouTubeVideoId(routeVideoId);
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-function normalizeYouTubeVideoId(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const [videoId] = value.split(/[?&#]/);
-  return YOUTUBE_ID_PATTERN.test(videoId) ? videoId : null;
-}
-
-async function playAudioFromTimestamp(
-  audioElement: HTMLAudioElement,
-  seconds: number,
-): Promise<void> {
-  if (audioElement.readyState < MEDIA_HAVE_METADATA) {
-    await waitForAudioMetadata(audioElement);
-  }
-
-  seekAudioTo(audioElement, seconds);
-  await audioElement.play();
-}
-
-function waitForAudioMetadata(audioElement: HTMLAudioElement): Promise<void> {
-  if (audioElement.readyState >= MEDIA_HAVE_METADATA) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(resolveMetadataWait, 2000);
-
-    function cleanup(): void {
-      window.clearTimeout(timeoutId);
-      audioElement.removeEventListener("loadedmetadata", resolveMetadataWait);
-      audioElement.removeEventListener("error", rejectMetadataWait);
-    }
-
-    function resolveMetadataWait(): void {
-      cleanup();
-      resolve();
-    }
-
-    function rejectMetadataWait(): void {
-      cleanup();
-      reject(new Error("Audio metadata could not be loaded."));
-    }
-
-    audioElement.addEventListener("loadedmetadata", resolveMetadataWait);
-    audioElement.addEventListener("error", rejectMetadataWait);
-    audioElement.load();
-  });
-}
-
-function seekAudioTo(audioElement: HTMLAudioElement, seconds: number): void {
-  if (!Number.isFinite(seconds)) return;
-
-  try {
-    audioElement.currentTime = Math.max(0, seconds);
-  } catch {
-    /*
-     * Some browsers reject seeking before metadata exists. In that case the
-     * audio handoff simply starts from the browser's current playable point.
-     */
-  }
+function elementHasRenderableSize(element: HTMLElement): boolean {
+  return element.offsetWidth > 0 && element.offsetHeight > 0;
 }
