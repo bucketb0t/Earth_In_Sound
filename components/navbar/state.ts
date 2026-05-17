@@ -173,17 +173,32 @@ export function useNavbar(): NavbarState {
   );
 
   /*
-   * Measure before paint, then keep scale synced to the real cell edges.
-   * The visible CSS viewport is the source of truth: if the window or browser
-   * zoom leaves less room, the full navbar row shrinks to stay accessible.
+   * Measure before paint, then keep scale synced to real window resizing.
+   *
+   * Browser zoom also reduces getBoundingClientRect().width. If we used that
+   * raw CSS-pixel width directly, the navbar scale would shrink exactly when
+   * the browser zoom grows, visually cancelling zoom from about 125% upward.
+   *
+   * The initial devicePixelRatio is used as this session's zoom baseline, so
+   * resizing the browser window still fits the navbar, while browser zoom keeps
+   * behaving like real zoom.
    */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
 
+    const initialPixelRatio = window.devicePixelRatio || 1;
+
+    const getResizeOnlyShellWidth = (): number => {
+      const currentPixelRatio = window.devicePixelRatio || initialPixelRatio;
+      const zoomRatio = currentPixelRatio / initialPixelRatio;
+
+      return shellElement.getBoundingClientRect().width * zoomRatio;
+    };
+
     const syncScaleFromCellEdges = () => {
-      const shellWidth = shellElement.getBoundingClientRect().width;
+      const shellWidth = getResizeOnlyShellWidth();
       const contentWidth = getNavbarContentWidth(contentElement);
       const nextScale =
         contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
