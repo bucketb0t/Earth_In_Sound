@@ -188,13 +188,37 @@ export function useNavbar(): NavbarState {
     const contentElement = contentRef.current;
     if (!shellElement || !contentElement) return;
 
-    const initialPixelRatio = window.devicePixelRatio || 1;
+    let baselinePixelRatio = window.devicePixelRatio || 1;
+    let baselinePhysicalShellWidth =
+      shellElement.getBoundingClientRect().width * baselinePixelRatio;
 
     const getResizeOnlyShellWidth = (): number => {
-      const currentPixelRatio = window.devicePixelRatio || initialPixelRatio;
-      const zoomRatio = currentPixelRatio / initialPixelRatio;
+      const shellRectWidth = shellElement.getBoundingClientRect().width;
+      const currentPixelRatio = window.devicePixelRatio || baselinePixelRatio;
+      const currentPhysicalShellWidth = shellRectWidth * currentPixelRatio;
 
-      return shellElement.getBoundingClientRect().width * zoomRatio;
+      /*
+       * DPR changes can mean two different things:
+       * - desktop browser zoom, where CSS width shrinks but physical width is
+       *   nearly stable
+       * - a real viewport/device change, where physical width also changes
+       *
+       * Resetting the baseline on physical-width changes keeps mobile/high-DPR
+       * layouts from being treated as zoomed desktop layouts.
+       */
+      const physicalWidthDelta =
+        baselinePhysicalShellWidth > 0
+          ? Math.abs(currentPhysicalShellWidth - baselinePhysicalShellWidth) /
+            baselinePhysicalShellWidth
+          : 0;
+
+      if (physicalWidthDelta > 0.08) {
+        baselinePixelRatio = currentPixelRatio;
+        baselinePhysicalShellWidth = currentPhysicalShellWidth;
+      }
+
+      const zoomRatio = currentPixelRatio / baselinePixelRatio;
+      return shellRectWidth * zoomRatio;
     };
 
     const syncScaleFromCellEdges = () => {
