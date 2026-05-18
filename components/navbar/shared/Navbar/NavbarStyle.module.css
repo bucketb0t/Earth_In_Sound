@@ -13,6 +13,7 @@
  */
 
 .navbarShell {
+  --navbar-viewport-width: 100vw;
   --navbar-shell-height: 132px;
   --navbar-line-height: 8px;
   --navbar-layer-banner: 1000;
@@ -22,7 +23,8 @@
   position: sticky;
   top: 0;
   z-index: var(--navbar-layer-banner);
-  width: 100%;
+  width: var(--navbar-viewport-width);
+  max-width: var(--navbar-viewport-width);
   height: var(--navbar-shell-height);
   padding: 0;
   overflow: visible;
@@ -39,7 +41,7 @@
   content: "";
   position: fixed;
   left: 0;
-  width: 100vw;
+  width: var(--navbar-viewport-width);
   pointer-events: none;
 }
 
@@ -73,8 +75,10 @@
 
 .navbarRoot {
   --artwork-cell-scale: 1.1071428571;
-  --navbar-root-width: 100%;
+  --navbar-layout-width: 100vw;
   --navbar-root-height: 124px;
+  --navbar-row-offset: 0px;
+  --navbar-row-width: auto;
 
   /*
    * The interactive cell layer is relative so browser zoom can expose natural
@@ -84,7 +88,13 @@
   top: 0;
   left: 0;
   z-index: var(--navbar-layer-cells);
-  width: var(--navbar-root-width);
+  /*
+   * Cross-browser layout width.
+   * React writes this value from measured DOM geometry so every browser uses
+   * the same viewport/overflow math instead of interpreting max-content rules.
+   */
+  width: var(--navbar-layout-width);
+  min-width: var(--navbar-layout-width);
   height: var(--navbar-root-height);
   overflow: visible;
   isolation: isolate;
@@ -94,11 +104,18 @@
 }
 
 .navbarInner {
-  /* Cells stretch to the faceplate height while keeping horizontal air. */
+  /*
+   * The cell row is positioned with measured values:
+   * - --navbar-row-offset centers the cells while they fit the viewport.
+   * - offset becomes 0 when the row is wider, preserving natural scrolling.
+   */
   position: relative;
   z-index: 2;
   display: flex;
-  justify-content: safe center;
+  width: var(--navbar-row-width);
+  margin-left: var(--navbar-row-offset);
+  flex-wrap: nowrap;
+  justify-content: flex-start;
   align-items: stretch;
   height: 100%;
   min-height: 0;
@@ -107,8 +124,10 @@
 
 .rowPrimary {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 0 var(--navbar-row-width);
+  flex-wrap: nowrap;
   align-items: stretch;
   justify-content: flex-start;
+  width: var(--navbar-row-width);
   min-width: 0;
 }
