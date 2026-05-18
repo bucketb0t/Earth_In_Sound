@@ -141,7 +141,7 @@ function getElementOuterWidth(element: Element): number {
   const marginLeft = parseFloat(computedStyle.marginLeft) || 0;
   const marginRight = parseFloat(computedStyle.marginRight) || 0;
 
-  return element.offsetWidth + marginLeft + marginRight;
+  return element.getBoundingClientRect().width + marginLeft + marginRight;
 }
 
 function getNavbarContentWidth(contentElement: HTMLDivElement): number {
@@ -151,7 +151,29 @@ function getNavbarContentWidth(contentElement: HTMLDivElement): number {
     0,
   );
 
-  return Math.max(contentElement.scrollWidth, childWidth);
+  /*
+   * Child cells are the source of truth. The row wrapper width is also written
+   * by Navbar.tsx for overflow layout, so using it first can create feedback.
+   */
+  if (childWidth > 0) return childWidth;
+
+  return Math.max(
+    contentElement.getBoundingClientRect().width,
+    contentElement.scrollWidth,
+  );
+}
+
+function getLayoutViewportWidth(fallbackElement: HTMLElement): number {
+  /*
+   * Use the layout viewport as the single source of truth for navbar fitting.
+   * `visualViewport` differs between desktop browsers under zoom; the layout
+   * viewport is the stable width used by normal page layout and scrollbars.
+   */
+  return (
+    document.documentElement.clientWidth ||
+    window.innerWidth ||
+    fallbackElement.getBoundingClientRect().width
+  );
 }
 
 function getRouteVisualState(
@@ -197,18 +219,18 @@ export function useNavbar(): NavbarState {
   /*
    * Measure before paint, then keep scale synced to real window resizing.
    *
-   * Browser zoom also reduces getBoundingClientRect().width. If we used that
-   * raw CSS-pixel width directly, the navbar scale would shrink exactly when
-   * the browser zoom grows, visually cancelling zoom from about 125% upward.
-   *
-   * The initial devicePixelRatio is used as this session's zoom baseline, so
-   * resizing the browser window still fits the navbar, while browser zoom keeps
-   * behaving like real zoom.
+   * Browser zoom reduces the CSS viewport width, but it should not be treated
+   * as a small window. The scale calculation keeps the viewport zoom-neutral:
+   * real window resizing can shrink the navbar, while browser zoom creates
+   * natural horizontal page overflow.
    */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
-    if (!shellElement || !contentElement) return;
+    const rootElement = contentElement?.parentElement?.parentElement;
+    if (!shellElement || !contentElement || !(rootElement instanceof HTMLElement)) {
+      return;
+    }
 
     const faceplateHeight = DESIGN_HEIGHT - BASE_LINE_HEIGHT;
     const fullArtworkScale = faceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT;
@@ -224,56 +246,68 @@ export function useNavbar(): NavbarState {
       `${BASE_LINE_HEIGHT}px`,
     );
 
-    if (contentElement.parentElement?.parentElement instanceof HTMLElement) {
-      const rootElement = contentElement.parentElement.parentElement;
-      rootElement.style.setProperty("--navbar-root-height", `${faceplateHeight}px`);
-      rootElement.style.setProperty(
-        "--artwork-cell-scale",
-        String(fullArtworkScale),
+    rootElement.style.setProperty("--navbar-root-height", `${faceplateHeight}px`);
+    rootElement.style.setProperty(
+      "--artwork-cell-scale",
+      String(fullArtworkScale),
+    );
+
+    const baselineDevicePixelRatio = window.devicePixelRatio || 1;
+
+    const getCurrentArtworkScale = (): number => {
+      const currentArtworkScale = parseFloat(
+        rootElement.style.getPropertyValue("--artwork-cell-scale") ||
+          window
+            .getComputedStyle(rootElement)
+            .getPropertyValue("--artwork-cell-scale"),
       );
-    }
 
-    designContentWidthRef.current = getNavbarContentWidth(contentElement);
+      return Number.isFinite(currentArtworkScale) && currentArtworkScale > 0
+        ? currentArtworkScale
+        : fullArtworkScale;
+    };
 
-    let baselinePixelRatio = window.devicePixelRatio || 1;
-    let baselinePhysicalShellWidth =
-      shellElement.getBoundingClientRect().width * baselinePixelRatio;
+    /*
+     * Fonts and SVG artwork can settle after the first layout pass,
+     * especially in Firefox. The measured row is normalized back to the
+     * full artwork scale so the stored design width stays browser-stable.
+     */
+    const syncFullScaleNavbarRowWidth = (): number => {
+      const renderedNavbarRowWidth = getNavbarContentWidth(contentElement);
+      const currentArtworkScale = getCurrentArtworkScale();
+      const normalizedNavbarRowWidth =
+        renderedNavbarRowWidth * (fullArtworkScale / currentArtworkScale);
 
-    const getResizeOnlyShellWidth = (): number => {
-      const shellRectWidth = shellElement.getBoundingClientRect().width;
-      const currentPixelRatio = window.devicePixelRatio || baselinePixelRatio;
-      const currentPhysicalShellWidth = shellRectWidth * currentPixelRatio;
-
-      /*
-       * DPR changes can mean two different things:
-       * - desktop browser zoom, where CSS width shrinks but physical width is
-       *   nearly stable
-       * - a real viewport/device change, where physical width also changes
-       *
-       * Resetting the baseline on physical-width changes keeps mobile/high-DPR
-       * layouts from being treated as zoomed desktop layouts.
-       */
-      const physicalWidthDelta =
-        baselinePhysicalShellWidth > 0
-          ? Math.abs(currentPhysicalShellWidth - baselinePhysicalShellWidth) /
-            baselinePhysicalShellWidth
-          : 0;
-
-      if (physicalWidthDelta > 0.08) {
-        baselinePixelRatio = currentPixelRatio;
-        baselinePhysicalShellWidth = currentPhysicalShellWidth;
+      if (normalizedNavbarRowWidth > 0) {
+        designContentWidthRef.current = normalizedNavbarRowWidth;
       }
 
-      const zoomRatio = currentPixelRatio / baselinePixelRatio;
-      return shellRectWidth * zoomRatio;
+      return designContentWidthRef.current;
+    };
+
+    const getResizeOnlyViewportWidth = (): number => {
+      const currentDevicePixelRatio =
+        window.devicePixelRatio || baselineDevicePixelRatio;
+      const cssViewportWidth = getLayoutViewportWidth(shellElement);
+
+      /*
+       * At the same browser zoom, this is the real content viewport width.
+       * When the user zooms in, CSS viewport width shrinks while DPR grows;
+       * multiplying by the DPR ratio prevents that zoom from shrinking navbar
+       * scale and lets normal horizontal scrolling handle the larger page.
+       */
+      return (
+        cssViewportWidth *
+        (currentDevicePixelRatio / baselineDevicePixelRatio)
+      );
     };
 
     const syncScaleFromCellEdges = () => {
-      const resizeOnlyShellWidth = getResizeOnlyShellWidth();
-      const fullScaleNavbarRowWidth = designContentWidthRef.current;
+      const resizeOnlyViewportWidth = getResizeOnlyViewportWidth();
+      const fullScaleNavbarRowWidth = syncFullScaleNavbarRowWidth();
       const nextScale =
         fullScaleNavbarRowWidth > 0
-          ? Math.min(1, resizeOnlyShellWidth / fullScaleNavbarRowWidth)
+          ? Math.min(1, resizeOnlyViewportWidth / fullScaleNavbarRowWidth)
           : 1;
 
       setScale((currentScale) =>
@@ -285,18 +319,26 @@ export function useNavbar(): NavbarState {
     syncScaleFromCellEdges();
 
     const shellResizeObserver = new ResizeObserver(syncScaleFromCellEdges);
+    const contentResizeObserver = new ResizeObserver(syncScaleFromCellEdges);
 
     shellResizeObserver.observe(shellElement);
+    contentResizeObserver.observe(contentElement);
+    Array.from(contentElement.children).forEach((cellElement) => {
+      contentResizeObserver.observe(cellElement);
+    });
+
     window.addEventListener("resize", syncScaleFromCellEdges);
-    window.visualViewport?.addEventListener("resize", syncScaleFromCellEdges);
+
+    let fontReadyCancelled = false;
+    document.fonts?.ready.then(() => {
+      if (!fontReadyCancelled) syncScaleFromCellEdges();
+    });
 
     return () => {
+      fontReadyCancelled = true;
       shellResizeObserver.disconnect();
+      contentResizeObserver.disconnect();
       window.removeEventListener("resize", syncScaleFromCellEdges);
-      window.visualViewport?.removeEventListener(
-        "resize",
-        syncScaleFromCellEdges,
-      );
     };
   }, []);
 

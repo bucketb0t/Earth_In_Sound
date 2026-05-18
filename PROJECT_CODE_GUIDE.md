@@ -140,11 +140,13 @@ Key variables:
 - `designContentWidthRef`: stores the full-size row width before scaling.
 - `scale`: the current artwork scale. `1` means full size.
 - `isScaleReady`: hides the navbar until the first stable measurement is done.
-- `baselinePixelRatio`: browser zoom baseline for the current session.
-- `baselinePhysicalShellWidth`: detects real viewport/device changes versus
-  browser zoom.
-- `resizeOnlyShellWidth`: viewport width corrected so browser zoom does not
-  cancel itself.
+- `baselineDevicePixelRatio`: browser zoom level when the navbar first mounts.
+- `cssViewportWidth`: current visible webpage width in CSS pixels.
+- `resizeOnlyViewportWidth`: zoom-neutral viewport width used for navbar
+  shrinking. It follows real window resizing without treating browser zoom as a
+  small window.
+- `syncFullScaleNavbarRowWidth`: re-measures the rendered child cells and
+  normalizes the value back to full artwork scale.
 - `fullScaleNavbarRowWidth`: full-size row width used to decide when shrinking
   should begin.
 
@@ -153,12 +155,22 @@ Behavior:
 - If the window is wide enough, `scale` stays `1`.
 - If the window becomes narrower than the full cell row, `scale` becomes
   `window width / full row width`.
-- Browser zoom is allowed to behave like real zoom instead of being neutralized.
+- Browser zoom is allowed to behave like real zoom. When zoom makes the navbar
+  visually wider than the visible area, the page can overflow horizontally
+  instead of the navbar shrinking to cancel the zoom.
+- Font and asset settling can change real cell width after first paint,
+  especially in Firefox. The scale code observes the row/cells and updates the
+  stored full-width measurement so Firefox and Chrome use the same cell-edge
+  source of truth.
 
 ### 2. Cross-Browser Row Positioning in `Navbar.tsx`
 
 Different browsers can report wrapper widths differently when children overflow.
 To avoid that, `Navbar.tsx` measures the actual navbar cell children.
+
+The same rule is used in `state.ts`: child cell widths are trusted before the
+row wrapper width. This avoids feedback from CSS variables such as
+`--navbar-row-width`, which are layout outputs rather than sizing inputs.
 
 Key helper functions:
 
@@ -167,14 +179,19 @@ Key helper functions:
 - `measureRenderedNavbarCellsWidth`: sums the rendered width of every navbar
   cell plus margins.
 - `setCssVariable`: writes a CSS variable only when the value changed.
+- `syncHorizontalScrollPosition`: when zoom makes the row wider than the
+  viewport, moves document `scrollLeft` toward the last mouse position so the
+  overflow remains centered around the user's focus.
 
 Key measured variables:
 
-- `visibleViewportWidth`: visual viewport width reported by the browser.
+- `visibleViewportWidth`: layout viewport width used by normal page layout.
 - `renderedNavbarRowWidth`: real rendered width of the cells.
 - `navbarOverflowLayoutWidth`: larger of viewport width and row width. This
   creates natural horizontal scrolling only when needed.
 - `centeredNavbarRowOffset`: left offset used to center the row while it fits.
+- `lastPointerViewportXRef`: remembers the last horizontal mouse position for
+  zoom-overflow scroll anchoring.
 
 CSS variables written by React:
 
@@ -195,6 +212,11 @@ In `NavbarStyle.module.css`:
 - `.navbarRoot`: interactive layer above the banner.
 - `.navbarInner`: measured row wrapper positioned by CSS variables.
 - `.rowPrimary`: actual flex row containing the six cells.
+
+When the row is wider than the viewport, the row starts at normal document
+position `0` so neither side is hidden in negative page space. JavaScript then
+sets horizontal scroll near the mouse position, giving centered overflow while
+keeping both left and right sides reachable through the browser scrollbar.
 
 Layer variables:
 

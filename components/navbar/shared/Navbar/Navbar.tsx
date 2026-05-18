@@ -22,6 +22,19 @@ function toNonNegativePixelValue(rawPixelValue: number): string {
   return `${Math.max(0, Math.ceil(rawPixelValue))}px`;
 }
 
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getLayoutViewportWidth(): number {
+  /*
+   * Match state.ts: use the layout viewport, not visualViewport. Firefox,
+   * Chrome, and Safari disagree less here, and this is the width that creates
+   * the browser's native horizontal scrollbar.
+   */
+  return document.documentElement.clientWidth || window.innerWidth;
+}
+
 function readHorizontalMarginWidth(element: HTMLElement): number {
   const elementStyles = window.getComputedStyle(element);
   const leftMarginWidth = parseFloat(elementStyles.marginLeft) || 0;
@@ -66,6 +79,7 @@ export default function Navbar() {
   const navbarState = useNavbar();
   const { shellRef, contentRef, scale, isScaleReady } = navbarState;
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const lastPointerViewportXRef = useRef<number | null>(null);
 
   /*
    * Runtime CSS variable sync.
@@ -77,6 +91,34 @@ export default function Navbar() {
     const rootElement = rootRef.current;
     const contentElement = contentRef.current;
     if (!shellElement || !rootElement || !contentElement) return;
+
+    const rememberPointerPosition = (event: PointerEvent) => {
+      lastPointerViewportXRef.current = event.clientX;
+    };
+
+    /*
+     * When browser zoom creates horizontal overflow, keep the scroll position
+     * near the user's pointer. This gives centered, reachable overflow without
+     * using negative margins that browsers cannot scroll into.
+     */
+    const syncHorizontalScrollPosition = (
+      visibleViewportWidth: number,
+      renderedNavbarRowWidth: number,
+    ) => {
+      const overflowWidth = renderedNavbarRowWidth - visibleViewportWidth;
+      if (overflowWidth <= 1) return;
+
+      const pointerX =
+        lastPointerViewportXRef.current ?? visibleViewportWidth / 2;
+      const pointerRatio = clampNumber(pointerX / visibleViewportWidth, 0, 1);
+      const targetScrollLeft = Math.round(overflowWidth * pointerRatio);
+      const scrollElement =
+        document.scrollingElement ?? document.documentElement;
+
+      if (Math.abs(scrollElement.scrollLeft - targetScrollLeft) > 2) {
+        scrollElement.scrollLeft = targetScrollLeft;
+      }
+    };
 
     const syncNavbarGeometry = () => {
       /*
@@ -109,16 +151,12 @@ export default function Navbar() {
       );
 
       /*
-       * visualViewport is the closest cross-browser answer to "what the user
-       * can actually see right now." It avoids mixing layout viewport,
-       * scrollbar width, and page overflow rules between Firefox/Safari/Chrome.
+       * The layout viewport is the browser-stable sizing contract. Using the
+       * same width here and in state.ts keeps Firefox from entering overflow
+       * mode earlier than Chrome/Edge.
        */
-      const visibleViewportWidth = Math.round(
-        window.visualViewport?.width ??
-          document.documentElement.clientWidth ??
-          window.innerWidth,
-      );
-      const renderedNavbarRowWidth = Math.ceil(
+      const visibleViewportWidth = Math.round(getLayoutViewportWidth());
+      const renderedNavbarRowWidth = Math.round(
         measureRenderedNavbarCellsWidth(contentElement),
       );
       const navbarOverflowLayoutWidth = Math.max(
@@ -157,6 +195,7 @@ export default function Navbar() {
         "--navbar-row-offset",
         toNonNegativePixelValue(centeredNavbarRowOffset),
       );
+      syncHorizontalScrollPosition(visibleViewportWidth, renderedNavbarRowWidth);
     };
 
     syncNavbarGeometry();
@@ -168,13 +207,15 @@ export default function Navbar() {
     );
 
     observedCells.forEach((cellElement) => observer.observe(cellElement));
+    window.addEventListener("pointermove", rememberPointerPosition, {
+      passive: true,
+    });
     window.addEventListener("resize", syncNavbarGeometry);
-    window.visualViewport?.addEventListener("resize", syncNavbarGeometry);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("pointermove", rememberPointerPosition);
       window.removeEventListener("resize", syncNavbarGeometry);
-      window.visualViewport?.removeEventListener("resize", syncNavbarGeometry);
     };
   }, [contentRef, scale, shellRef]);
 

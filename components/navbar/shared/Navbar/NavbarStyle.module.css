@@ -107,7 +107,8 @@
   /*
    * The cell row is positioned with measured values:
    * - --navbar-row-offset centers the cells while they fit the viewport.
-   * - offset becomes 0 when the row is wider, preserving natural scrolling.
+   * - offset becomes 0 when the row is wider; Navbar.tsx then scrolls the
+   *   document toward the pointer so both overflowing sides remain reachable.
    */
   position: relative;
   z-index: 2;
