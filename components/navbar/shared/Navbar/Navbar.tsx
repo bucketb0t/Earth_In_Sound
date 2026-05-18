@@ -18,44 +18,44 @@ import StoreCell from "../../cells/StoreCell/StoreCell";
 
 import styles from "./NavbarStyle.module.css";
 
-function toPixelValue(value: number): string {
-  return `${Math.max(0, Math.ceil(value))}px`;
+function toNonNegativePixelValue(rawPixelValue: number): string {
+  return `${Math.max(0, Math.ceil(rawPixelValue))}px`;
 }
 
-function readHorizontalMargin(element: HTMLElement): number {
-  const computedStyle = window.getComputedStyle(element);
-  const marginLeft = parseFloat(computedStyle.marginLeft) || 0;
-  const marginRight = parseFloat(computedStyle.marginRight) || 0;
+function readHorizontalMarginWidth(element: HTMLElement): number {
+  const elementStyles = window.getComputedStyle(element);
+  const leftMarginWidth = parseFloat(elementStyles.marginLeft) || 0;
+  const rightMarginWidth = parseFloat(elementStyles.marginRight) || 0;
 
-  return marginLeft + marginRight;
+  return leftMarginWidth + rightMarginWidth;
 }
 
-function measureCellRowWidth(contentElement: HTMLDivElement): number {
-  const cells = Array.from(contentElement.children);
+function measureRenderedNavbarCellsWidth(contentElement: HTMLDivElement): number {
+  const navbarCellElements = Array.from(contentElement.children);
 
   /*
    * Measure the individual cell boxes instead of the row wrapper. Firefox can
    * report a smaller wrapper width when children visually overflow it, while
    * each child rect remains reliable.
    */
-  return cells.reduce((totalWidth, childElement) => {
-    const childWidth = childElement.getBoundingClientRect().width;
-    const childMargin =
-      childElement instanceof HTMLElement
-        ? readHorizontalMargin(childElement)
+  return navbarCellElements.reduce((totalRenderedWidth, navbarCellElement) => {
+    const cellRenderedWidth = navbarCellElement.getBoundingClientRect().width;
+    const cellHorizontalMarginWidth =
+      navbarCellElement instanceof HTMLElement
+        ? readHorizontalMarginWidth(navbarCellElement)
         : 0;
 
-    return totalWidth + childWidth + childMargin;
+    return totalRenderedWidth + cellRenderedWidth + cellHorizontalMarginWidth;
   }, 0);
 }
 
 function setCssVariable(
   element: HTMLElement,
   variableName: string,
-  value: string,
+  cssVariableValue: string,
 ): void {
-  if (element.style.getPropertyValue(variableName) === value) return;
-  element.style.setProperty(variableName, value);
+  if (element.style.getPropertyValue(variableName) === cssVariableValue) return;
+  element.style.setProperty(variableName, cssVariableValue);
 }
 
 /**
@@ -113,14 +113,22 @@ export default function Navbar() {
        * can actually see right now." It avoids mixing layout viewport,
        * scrollbar width, and page overflow rules between Firefox/Safari/Chrome.
        */
-      const viewportWidth = Math.round(
+      const visibleViewportWidth = Math.round(
         window.visualViewport?.width ??
           document.documentElement.clientWidth ??
           window.innerWidth,
       );
-      const rowWidth = Math.ceil(measureCellRowWidth(contentElement));
-      const rootLayoutWidth = Math.max(viewportWidth, rowWidth);
-      const rowOffset = Math.max(0, (viewportWidth - rowWidth) / 2);
+      const renderedNavbarRowWidth = Math.ceil(
+        measureRenderedNavbarCellsWidth(contentElement),
+      );
+      const navbarOverflowLayoutWidth = Math.max(
+        visibleViewportWidth,
+        renderedNavbarRowWidth,
+      );
+      const centeredNavbarRowOffset = Math.max(
+        0,
+        (visibleViewportWidth - renderedNavbarRowWidth) / 2,
+      );
 
       /*
        * Browser-safe row alignment. React writes the same concrete numbers to
@@ -132,22 +140,22 @@ export default function Navbar() {
       setCssVariable(
         shellElement,
         "--navbar-viewport-width",
-        toPixelValue(viewportWidth),
+        toNonNegativePixelValue(visibleViewportWidth),
       );
       setCssVariable(
         rootElement,
         "--navbar-layout-width",
-        toPixelValue(rootLayoutWidth),
+        toNonNegativePixelValue(navbarOverflowLayoutWidth),
       );
       setCssVariable(
         rootElement,
         "--navbar-row-width",
-        toPixelValue(rowWidth),
+        toNonNegativePixelValue(renderedNavbarRowWidth),
       );
       setCssVariable(
         rootElement,
         "--navbar-row-offset",
-        toPixelValue(rowOffset),
+        toNonNegativePixelValue(centeredNavbarRowOffset),
       );
     };
 

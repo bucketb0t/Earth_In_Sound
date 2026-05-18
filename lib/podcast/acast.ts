@@ -120,15 +120,20 @@ export async function getIHateMusicShow(): Promise<PodcastShow> {
   };
 }
 
-function mapEpisode(episode: AcastRssEpisode, index: number): PodcastEpisode {
-  const title = cleanAcastText(episode.title ?? `Episode ${index + 1}`);
+function mapEpisode(
+  episode: AcastRssEpisode,
+  fallbackEpisodeIndex: number,
+): PodcastEpisode {
+  const title = cleanAcastText(
+    episode.title ?? `Episode ${fallbackEpisodeIndex + 1}`,
+  );
   const episodeNumber =
     episode["itunes:episode"] === undefined
       ? null
       : String(episode["itunes:episode"]);
 
   return {
-    id: episode.link ?? `${title}-${index}`,
+    id: episode.link ?? `${title}-${fallbackEpisodeIndex}`,
     title,
     episodeNumber,
     publishedAt: episode.pubDate ?? "",
@@ -142,21 +147,21 @@ function mapEpisode(episode: AcastRssEpisode, index: number): PodcastEpisode {
   };
 }
 
-function asArray<T>(value: OptionalArray<T>): T[] {
-  if (value === undefined) return [];
-  return Array.isArray(value) ? value : [value];
+function asArray<T>(maybeArrayValue: OptionalArray<T>): T[] {
+  if (maybeArrayValue === undefined) return [];
+  return Array.isArray(maybeArrayValue) ? maybeArrayValue : [maybeArrayValue];
 }
 
-function splitKeywords(value: string | undefined): string[] {
-  if (!value) return [];
-  return value
+function splitKeywords(rawKeywords: string | undefined): string[] {
+  if (!rawKeywords) return [];
+  return rawKeywords
     .split(",")
     .map((keyword) => keyword.trim())
     .filter(Boolean);
 }
 
-function cleanTextOrNull(value: string | undefined): string | null {
-  const cleanedValue = cleanAcastText(value ?? "");
+function cleanTextOrNull(rawText: string | undefined): string | null {
+  const cleanedValue = cleanAcastText(rawText ?? "");
   return cleanedValue.length > 0 ? cleanedValue : null;
 }
 
@@ -164,8 +169,8 @@ function cleanTextOrNull(value: string | undefined): string | null {
  * RSS descriptions arrive as HTML with Acast's hosted footer attached.
  * The page currently renders safe text previews, not raw external HTML.
  */
-function cleanAcastText(value: string): string {
-  return decodeHtmlEntities(value)
+function cleanAcastText(rawAcastHtmlText: string): string {
+  return decodeHtmlEntities(rawAcastHtmlText)
     .replace(/<hr\s*\/?>[\s\S]*?Hosted on Acast[\s\S]*$/i, "")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
@@ -176,8 +181,8 @@ function cleanAcastText(value: string): string {
     .trim();
 }
 
-function decodeHtmlEntities(value: string): string {
-  return value
+function decodeHtmlEntities(rawTextWithEntities: string): string {
+  return rawTextWithEntities
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")

@@ -33,7 +33,7 @@ export default function JasonWaltonCell() {
       <KnobJackCell
         sectionId="jw"
         sectionLabel="Jason Walton"
-        links={JW_LINKS}
+        sectionLinks={JW_LINKS}
         knobArtworkClassName={styles.jasonWaltonKnob}
         showJackPort
       />

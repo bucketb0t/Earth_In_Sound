@@ -19,8 +19,8 @@ import {
 import { activateOnEnterOrSpace, useNavbarContext } from "../../state";
 import styles from "./KnobJackCell.module.css";
 
-function scaledPx(value: number): string {
-  return `calc(${value}px * var(--artwork-cell-scale))`;
+function artworkScaledPixelValue(sourcePixelValue: number): string {
+  return `calc(${sourcePixelValue}px * var(--artwork-cell-scale))`;
 }
 
 /*
@@ -28,10 +28,10 @@ function scaledPx(value: number): string {
  * config.ts stays the tuning source; CSS modules still own visuals and assets.
  */
 const knobJackLayoutVars = {
-  "--knob-max-width": scaledPx(KNOB_LAYOUT.module.maxWidth),
-  "--knob-module-offset-x": scaledPx(KNOB_LAYOUT.module.offset.x),
-  "--knob-module-offset-y": scaledPx(KNOB_LAYOUT.module.offset.y),
-  "--knob-artwork-size": scaledPx(KNOB_LAYOUT.artwork.size),
+  "--knob-max-width": artworkScaledPixelValue(KNOB_LAYOUT.module.maxWidth),
+  "--knob-module-offset-x": artworkScaledPixelValue(KNOB_LAYOUT.module.offset.x),
+  "--knob-module-offset-y": artworkScaledPixelValue(KNOB_LAYOUT.module.offset.y),
+  "--knob-artwork-size": artworkScaledPixelValue(KNOB_LAYOUT.artwork.size),
   "--knob-artwork-left": `${KNOB_LAYOUT.artwork.leftPercent}%`,
   "--knob-artwork-top": `${KNOB_LAYOUT.artwork.topPercent}%`,
   "--knob-press-scale-active": KNOB_LAYOUT.artwork.pressedScale,
@@ -39,11 +39,11 @@ const knobJackLayoutVars = {
   "--knob-rotation-top": `${KNOB_LAYOUT.artwork.rotation.top}deg`,
   "--knob-rotation-middle": `${KNOB_LAYOUT.artwork.rotation.middle}deg`,
   "--knob-rotation-bottom": `${KNOB_LAYOUT.artwork.rotation.bottom}deg`,
-  "--jack-socket-width": scaledPx(KNOB_LAYOUT.jack.socketWidth),
-  "--jack-plug-width": scaledPx(KNOB_LAYOUT.jack.plugWidth),
-  "--jack-plug-height": scaledPx(KNOB_LAYOUT.jack.plugHeight),
-  "--jack-anchor-top": scaledPx(KNOB_LAYOUT.jack.anchor.top),
-  "--jack-anchor-right": scaledPx(KNOB_LAYOUT.jack.anchor.right),
+  "--jack-socket-width": artworkScaledPixelValue(KNOB_LAYOUT.jack.socketWidth),
+  "--jack-plug-width": artworkScaledPixelValue(KNOB_LAYOUT.jack.plugWidth),
+  "--jack-plug-height": artworkScaledPixelValue(KNOB_LAYOUT.jack.plugHeight),
+  "--jack-anchor-top": artworkScaledPixelValue(KNOB_LAYOUT.jack.anchor.top),
+  "--jack-anchor-right": artworkScaledPixelValue(KNOB_LAYOUT.jack.anchor.right),
   "--jack-plug-tip-x": KNOB_LAYOUT.jack.plugTipCorrection.x,
   "--jack-plug-tip-y": KNOB_LAYOUT.jack.plugTipCorrection.y,
 } as CSSProperties;
@@ -58,7 +58,7 @@ interface KnobDragState {
 export interface KnobJackCellProps {
   sectionId: KnobSectionId;
   sectionLabel: string;
-  links: readonly string[];
+  sectionLinks: readonly string[];
   knobArtworkClassName: string;
   showJackPort?: boolean;
 }
@@ -70,7 +70,7 @@ export interface KnobJackCellProps {
 export default function KnobJackCell({
   sectionId,
   sectionLabel,
-  links,
+  sectionLinks,
   knobArtworkClassName,
   showJackPort = false,
 }: KnobJackCellProps) {
@@ -83,20 +83,20 @@ export default function KnobJackCell({
   });
   const suppressNextClick = useRef(false);
 
-  const isActive = activePage?.section === sectionId;
-  const activeLinkIndex = isActive ? activePage.linkIndex : -1;
+  const sectionIsActive = activePage?.section === sectionId;
+  const activeLinkIndex = sectionIsActive ? activePage.linkIndex : -1;
   const sectionOffsets = KNOB_OFFSETS[sectionId];
 
   /* Geometry for each choice: dot position and label position. */
   const choiceGeometry = useMemo(
     () =>
-      CHOICE_ANGLES.map((clockAngle) => {
-        const mathAngle = clockAngleToMathAngle(clockAngle);
+      CHOICE_ANGLES.map((clockwiseDegreesFromTop) => {
+        const trigDegrees = clockAngleToMathAngle(clockwiseDegreesFromTop);
         return {
-          dotPosition: polarToCartesian(CHOICE_ORBIT_RADIUS, mathAngle),
+          dotPosition: polarToCartesian(CHOICE_ORBIT_RADIUS, trigDegrees),
           labelPosition: polarToCartesian(
             CHOICE_ORBIT_RADIUS + KNOB_LAYOUT.labelOrbitGap,
-            mathAngle,
+            trigDegrees,
           ),
         };
       }),
@@ -104,21 +104,21 @@ export default function KnobJackCell({
   );
 
   const knobTurnClass =
-    isActive && activeLinkIndex === 0
+    sectionIsActive && activeLinkIndex === 0
       ? styles.knobArtworkTurnTop
-      : isActive && activeLinkIndex === 1
+      : sectionIsActive && activeLinkIndex === 1
         ? styles.knobArtworkTurnMiddle
-        : isActive && activeLinkIndex === 2
+        : sectionIsActive && activeLinkIndex === 2
           ? styles.knobArtworkTurnBottom
           : styles.knobArtworkIdle;
 
   const moveKnobToLink = useCallback(
     (linkIndex: number): void => {
-      const lastLinkIndex = links.length - 1;
+      const lastLinkIndex = sectionLinks.length - 1;
       const clampedLinkIndex = Math.max(0, Math.min(lastLinkIndex, linkIndex));
       knobNavTo(sectionId, clampedLinkIndex);
     },
-    [knobNavTo, links.length, sectionId],
+    [knobNavTo, sectionId, sectionLinks.length],
   );
 
   const onKnobPointerDown = (
@@ -128,7 +128,7 @@ export default function KnobJackCell({
       active: true,
       pointerId: event.pointerId,
       startY: event.clientY,
-      startLinkIndex: isActive ? activeLinkIndex : 0,
+      startLinkIndex: sectionIsActive ? activeLinkIndex : 0,
     };
 
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -138,23 +138,27 @@ export default function KnobJackCell({
   const onKnobPointerMove = (
     event: PointerEvent<SVGCircleElement>,
   ): void => {
-    const drag = dragState.current;
-    if (!drag.active || drag.pointerId !== event.pointerId) return;
+    const activeDragState = dragState.current;
+    if (!activeDragState.active || activeDragState.pointerId !== event.pointerId) {
+      return;
+    }
 
-    const deltaY = event.clientY - drag.startY;
-    if (Math.abs(deltaY) <= 4) return;
+    const pointerDeltaY = event.clientY - activeDragState.startY;
+    if (Math.abs(pointerDeltaY) <= 4) return;
 
-    const stepOffset = Math.round(deltaY / KNOB_LAYOUT.dragStepPx);
+    const linkStepOffset = Math.round(pointerDeltaY / KNOB_LAYOUT.dragStepPx);
 
     suppressNextClick.current = true;
-    moveKnobToLink(drag.startLinkIndex + stepOffset);
+    moveKnobToLink(activeDragState.startLinkIndex + linkStepOffset);
   };
 
   const finishKnobDrag = (event: PointerEvent<SVGCircleElement>): void => {
-    const drag = dragState.current;
-    if (!drag.active || drag.pointerId !== event.pointerId) return;
+    const activeDragState = dragState.current;
+    if (!activeDragState.active || activeDragState.pointerId !== event.pointerId) {
+      return;
+    }
 
-    dragState.current = { ...drag, active: false };
+    dragState.current = { ...activeDragState, active: false };
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -194,7 +198,7 @@ export default function KnobJackCell({
             tabIndex={0}
             role="button"
             aria-label={`${sectionLabel} knob`}
-            aria-pressed={isActive}
+            aria-pressed={sectionIsActive}
             onClick={onKnobClick}
             onPointerDown={onKnobPointerDown}
             onPointerMove={onKnobPointerMove}
@@ -206,9 +210,13 @@ export default function KnobJackCell({
           />
 
           {/* Choice groups: each dot + label is one selectable navigation target. */}
-          {links.map((link, linkIndex) => {
-            const isSelected = isActive && linkIndex === activeLinkIndex;
-            const dotOffset = sectionOffsets.led[linkIndex] ?? { x: 0, y: 0 };
+          {sectionLinks.map((link, linkIndex) => {
+            const linkIsSelected =
+              sectionIsActive && linkIndex === activeLinkIndex;
+            const choiceLightOffset = sectionOffsets.led[linkIndex] ?? {
+              x: 0,
+              y: 0,
+            };
             const labelOffset = sectionOffsets.label[linkIndex] ?? {
               x: 0,
               y: 0,
@@ -228,19 +236,19 @@ export default function KnobJackCell({
                 tabIndex={0}
                 role="button"
                 aria-label={`${sectionLabel}: ${link}`}
-                aria-pressed={isSelected}
-                aria-current={isSelected ? "page" : undefined}
+                aria-pressed={linkIsSelected}
+                aria-current={linkIsSelected ? "page" : undefined}
               >
                 <foreignObject
                   className={styles.choiceLightObject}
                   x={
                     dotPosition.x +
-                    dotOffset.x -
+                    choiceLightOffset.x -
                     KNOB_LAYOUT.choiceLightSize / 2
                   }
                   y={
                     dotPosition.y +
-                    dotOffset.y -
+                    choiceLightOffset.y -
                     KNOB_LAYOUT.choiceLightSize / 2
                   }
                   width={KNOB_LAYOUT.choiceLightSize}
@@ -249,13 +257,15 @@ export default function KnobJackCell({
                 >
                   <div
                     className={`${styles.choiceLight} ${
-                      isSelected ? styles.choiceLightOn : ""
+                      linkIsSelected ? styles.choiceLightOn : ""
                     }`}
                   />
                 </foreignObject>
 
                 <text
-                  className={`${styles.choiceText} ${isSelected ? styles.choiceTextActive : ""}`}
+                  className={`${styles.choiceText} ${
+                    linkIsSelected ? styles.choiceTextActive : ""
+                  }`}
                   x={labelPosition.x + labelOffset.x}
                   y={labelPosition.y + labelOffset.y}
                   dominantBaseline="middle"
@@ -274,7 +284,7 @@ export default function KnobJackCell({
           {/* One anchor keeps the socket and cable mirrored between JWW and IHM. */}
           <div className={styles.jackAnchor}>
             <div className={styles.jackSocket} />
-            {isActive ? <div className={styles.jackPlug} /> : null}
+            {sectionIsActive ? <div className={styles.jackPlug} /> : null}
           </div>
         </div>
       ) : null}

@@ -33,7 +33,7 @@ export default function IHateMusicCell() {
       <KnobJackCell
         sectionId="ihm"
         sectionLabel="I Hate Music"
-        links={IHM_LINKS}
+        sectionLinks={IHM_LINKS}
         knobArtworkClassName={styles.iHateMusicKnob}
         showJackPort
       />

@@ -269,10 +269,12 @@ export function useNavbar(): NavbarState {
     };
 
     const syncScaleFromCellEdges = () => {
-      const shellWidth = getResizeOnlyShellWidth();
-      const contentWidth = designContentWidthRef.current;
+      const resizeOnlyShellWidth = getResizeOnlyShellWidth();
+      const fullScaleNavbarRowWidth = designContentWidthRef.current;
       const nextScale =
-        contentWidth > 0 ? Math.min(1, shellWidth / contentWidth) : 1;
+        fullScaleNavbarRowWidth > 0
+          ? Math.min(1, resizeOnlyShellWidth / fullScaleNavbarRowWidth)
+          : 1;
 
       setScale((currentScale) =>
         Math.abs(currentScale - nextScale) > 0.001 ? nextScale : currentScale,
@@ -282,14 +284,14 @@ export function useNavbar(): NavbarState {
 
     syncScaleFromCellEdges();
 
-    const observer = new ResizeObserver(syncScaleFromCellEdges);
+    const shellResizeObserver = new ResizeObserver(syncScaleFromCellEdges);
 
-    observer.observe(shellElement);
+    shellResizeObserver.observe(shellElement);
     window.addEventListener("resize", syncScaleFromCellEdges);
     window.visualViewport?.addEventListener("resize", syncScaleFromCellEdges);
 
     return () => {
-      observer.disconnect();
+      shellResizeObserver.disconnect();
       window.removeEventListener("resize", syncScaleFromCellEdges);
       window.visualViewport?.removeEventListener(
         "resize",
