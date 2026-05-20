@@ -22,9 +22,9 @@ export default defineSchema({
     email: v.string(),
 
     /**
-     * Public/admin display name.
+     * Required public/admin display name.
      */
-    username: v.optional(v.string()),
+    username: v.string(),
 
     /**
      * Website permission role.
