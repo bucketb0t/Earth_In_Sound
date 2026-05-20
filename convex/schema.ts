@@ -48,6 +48,13 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_email", ["email"])
+    .index("by_username", ["username"])
     .index("by_clerk_user_id", ["clerkUserId"])
-    .index("by_role", ["role"]),
+    .index("by_role", ["role"])
+    .searchIndex("search_email", {
+      searchField: "email",
+    })
+    .searchIndex("search_username", {
+      searchField: "username",
+    }),
 });
