@@ -90,6 +90,27 @@
   outline: none;
 }
 
+.backgroundAudioConsent {
+  align-items: flex-start;
+  color: #cfcfcf;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.78rem;
+  gap: 8px;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.backgroundAudioConsent input {
+  accent-color: #22c55e;
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.backgroundAudioConsent:focus-within {
+  color: #fff;
+}
+
 .videoFrame {
   aspect-ratio: 16 / 9;
   background: #050505;

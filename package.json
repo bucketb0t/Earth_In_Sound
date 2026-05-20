@@ -10,13 +10,17 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "convex": "^1.39.1",
     "fast-xml-parser": "^5.8.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "overrides": {
-    "postcss": "8.5.10"
+    "postcss": "8.5.10",
+    "convex": {
+      "ws": "8.20.1"
+    }
   },
   "devDependencies": {
     "@types/node": "^20",
