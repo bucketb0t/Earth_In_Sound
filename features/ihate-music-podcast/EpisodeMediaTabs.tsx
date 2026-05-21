@@ -22,7 +22,6 @@ import {
 } from "./youtubePlayer";
 
 type MediaMode = "audio" | "video";
-const DEBUG_MEDIA_HANDOFF = process.env.NODE_ENV !== "production";
 
 interface EpisodeMediaTabsProps {
   episodeId: string;
@@ -224,7 +223,6 @@ export default function EpisodeMediaTabs({
           event.data === YOUTUBE_ENDED_STATE);
 
       if (videoWasStoppedByTheUser) {
-        logMediaHandoff("Video stopped by user; cancelling hidden handoff.");
         cancelVideoToAudioHandoff();
         stopAcastShadowAudio();
       }
@@ -266,8 +264,7 @@ export default function EpisodeMediaTabs({
           stopHiddenHandoffIfVideoStopped(event);
           if (event.data === YOUTUBE_PLAYING_STATE && !document.hidden) {
             if (backgroundAudioConsentRef.current) {
-              void startMutedAcastShadowFromVideo().catch((error: unknown) => {
-                logMediaHandoff("Muted Acast shadow failed.", error);
+              void startMutedAcastShadowFromVideo().catch(() => {
                 setBackgroundAudioError(
                   "Background audio could not be prepared while the video played.",
                 );
@@ -331,7 +328,6 @@ export default function EpisodeMediaTabs({
       if (document.hidden) {
         const videoWasPlaying = videoIsPlaying();
 
-        logMediaHandoff("Page hidden.", { videoWasPlaying });
         shouldResumeVideoFromAudioRef.current = videoWasPlaying;
         if (!videoWasPlaying) {
           return;
@@ -345,12 +341,10 @@ export default function EpisodeMediaTabs({
           .then(() => {
             if (document.hidden && shouldResumeVideoFromAudioRef.current) {
               audioElement.muted = false;
-              logMediaHandoff("Acast audio started; pausing YouTube video.");
               youtubePlayer.pauseVideo();
             }
           })
-          .catch((error: unknown) => {
-            logMediaHandoff("Acast audio handoff failed.", error);
+          .catch(() => {
             cancelVideoToAudioHandoff();
             setBackgroundAudioError(
               "Background audio could not start, so the video was not switched.",
@@ -364,9 +358,6 @@ export default function EpisodeMediaTabs({
       }
 
       cancelVideoToAudioHandoff();
-      logMediaHandoff("Page visible; resuming YouTube from Acast time.", {
-        audioTime: audioElement.currentTime,
-      });
       youtubePlayer.seekTo(audioElement.currentTime, true);
       audioElement.pause();
       audioElement.muted = false;
@@ -519,10 +510,4 @@ function createYouTubePlayerMount(videoHost: HTMLDivElement): HTMLDivElement {
 
 function elementHasRenderableSize(element: HTMLElement): boolean {
   return element.offsetWidth > 0 && element.offsetHeight > 0;
-}
-
-function logMediaHandoff(message: string, details?: unknown): void {
-  if (!DEBUG_MEDIA_HANDOFF) return;
-
-  console.info("[EpisodeMediaTabs]", message, details ?? "");
 }

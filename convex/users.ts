@@ -9,7 +9,6 @@ import {
 
 // Local aliases keep this file readable while staying tied to the schema.
 type UserDoc = Doc<"users">;
-type UserRole = UserDoc["role"];
 
 // Search defaults protect the admin panel from loading too many users at once.
 const DEFAULT_SEARCH_LIMIT = 25;
@@ -170,21 +169,21 @@ function requireActiveUser(user: UserDoc): void {
   }
 }
 
-// Admin-level access includes both admins and superadmins.
+// Admin-level access includes admins and the owner.
 function requireAdminUser(user: UserDoc): void {
   requireActiveUser(user);
 
-  if (user.role !== "admin" && user.role !== "superadmin") {
+  if (user.role !== "admin" && user.role !== "owner") {
     throw new Error("Admin access is required.");
   }
 }
 
-// Superadmin-only actions are the highest-risk account operations.
-function requireSuperadminUser(user: UserDoc): void {
+// Owner-only actions are the highest-risk account operations.
+function requireOwnerUser(user: UserDoc): void {
   requireActiveUser(user);
 
-  if (user.role !== "superadmin") {
-    throw new Error("Superadmin access is required.");
+  if (user.role !== "owner") {
+    throw new Error("Owner access is required.");
   }
 }
 
@@ -207,43 +206,32 @@ async function requireUniqueUsername(
   }
 }
 
-// Counts active superadmins so the project cannot lose its final owner account.
-async function countActiveSuperadmins(
+// Loads the owner account, if one exists.
+async function getExistingOwner(
   ctx: QueryCtx | MutationCtx,
-): Promise<number> {
-  const superadmins = await ctx.db
+): Promise<UserDoc | null> {
+  const owners = await ctx.db
     .query("users")
-    .withIndex("by_role", (q) => q.eq("role", "superadmin"))
+    .withIndex("by_role", (q) => q.eq("role", "owner"))
     .collect();
 
-  return superadmins.filter((user) => user.status === "active").length;
+  if (owners.length > 1) {
+    throw new Error("Database has more than one owner account.");
+  }
+
+  return owners[0] ?? null;
 }
 
 /*
- * Protects the final active superadmin.
- * Any role/status change that would remove one must pass through this guard.
+ * Protects the single owner account.
+ * The owner role may move only through transferOwnership.
  */
-async function requireSafeSuperadminChange(
-  ctx: QueryCtx | MutationCtx,
-  targetUser: UserDoc,
-  nextRole?: UserRole,
-  nextStatus = targetUser.status,
-): Promise<void> {
-  const roleWouldRemoveSuperadmin =
-    nextRole !== undefined && nextRole !== "superadmin";
-  const statusWouldRemoveSuperadmin = nextStatus !== "active";
-  const wouldRemoveActiveSuperadmin =
-    targetUser.role === "superadmin" &&
-    targetUser.status === "active" &&
-    (roleWouldRemoveSuperadmin || statusWouldRemoveSuperadmin);
-
-  if (!wouldRemoveActiveSuperadmin) {
+function requireNotOwnerTarget(targetUser: UserDoc): void {
+  if (targetUser.role !== "owner") {
     return;
   }
 
-  if ((await countActiveSuperadmins(ctx)) <= 1) {
-    throw new Error("Cannot remove or disable the last active superadmin.");
-  }
+  throw new Error("Transfer ownership before changing the owner account.");
 }
 
 // Sorts admin search results by username first, then email as a tie-breaker.
@@ -260,13 +248,13 @@ function compareUsersForAdminList(a: UserDoc, b: UserDoc): number {
 }
 
 /**
- * Creates the first superadmin user during setup.
+ * Creates or repairs the single local owner during setup.
  *
- * This is temporary development scaffolding. It only creates a superadmin when
- * no superadmin exists yet, so repeated dashboard tests cannot create multiple
- * full-power accounts by accident.
+ * This is temporary development scaffolding until Clerk is wired in. It allows
+ * the first account to become owner, and it can repair the old local setup
+ * record by turning it into the owner when no owner exists yet.
  */
-export const createLocalSuperadmin = mutation({
+export const createLocalOwner = mutation({
   args: {
     email: v.string(),
     username: v.string(),
@@ -277,24 +265,37 @@ export const createLocalSuperadmin = mutation({
     const cleanedEmail = requireValidEmail(args.email);
     const cleanedUsername = requireValidUsername(args.username);
 
-    // If this email was already set up, return that user instead of duplicating.
+    const existingOwner = await getExistingOwner(ctx);
+
+    // If an owner already exists, setup is finished and ownership must transfer.
+    if (existingOwner) {
+      if (existingOwner.email === cleanedEmail) {
+        return existingOwner._id;
+      }
+
+      throw new Error("An owner already exists. Transfer ownership instead.");
+    }
+
+    /*
+     * If this email exists from earlier setup, promote that exact account to
+     * owner instead of creating a duplicate user document.
+     */
     const existingUser = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", cleanedEmail))
       .unique();
 
     if (existingUser) {
+      await requireUniqueUsername(ctx, cleanedUsername, existingUser._id);
+
+      await ctx.db.patch(existingUser._id, {
+        username: cleanedUsername,
+        role: "owner",
+        status: "active",
+        updatedAt: Date.now(),
+      });
+
       return existingUser._id;
-    }
-
-    // This temporary setup helper may only create the first superadmin.
-    const existingSuperadmins = await ctx.db
-      .query("users")
-      .withIndex("by_role", (q) => q.eq("role", "superadmin"))
-      .take(1);
-
-    if (existingSuperadmins.length > 0) {
-      throw new Error("A setup superadmin already exists.");
     }
 
     await requireUniqueUsername(ctx, cleanedUsername);
@@ -305,7 +306,7 @@ export const createLocalSuperadmin = mutation({
     return await ctx.db.insert("users", {
       email: cleanedEmail,
       username: cleanedUsername,
-      role: "superadmin",
+      role: "owner",
       status: "active",
       createdAt: now,
       updatedAt: now,
@@ -391,8 +392,8 @@ export const updateUsername = mutation({
  * Disables a user account without deleting its history.
  *
  * Users can close their own accounts. Admins can close themselves and regular
- * users. Superadmins can close themselves, admins, and regular users. The final
- * active superadmin is protected so the admin system cannot lock itself out.
+ * users. The owner can close admins and users, but not the owner account;
+ * ownership must be transferred first so the site never loses its owner.
  */
 export const disableUser = mutation({
   args: {
@@ -407,6 +408,9 @@ export const disableUser = mutation({
     const targetUser = await getUserById(ctx, args.userId);
     const isClosingOwnAccount = currentUser._id === targetUser._id;
 
+    // The owner account can only be removed after ownership is transferred.
+    requireNotOwnerTarget(targetUser);
+
     // Self-closing is allowed; closing another account depends on role.
     if (!isClosingOwnAccount) {
       if (currentUser.role === "user") {
@@ -416,17 +420,7 @@ export const disableUser = mutation({
       if (currentUser.role === "admin" && targetUser.role !== "user") {
         throw new Error("Admins can only disable regular user accounts.");
       }
-
-      if (
-        currentUser.role === "superadmin" &&
-        targetUser.role === "superadmin"
-      ) {
-        throw new Error("Superadmins cannot disable other superadmins here.");
-      }
     }
-
-    // The final active superadmin cannot be disabled by any path.
-    await requireSafeSuperadminChange(ctx, targetUser, undefined, "disabled");
 
     // Re-running the same disable action should not cause an error.
     if (targetUser.status === "disabled") {
@@ -445,33 +439,24 @@ export const disableUser = mutation({
 /**
  * Changes a user's permission role.
  *
- * Only active superadmins can change roles. The mutation prevents self-demotion
- * and protects the final active superadmin from being removed by mistake.
+ * Only the owner can promote/demote admins and normal users. The owner role is
+ * intentionally excluded here because ownership moves through transferOwnership.
  */
 export const setUserRole = mutation({
   args: {
     userId: v.id("users"),
-    role: v.union(
-      v.literal("superadmin"),
-      v.literal("admin"),
-      v.literal("user"),
-    ),
+    role: v.union(v.literal("admin"), v.literal("user")),
   },
 
   handler: async (ctx, args) => {
-    // Role edits are reserved for active superadmins.
+    // Role edits are reserved for the active owner.
     const currentUser = await requireCurrentUser(ctx);
-    requireSuperadminUser(currentUser);
-
-    // Self-role edits are blocked to avoid accidental owner lockout.
-    if (currentUser._id === args.userId) {
-      throw new Error("You cannot change your own role.");
-    }
+    requireOwnerUser(currentUser);
 
     const targetUser = await getUserById(ctx, args.userId);
 
-    // Demoting the final active superadmin is not allowed.
-    await requireSafeSuperadminChange(ctx, targetUser, args.role);
+    // Owner changes are blocked here so ownership has one clear path.
+    requireNotOwnerTarget(targetUser);
 
     // If the role is already correct, avoid a pointless write.
     if (targetUser.role === args.role) {
@@ -484,6 +469,48 @@ export const setUserRole = mutation({
     });
 
     return targetUser._id;
+  },
+});
+
+/**
+ * Transfers the single owner role to another active user.
+ *
+ * The current owner becomes an admin. That keeps the old owner useful without
+ * leaving two owner accounts in the database.
+ */
+export const transferOwnership = mutation({
+  args: {
+    newOwnerUserId: v.id("users"),
+  },
+
+  handler: async (ctx, args) => {
+    const currentOwner = await requireCurrentUser(ctx);
+    requireOwnerUser(currentOwner);
+
+    const nextOwner = await getUserById(ctx, args.newOwnerUserId);
+    requireActiveUser(nextOwner);
+
+    if (currentOwner._id === nextOwner._id) {
+      return currentOwner._id;
+    }
+
+    const now = Date.now();
+
+    /*
+     * Convex mutations are transactional. Both role changes commit together,
+     * so the database never ends a mutation with zero or two owners.
+     */
+    await ctx.db.patch(currentOwner._id, {
+      role: "admin",
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(nextOwner._id, {
+      role: "owner",
+      updatedAt: now,
+    });
+
+    return nextOwner._id;
   },
 });
 

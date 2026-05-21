@@ -28,12 +28,12 @@ export default defineSchema({
 
     /**
      * Website permission role.
+     *
+     * owner: the single top account; ownership is transferred, not duplicated.
+     * admin: can moderate/manage normal users but cannot change roles.
+     * user: normal public account.
      */
-    role: v.union(
-      v.literal("superadmin"),
-      v.literal("admin"),
-      v.literal("user"),
-    ),
+    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("user")),
 
     /**
      * Account state.
