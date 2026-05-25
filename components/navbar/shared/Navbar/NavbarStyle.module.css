@@ -13,7 +13,8 @@
  */
 
 .navbarShell {
-  --navbar-viewport-width: 100vw;
+  --navbar-layout-width: 100vw;
+  --navbar-paint-width: 100vw;
   --navbar-shell-height: 132px;
   --navbar-line-height: 8px;
   --navbar-layer-banner: 1000;
@@ -23,8 +24,8 @@
   position: sticky;
   top: 0;
   z-index: var(--navbar-layer-banner);
-  width: var(--navbar-viewport-width);
-  max-width: var(--navbar-viewport-width);
+  width: var(--navbar-layout-width);
+  max-width: none;
   height: var(--navbar-shell-height);
   padding: 0;
   overflow: visible;
@@ -39,16 +40,17 @@
 .navbarShell::before,
 .navbarShell::after {
   content: "";
-  position: fixed;
+  position: absolute;
   left: 0;
-  width: var(--navbar-viewport-width);
+  width: var(--navbar-paint-width);
   pointer-events: none;
 }
 
 .navbarShell::before {
   /*
-   * The banner is viewport paint. The cell layer participates in layout for
-   * natural horizontal scrolling, while this art stays edge-to-edge.
+   * The banner shares the same scrollable width as the cell layer. This keeps
+   * artwork and controls glued together after window restore and horizontal
+   * scrolling while still filling the full viewport when the row fits.
    */
   top: 0;
   height: var(--navbar-shell-height);
@@ -61,8 +63,8 @@
 
 .navbarShell::after {
   /*
-   * The baseline follows the same viewport paint rule as the banner, so it
-   * stays glued to both window edges during zoom and horizontal scrolling.
+   * The baseline follows the banner width so it cannot separate from the cells
+   * when browser zoom or window restore creates horizontal page overflow.
    */
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
   z-index: var(--navbar-layer-baseline);

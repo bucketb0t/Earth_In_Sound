@@ -45,7 +45,6 @@ export default function EpisodeMediaTabs({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoHostRef = useRef<HTMLDivElement | null>(null);
   const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
-  const backgroundAudioConsentRef = useRef(false);
   const shouldResumeVideoFromAudioRef = useRef(false);
 
   const [activeMode, setActiveMode] = useState<MediaMode>("audio");
@@ -75,21 +74,37 @@ export default function EpisodeMediaTabs({
     youtubePlayerRef.current?.pauseVideo();
   }, []);
 
+  const logMediaSwitch = useCallback(
+    (
+      fromMode: MediaMode,
+      toMode: MediaMode,
+      reason: string,
+      timestamp?: number,
+    ): void => {
+      /*
+       * Temporary debugging signal for the video/audio continuity feature.
+       * Sentences are easier to follow than object dumps while testing.
+       */
+      const readableEpisodeId = decodeURIComponent(episodeId)
+        .split("/")
+        .pop()
+        ?.replace(/^episode-?\d*-?/i, "")
+        .replace(/-/g, " ")
+        .trim();
+      const timestampLabel = Number.isFinite(timestamp)
+        ? ` at ${Math.max(0, timestamp ?? 0).toFixed(1)}s`
+        : "";
+
+      console.info(
+        `[Episode media] ${fromMode.toUpperCase()} -> ${toMode.toUpperCase()}${timestampLabel}. Reason: ${reason}. Episode: ${readableEpisodeId || episodeId}`,
+      );
+    },
+    [episodeId],
+  );
+
   const cancelVideoToAudioHandoff = useCallback((): void => {
     shouldResumeVideoFromAudioRef.current = false;
   }, []);
-
-  const stopAcastShadowAudio = useCallback((): void => {
-    const audioElement = audioRef.current;
-    if (!audioElement) return;
-
-    audioElement.pause();
-    audioElement.muted = false;
-  }, []);
-
-  useEffect(() => {
-    backgroundAudioConsentRef.current = backgroundAudioConsentGiven;
-  }, [backgroundAudioConsentGiven]);
 
   const selectAudio = useCallback((): void => {
     /*
@@ -98,14 +113,13 @@ export default function EpisodeMediaTabs({
      * phone screen is off, and it does not trigger any YouTube handoff logic.
      */
     cancelVideoToAudioHandoff();
-    if (audioRef.current) {
-      audioRef.current.muted = false;
-    }
+    logMediaSwitch("video", "audio", "manual tab selection");
     setActiveMode("audio");
     pauseVideo();
-  }, [cancelVideoToAudioHandoff, pauseVideo]);
+  }, [cancelVideoToAudioHandoff, logMediaSwitch, pauseVideo]);
 
   const selectVideo = useCallback((): void => {
+    logMediaSwitch("audio", "video", "manual tab selection");
     setActiveMode("video");
     pauseAudio();
 
@@ -114,42 +128,22 @@ export default function EpisodeMediaTabs({
      * without starting playback or changing normal Audio-tab behavior.
      */
     audioRef.current?.load();
-  }, [pauseAudio]);
-
-  const getYouTubePlayerState = useCallback((): number | null => {
-    try {
-      return youtubePlayerRef.current?.getPlayerState() ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const videoIsPlaying = useCallback(
-    () => getYouTubePlayerState() === YOUTUBE_PLAYING_STATE,
-    [getYouTubePlayerState],
-  );
-
-  const startMutedAcastShadowFromVideo = useCallback(async (): Promise<void> => {
-    const audioElement = audioRef.current;
-    const youtubePlayer = youtubePlayerRef.current;
-    if (!audioElement || !youtubePlayer || !audioUrl) return;
-
-    audioElement.muted = true;
-    await playAudioFromTimestamp(audioElement, youtubePlayer.getCurrentTime());
-  }, [audioUrl]);
+  }, [logMediaSwitch, pauseAudio]);
 
   /*
    * Consent is explicit because the Video tab can start Acast audio while the
-   * page is hidden. Preparation is best-effort: browsers differ here, so a
-   * failed warm-up should not disable the user's choice before the real handoff.
+   * page is hidden. The muted warm-up gives browsers a user-triggered media
+   * interaction before any later screen-off handoff is attempted.
    */
-  const changeBackgroundAudioConsent = (consentGiven: boolean): void => {
+  const changeBackgroundAudioConsent = async (
+    consentGiven: boolean,
+  ): Promise<void> => {
     cancelVideoToAudioHandoff();
     setBackgroundAudioError("");
 
     if (!consentGiven) {
       setBackgroundAudioConsentGiven(false);
-      stopAcastShadowAudio();
+      audioRef.current?.pause();
       return;
     }
 
@@ -162,20 +156,6 @@ export default function EpisodeMediaTabs({
 
     setBackgroundAudioConsentGiven(true);
 
-    const preparation = videoIsPlaying()
-      ? startMutedAcastShadowFromVideo()
-      : prepareAudioForBackgroundHandoff(audioElement);
-
-    preparation.catch(() => {
-      setBackgroundAudioError(
-        "Background audio is allowed, but this browser may require the audio player to be started once first.",
-      );
-    });
-  };
-
-  const prepareAudioForBackgroundHandoff = async (
-    audioElement: HTMLAudioElement,
-  ): Promise<void> => {
     const previousMuted = audioElement.muted;
     const previousTime = audioElement.currentTime;
 
@@ -189,7 +169,10 @@ export default function EpisodeMediaTabs({
         audioElement.currentTime = previousTime;
       }
     } catch {
-      throw new Error("Background audio warm-up was blocked.");
+      setBackgroundAudioConsentGiven(false);
+      setBackgroundAudioError(
+        "Background audio could not be prepared. Try again after playing the audio once.",
+      );
     } finally {
       audioElement.muted = previousMuted;
     }
@@ -224,10 +207,9 @@ export default function EpisodeMediaTabs({
 
       if (videoWasStoppedByTheUser) {
         cancelVideoToAudioHandoff();
-        stopAcastShadowAudio();
       }
     },
-    [cancelVideoToAudioHandoff, stopAcastShadowAudio],
+    [cancelVideoToAudioHandoff],
   );
 
   /*
@@ -263,15 +245,7 @@ export default function EpisodeMediaTabs({
         onStateChange: (event) => {
           stopHiddenHandoffIfVideoStopped(event);
           if (event.data === YOUTUBE_PLAYING_STATE && !document.hidden) {
-            if (backgroundAudioConsentRef.current) {
-              void startMutedAcastShadowFromVideo().catch(() => {
-                setBackgroundAudioError(
-                  "Background audio could not be prepared while the video played.",
-                );
-              });
-            } else {
-              pauseAudio();
-            }
+            pauseAudio();
           }
         },
       })
@@ -294,13 +268,10 @@ export default function EpisodeMediaTabs({
       }
       youtubePlayerRef.current?.destroy();
       youtubePlayerRef.current = null;
-      stopAcastShadowAudio();
       videoHost.replaceChildren();
     };
   }, [
     pauseAudio,
-    startMutedAcastShadowFromVideo,
-    stopAcastShadowAudio,
     stopHiddenHandoffIfVideoStopped,
     videoTabIsActive,
     youtubeVideoId,
@@ -308,8 +279,8 @@ export default function EpisodeMediaTabs({
 
   /*
    * Video-only screen-off handoff:
-   * - With consent, Acast can run muted while the YouTube video is visible.
-   * - If the page becomes hidden, that prepared audio is unmuted and takes over.
+   * - If the YouTube video is actively playing and the page becomes hidden,
+   *   Acast audio takes over from the same timestamp.
    * - When the page becomes visible again, YouTube seeks to the audio time.
    *
    * Direct Audio-tab playback intentionally bypasses this effect and is left to
@@ -326,21 +297,28 @@ export default function EpisodeMediaTabs({
       }
 
       if (document.hidden) {
-        const videoWasPlaying = videoIsPlaying();
+        const videoWasPlaying =
+          youtubePlayer.getPlayerState() === YOUTUBE_PLAYING_STATE;
 
         shouldResumeVideoFromAudioRef.current = videoWasPlaying;
         if (!videoWasPlaying) {
           return;
         }
 
-        const audioStart = audioElement.paused
-          ? startMutedAcastShadowFromVideo()
-          : Promise.resolve();
+        const videoTimestamp = youtubePlayer.getCurrentTime();
+        logMediaSwitch(
+          "video",
+          "audio",
+          "page hidden background handoff",
+          videoTimestamp,
+        );
 
-        void audioStart
+        void playAudioFromTimestamp(
+          audioElement,
+          videoTimestamp,
+        )
           .then(() => {
             if (document.hidden && shouldResumeVideoFromAudioRef.current) {
-              audioElement.muted = false;
               youtubePlayer.pauseVideo();
             }
           })
@@ -358,9 +336,14 @@ export default function EpisodeMediaTabs({
       }
 
       cancelVideoToAudioHandoff();
+      logMediaSwitch(
+        "audio",
+        "video",
+        "page visible resume handoff",
+        audioElement.currentTime,
+      );
       youtubePlayer.seekTo(audioElement.currentTime, true);
       audioElement.pause();
-      audioElement.muted = false;
       youtubePlayer.playVideo();
     };
 
@@ -371,12 +354,7 @@ export default function EpisodeMediaTabs({
         syncMediaOnVisibilityChange,
       );
     };
-  }, [
-    cancelVideoToAudioHandoff,
-    startMutedAcastShadowFromVideo,
-    videoContinuityIsEnabled,
-    videoIsPlaying,
-  ]);
+  }, [cancelVideoToAudioHandoff, logMediaSwitch, videoContinuityIsEnabled]);
 
   const stopHiddenHandoffIfUserPausedAudio = (): void => {
     if (document.hidden) {
@@ -465,7 +443,7 @@ export default function EpisodeMediaTabs({
             type="checkbox"
             checked={backgroundAudioConsentGiven}
             onChange={(event) => {
-              changeBackgroundAudioConsent(event.currentTarget.checked);
+              void changeBackgroundAudioConsent(event.currentTarget.checked);
             }}
           />
           <span>

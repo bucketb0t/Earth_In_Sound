@@ -318,8 +318,38 @@ export function useNavbar(): NavbarState {
 
     syncScaleFromCellEdges();
 
-    const shellResizeObserver = new ResizeObserver(syncScaleFromCellEdges);
-    const contentResizeObserver = new ResizeObserver(syncScaleFromCellEdges);
+    /*
+     * Minimize/maximize and browser focus changes can report geometry before
+     * layout settles. Scheduling the scale sync two frames later keeps the
+     * stored design width stable while still reacting quickly to real resizes.
+     */
+    let firstFrameId: number | null = null;
+    let secondFrameId: number | null = null;
+
+    const cancelScheduledScaleSync = () => {
+      if (firstFrameId !== null) cancelAnimationFrame(firstFrameId);
+      if (secondFrameId !== null) cancelAnimationFrame(secondFrameId);
+      firstFrameId = null;
+      secondFrameId = null;
+    };
+
+    const scheduleScaleSync = () => {
+      cancelScheduledScaleSync();
+      firstFrameId = requestAnimationFrame(() => {
+        secondFrameId = requestAnimationFrame(() => {
+          firstFrameId = null;
+          secondFrameId = null;
+          syncScaleFromCellEdges();
+        });
+      });
+    };
+
+    const syncAfterVisibilityRestore = () => {
+      if (!document.hidden) scheduleScaleSync();
+    };
+
+    const shellResizeObserver = new ResizeObserver(scheduleScaleSync);
+    const contentResizeObserver = new ResizeObserver(scheduleScaleSync);
 
     shellResizeObserver.observe(shellElement);
     contentResizeObserver.observe(contentElement);
@@ -327,18 +357,28 @@ export function useNavbar(): NavbarState {
       contentResizeObserver.observe(cellElement);
     });
 
-    window.addEventListener("resize", syncScaleFromCellEdges);
+    window.addEventListener("resize", scheduleScaleSync);
+    window.addEventListener("focus", scheduleScaleSync);
+    window.addEventListener("pageshow", scheduleScaleSync);
+    document.addEventListener("visibilitychange", syncAfterVisibilityRestore);
 
     let fontReadyCancelled = false;
     document.fonts?.ready.then(() => {
-      if (!fontReadyCancelled) syncScaleFromCellEdges();
+      if (!fontReadyCancelled) scheduleScaleSync();
     });
 
     return () => {
       fontReadyCancelled = true;
+      cancelScheduledScaleSync();
       shellResizeObserver.disconnect();
       contentResizeObserver.disconnect();
-      window.removeEventListener("resize", syncScaleFromCellEdges);
+      window.removeEventListener("resize", scheduleScaleSync);
+      window.removeEventListener("focus", scheduleScaleSync);
+      window.removeEventListener("pageshow", scheduleScaleSync);
+      document.removeEventListener(
+        "visibilitychange",
+        syncAfterVisibilityRestore,
+      );
     };
   }, []);
 

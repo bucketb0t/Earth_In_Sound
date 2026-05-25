@@ -22,10 +22,6 @@ function toNonNegativePixelValue(rawPixelValue: number): string {
   return `${Math.max(0, Math.ceil(rawPixelValue))}px`;
 }
 
-function clampNumber(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 function getLayoutViewportWidth(): number {
   /*
    * Match state.ts: use the layout viewport, not visualViewport. Firefox,
@@ -33,6 +29,16 @@ function getLayoutViewportWidth(): number {
    * the browser's native horizontal scrollbar.
    */
   return document.documentElement.clientWidth || window.innerWidth;
+}
+
+function getPaintViewportWidth(layoutViewportWidth: number): number {
+  /*
+   * Layout width and paint width are intentionally separate.
+   * clientWidth excludes the vertical scrollbar gutter, which is correct for
+   * fitting cells. innerWidth includes that gutter, which prevents a thin body
+   * colored strip from appearing beside the navbar after restore/refresh.
+   */
+  return Math.max(layoutViewportWidth, window.innerWidth || 0);
 }
 
 function readHorizontalMarginWidth(element: HTMLElement): number {
@@ -79,7 +85,6 @@ export default function Navbar() {
   const navbarState = useNavbar();
   const { shellRef, contentRef, scale, isScaleReady } = navbarState;
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const lastPointerViewportXRef = useRef<number | null>(null);
 
   /*
    * Runtime CSS variable sync.
@@ -92,31 +97,23 @@ export default function Navbar() {
     const contentElement = contentRef.current;
     if (!shellElement || !rootElement || !contentElement) return;
 
-    const rememberPointerPosition = (event: PointerEvent) => {
-      lastPointerViewportXRef.current = event.clientX;
-    };
-
     /*
-     * When browser zoom creates horizontal overflow, keep the scroll position
-     * near the user's pointer. This gives centered, reachable overflow without
-     * using negative margins that browsers cannot scroll into.
+     * Window minimize/restore can leave a stale horizontal scroll value behind.
+     * If the measured row fits again, reset the document to the normal left
+     * edge. When the row is wider, native browser scrolling remains in charge.
      */
-    const syncHorizontalScrollPosition = (
+    const clearStaleHorizontalScrollWhenRowFits = (
       visibleViewportWidth: number,
       renderedNavbarRowWidth: number,
     ) => {
       const overflowWidth = renderedNavbarRowWidth - visibleViewportWidth;
-      if (overflowWidth <= 1) return;
+      if (overflowWidth > 1) return;
 
-      const pointerX =
-        lastPointerViewportXRef.current ?? visibleViewportWidth / 2;
-      const pointerRatio = clampNumber(pointerX / visibleViewportWidth, 0, 1);
-      const targetScrollLeft = Math.round(overflowWidth * pointerRatio);
       const scrollElement =
         document.scrollingElement ?? document.documentElement;
 
-      if (Math.abs(scrollElement.scrollLeft - targetScrollLeft) > 2) {
-        scrollElement.scrollLeft = targetScrollLeft;
+      if (scrollElement.scrollLeft !== 0) {
+        scrollElement.scrollLeft = 0;
       }
     };
 
@@ -156,6 +153,9 @@ export default function Navbar() {
        * mode earlier than Chrome/Edge.
        */
       const visibleViewportWidth = Math.round(getLayoutViewportWidth());
+      const paintViewportWidth = Math.round(
+        getPaintViewportWidth(visibleViewportWidth),
+      );
       const renderedNavbarRowWidth = Math.round(
         measureRenderedNavbarCellsWidth(contentElement),
       );
@@ -171,19 +171,24 @@ export default function Navbar() {
       /*
        * Browser-safe row alignment. React writes the same concrete numbers to
        * every browser:
-       * - viewport width for the banner/shell
+       * - scrollable layout width for the banner/shell and interactive layer
        * - real child-cell row width for the interactive layer
        * - left offset for centering while the row fits
        */
       setCssVariable(
-        shellElement,
-        "--navbar-viewport-width",
-        toNonNegativePixelValue(visibleViewportWidth),
-      );
-      setCssVariable(
         rootElement,
         "--navbar-layout-width",
         toNonNegativePixelValue(navbarOverflowLayoutWidth),
+      );
+      setCssVariable(
+        shellElement,
+        "--navbar-layout-width",
+        toNonNegativePixelValue(navbarOverflowLayoutWidth),
+      );
+      setCssVariable(
+        shellElement,
+        "--navbar-paint-width",
+        toNonNegativePixelValue(Math.max(paintViewportWidth, renderedNavbarRowWidth)),
       );
       setCssVariable(
         rootElement,
@@ -195,27 +200,66 @@ export default function Navbar() {
         "--navbar-row-offset",
         toNonNegativePixelValue(centeredNavbarRowOffset),
       );
-      syncHorizontalScrollPosition(visibleViewportWidth, renderedNavbarRowWidth);
+      clearStaleHorizontalScrollWhenRowFits(
+        visibleViewportWidth,
+        renderedNavbarRowWidth,
+      );
     };
 
     syncNavbarGeometry();
 
-    const observer = new ResizeObserver(syncNavbarGeometry);
+    /*
+     * Browser restore/focus events can fire before layout has fully settled.
+     * Two animation frames let Chrome, Firefox, and Safari finish viewport and
+     * font/layout updates before we write the final CSS variables.
+     */
+    let firstFrameId: number | null = null;
+    let secondFrameId: number | null = null;
+
+    const cancelScheduledNavbarGeometrySync = () => {
+      if (firstFrameId !== null) cancelAnimationFrame(firstFrameId);
+      if (secondFrameId !== null) cancelAnimationFrame(secondFrameId);
+      firstFrameId = null;
+      secondFrameId = null;
+    };
+
+    const scheduleNavbarGeometrySync = () => {
+      cancelScheduledNavbarGeometrySync();
+      firstFrameId = requestAnimationFrame(() => {
+        secondFrameId = requestAnimationFrame(() => {
+          firstFrameId = null;
+          secondFrameId = null;
+          syncNavbarGeometry();
+        });
+      });
+    };
+
+    const syncAfterVisibilityRestore = () => {
+      if (!document.hidden) scheduleNavbarGeometrySync();
+    };
+
+    const observer = new ResizeObserver(scheduleNavbarGeometrySync);
     const observedCells = Array.from(contentElement.children).filter(
       (childElement): childElement is HTMLElement =>
         childElement instanceof HTMLElement,
     );
 
     observedCells.forEach((cellElement) => observer.observe(cellElement));
-    window.addEventListener("pointermove", rememberPointerPosition, {
-      passive: true,
-    });
-    window.addEventListener("resize", syncNavbarGeometry);
+    window.addEventListener("resize", scheduleNavbarGeometrySync);
+    window.addEventListener("focus", scheduleNavbarGeometrySync);
+    window.addEventListener("pageshow", scheduleNavbarGeometrySync);
+    document.addEventListener("visibilitychange", syncAfterVisibilityRestore);
 
     return () => {
+      cancelScheduledNavbarGeometrySync();
       observer.disconnect();
-      window.removeEventListener("pointermove", rememberPointerPosition);
-      window.removeEventListener("resize", syncNavbarGeometry);
+      window.removeEventListener("resize", scheduleNavbarGeometrySync);
+      window.removeEventListener("focus", scheduleNavbarGeometrySync);
+      window.removeEventListener("pageshow", scheduleNavbarGeometrySync);
+      document.removeEventListener(
+        "visibilitychange",
+        syncAfterVisibilityRestore,
+      );
     };
   }, [contentRef, scale, shellRef]);
 
