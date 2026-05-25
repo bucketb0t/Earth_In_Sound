@@ -18,6 +18,11 @@ import StoreCell from "../../cells/StoreCell/StoreCell";
 
 import styles from "./NavbarStyle.module.css";
 
+interface PointerZoomAnchor {
+  pointerX: number;
+  viewportWidth: number;
+}
+
 function toNonNegativePixelValue(rawPixelValue: number): string {
   return `${Math.max(0, Math.ceil(rawPixelValue))}px`;
 }
@@ -85,6 +90,7 @@ export default function Navbar() {
   const navbarState = useNavbar();
   const { shellRef, contentRef, scale, isScaleReady } = navbarState;
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const pointerZoomAnchorRef = useRef<PointerZoomAnchor | null>(null);
 
   /*
    * Runtime CSS variable sync.
@@ -114,6 +120,39 @@ export default function Navbar() {
 
       if (scrollElement.scrollLeft !== 0) {
         scrollElement.scrollLeft = 0;
+      }
+    };
+
+    const rememberPointerZoomAnchor = (event: MouseEvent | PointerEvent) => {
+      /*
+       * Browser zoom changes viewport width after this event. Storing the last
+       * pointer position lets us restore a mouse-centered horizontal view once
+       * the navbar becomes wider than the viewport.
+       */
+      pointerZoomAnchorRef.current = {
+        pointerX: event.clientX,
+        viewportWidth: getLayoutViewportWidth(),
+      };
+    };
+
+    const scrollOverflowTowardPointer = (
+      visibleViewportWidth: number,
+      renderedNavbarRowWidth: number,
+    ) => {
+      const overflowWidth = renderedNavbarRowWidth - visibleViewportWidth;
+      const pointerZoomAnchor = pointerZoomAnchorRef.current;
+      if (overflowWidth <= 1 || !pointerZoomAnchor) return;
+
+      const scrollElement =
+        document.scrollingElement ?? document.documentElement;
+      const pointerRatio = Math.max(
+        0,
+        Math.min(1, pointerZoomAnchor.pointerX / pointerZoomAnchor.viewportWidth),
+      );
+      const nextScrollLeft = Math.round(overflowWidth * pointerRatio);
+
+      if (Math.abs(scrollElement.scrollLeft - nextScrollLeft) > 1) {
+        scrollElement.scrollLeft = nextScrollLeft;
       }
     };
 
@@ -200,6 +239,8 @@ export default function Navbar() {
         "--navbar-row-offset",
         toNonNegativePixelValue(centeredNavbarRowOffset),
       );
+
+      scrollOverflowTowardPointer(visibleViewportWidth, renderedNavbarRowWidth);
       clearStaleHorizontalScrollWhenRowFits(
         visibleViewportWidth,
         renderedNavbarRowWidth,
@@ -245,6 +286,8 @@ export default function Navbar() {
     );
 
     observedCells.forEach((cellElement) => observer.observe(cellElement));
+    window.addEventListener("pointermove", rememberPointerZoomAnchor);
+    window.addEventListener("mousemove", rememberPointerZoomAnchor);
     window.addEventListener("resize", scheduleNavbarGeometrySync);
     window.addEventListener("focus", scheduleNavbarGeometrySync);
     window.addEventListener("pageshow", scheduleNavbarGeometrySync);
@@ -253,6 +296,8 @@ export default function Navbar() {
     return () => {
       cancelScheduledNavbarGeometrySync();
       observer.disconnect();
+      window.removeEventListener("pointermove", rememberPointerZoomAnchor);
+      window.removeEventListener("mousemove", rememberPointerZoomAnchor);
       window.removeEventListener("resize", scheduleNavbarGeometrySync);
       window.removeEventListener("focus", scheduleNavbarGeometrySync);
       window.removeEventListener("pageshow", scheduleNavbarGeometrySync);
