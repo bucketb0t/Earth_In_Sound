@@ -151,24 +151,58 @@ git status --short
 
 ## 10. Create The Database Tables
 
-The local database needs the same tables expected by the app.
+The database schema is stored in committed SQL migration files.
 
-At minimum, the user system will use a `users` table with:
+Run the first migration from the project root.
 
-```text
-email
-username
-role
-status
-createdAt
-updatedAt
+From WSL/Ubuntu:
+
+```bash
+turso db shell earth-in-sound-dev < database/migrations/001_create_users.sql
 ```
 
-The exact SQL migration should be run from the project migration files once they are added.
+Replace `earth-in-sound-dev` with your own Turso database name if different.
 
-Until migrations are finalized, ask the project owner for the current SQL setup step.
+This creates the `users` table with:
 
-## 11. Run The Project
+```text
+id
+auth_provider_user_id
+email
+email_lookup
+username
+username_lookup
+role
+status
+created_at
+updated_at
+```
+
+The lookup fields are lowercase search/uniqueness helpers. The original `email` and `username` fields keep the visible values exactly as typed.
+
+## 11. Create The First Owner Account
+
+The project includes a setup script for creating the first owner account.
+
+In Command Prompt:
+
+```cmd
+set LOCAL_OWNER_EMAIL=owner@example.com
+set LOCAL_OWNER_USERNAME=OwnerName
+npx tsx database/scripts/create-local-owner.ts
+```
+
+In PowerShell:
+
+```powershell
+$env:LOCAL_OWNER_EMAIL="owner@example.com"
+$env:LOCAL_OWNER_USERNAME="OwnerName"
+npx tsx database/scripts/create-local-owner.ts
+```
+
+The script refuses to create a second owner. Ownership transfer will be handled later by a separate database function.
+
+## 12. Run The Project
 
 From the project root:
 
@@ -182,7 +216,7 @@ Open:
 http://localhost:3000
 ```
 
-## 12. Important Security Rules
+## 13. Important Security Rules
 
 Do not commit:
 
@@ -204,7 +238,7 @@ documentation
 
 If a token is accidentally shared, revoke it from Turso and create a new one.
 
-## 13. Recommended Collaborator Workflow
+## 14. Recommended Collaborator Workflow
 
 Each collaborator should use:
 
@@ -215,4 +249,3 @@ their own local test data
 ```
 
 The real production database should only be connected to the deployed website and trusted production environment variables.
-

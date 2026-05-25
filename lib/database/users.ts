@@ -5,11 +5,6 @@ import { turso } from "./turso";
 type UserRole = "owner" | "admin" | "user";
 type UserStatus = "active" | "disabled" | "deleted";
 
-interface CreateLocalOwnerInput {
-  email: string;
-  username: string;
-}
-
 interface StoredUser {
   id: string;
   auth_provider_user_id: string | null;
@@ -21,6 +16,31 @@ interface StoredUser {
   status: UserStatus;
   created_at: number;
   updated_at: number;
+}
+
+interface CreateLocalOwnerInput {
+  email: string;
+  username: string;
+}
+
+/**
+ * Fetches one user by internal database id.
+ * Most permission checks start here because actions usually compare
+ * the acting user against the target user.
+ */
+export async function getUserById(userId: string): Promise<StoredUser | null> {
+  const cleanedUserId = userId.trim();
+
+  if (!cleanedUserId) {
+    throw new Error("User id is required.");
+  }
+
+  const result = await turso.execute({
+    sql: "SELECT * FROM users WHERE id = ? LIMIT 1",
+    args: [cleanedUserId],
+  });
+
+  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
 }
 
 /**
