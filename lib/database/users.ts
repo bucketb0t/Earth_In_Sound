@@ -44,6 +44,27 @@ export async function getUserById(userId: string): Promise<StoredUser | null> {
 }
 
 /**
+ * Fetches one user by the external auth provider id.
+ * This will become the bridge between login/session data and the app user row.
+ */
+export async function getUserByAuthProviderId(
+  authProviderUserId: string,
+): Promise<StoredUser | null> {
+  const cleanedAuthProviderUserId = authProviderUserId.trim();
+
+  if (!cleanedAuthProviderUserId) {
+    throw new Error("Auth provider user id is required.");
+  }
+
+  const result = await turso.execute({
+    sql: "SELECT * FROM users WHERE auth_provider_user_id = ? LIMIT 1",
+    args: [cleanedAuthProviderUserId],
+  });
+
+  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+}
+
+/**
  * Validates the visible email value.
  * The original casing is kept for display, while email_lookup handles searches.
  */
