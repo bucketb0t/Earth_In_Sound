@@ -1,55 +1,39 @@
 import { randomUUID } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 import { loadEnvConfig } from "@next/env";
+import {
+  assert,
+  assertRejectsWithMessage,
+  deleteTestUsers,
+  seedTestUsers,
+  type TestUserSeed,
+} from "./test-user-helpers";
 
 /**
- * Load .env.local before importing database modules.
- * turso.ts reads process.env immediately when it is imported.
+ * Environment loader for database scripts.
  */
 loadEnvConfig(process.cwd());
 
-type TestUserSeed = {
-  // The test writes fixed ids so each later check can target a known user.
-  id: string;
-  // Optional fake auth id; used to verify deleteUser releases auth uniqueness.
-  authProviderUserId?: string | null;
-  // Visible account values. The database also stores lowercase lookup versions.
-  email: string;
-  username: string;
-  // Role/status combinations let the test cover owner, admin, active, disabled.
-  role: "owner" | "admin" | "user";
-  status: "active" | "disabled" | "deleted";
-};
-
-/**
- * Tiny test assertion helper.
- * If a condition is false, the script stops with a clear failure message.
- */
-function assert(condition: boolean, message: string): void {
-  if (!condition) {
-    throw new Error(`Test failed: ${message}`);
-  }
-}
-
-async function main(): Promise<void> {
+export async function runUserDatabaseTests(): Promise<void> {
   /**
-   * Import database code after .env.local is loaded.
-   * Dynamic import keeps the order explicit for scripts.
+   * Database module imports that depend on environment variables.
    */
-  const { turso } = await import("../../lib/database/turso");
+  const { turso } = await import("../../../../lib/server/database/turso-client");
+  const {
+    getUserByEmail,
+    getUserById,
+    searchUsers,
+  } = await import("../../../../lib/server/database/users/read/read-users");
   const {
     deleteUser,
     disableUser,
-    getUserByEmail,
-    getUserById,
     reactivateUser,
-    searchUsers,
     updateUsername,
-  } = await import("../../lib/database/users");
+  } = await import("../../../../lib/server/database/users/write/write-users");
 
   /**
-   * Every test run gets a short unique prefix.
-   * This prevents collisions with real users or previous failed test runs.
+   * Unique namespace for all rows created by this test run.
    */
   const testRunId = randomUUID().slice(0, 8);
   const testPrefix = `t-${testRunId}`;
@@ -57,7 +41,7 @@ async function main(): Promise<void> {
 
   /**
    * Temporary users used by the script.
-   * They are inserted directly so the test can focus on the exported functions.
+   * They are inserted directly so the test can focus on exported functions.
    */
   const testUsers: TestUserSeed[] = [
     {
@@ -106,44 +90,10 @@ async function main(): Promise<void> {
   ];
 
   try {
-    /**
-     * Seed isolated rows directly.
-     * The tests below then exercise the real exported database functions.
-     */
-    for (const user of testUsers) {
-      await turso.execute({
-        sql: `
-          INSERT INTO users (
-            id,
-            auth_provider_user_id,
-            email,
-            email_lookup,
-            username,
-            username_lookup,
-            role,
-            status,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        args: [
-          user.id,
-          user.authProviderUserId ?? null,
-          user.email,
-          user.email.toLowerCase(),
-          user.username,
-          user.username.toLowerCase(),
-          user.role,
-          user.status,
-          now,
-          now,
-        ],
-      });
-    }
+    await seedTestUsers(turso, testUsers, now);
 
     /**
-     * Store the temporary ids in readable variables.
+     * Test row ids.
      * The names explain which rule each user is used to test.
      */
     const ownerId = `${testPrefix}-owner`;
@@ -168,52 +118,37 @@ async function main(): Promise<void> {
     /**
      * Disabled users cannot act, so username changes must be rejected.
      */
-    try {
-      await updateUsername({
-        currentUserId: disabledUserId,
-        username: `${testPrefix}-disabled-rename`,
-      });
-      throw new Error("disabled user unexpectedly changed username");
-    } catch (error) {
-      assert(
-        error instanceof Error &&
-          error.message === "User account is not active.",
-        "disabled users should not be able to change username",
-      );
-    }
+    await assertRejectsWithMessage(
+      () =>
+        updateUsername({
+          currentUserId: disabledUserId,
+          username: `${testPrefix}-disabled-rename`,
+        }),
+      "User account is not active.",
+      "disabled users should not be able to change username",
+    );
 
     /**
      * A username already owned by another row must stay reserved.
      */
-    try {
-      await updateUsername({
-        currentUserId: activeUserId,
-        username: `${testPrefix}-admin`,
-      });
-      throw new Error("duplicate username was unexpectedly accepted");
-    } catch (error) {
-      assert(
-        error instanceof Error &&
-          error.message === "Username is already registered.",
-        "existing usernames should stay reserved",
-      );
-    }
+    await assertRejectsWithMessage(
+      () =>
+        updateUsername({
+          currentUserId: activeUserId,
+          username: `${testPrefix}-admin`,
+        }),
+      "Username is already registered.",
+      "existing usernames should stay reserved",
+    );
 
     /**
-     * The owner account is protected from self-disable.
-     * Ownership should be transferred before the owner account is closed.
+     * Owner self-disable protection.
      */
-    try {
-      await disableUser({ currentUserId: ownerId, targetUserId: ownerId });
-      throw new Error("owner unexpectedly disabled self");
-    } catch (error) {
-      assert(
-        error instanceof Error &&
-          error.message ===
-            "Transfer ownership before disabling the owner account.",
-        "owner should not be able to disable self",
-      );
-    }
+    await assertRejectsWithMessage(
+      () => disableUser({ currentUserId: ownerId, targetUserId: ownerId }),
+      "Transfer ownership before disabling the owner account.",
+      "owner should not be able to disable self",
+    );
 
     /**
      * Admins can disable normal users.
@@ -257,11 +192,11 @@ async function main(): Promise<void> {
       });
       throw new Error("disabled account email was unexpectedly reusable");
     } catch {
-      // Disabled accounts keep their email_lookup reserved.
+      // Expected duplicate email_lookup rejection.
     }
 
     /**
-     * Disabled accounts are the only accounts that can be restored normally.
+     * Disabled account reactivation.
      */
     const reactivatedUser = await reactivateUser({
       currentUserId: adminId,
@@ -331,20 +266,15 @@ async function main(): Promise<void> {
       currentUserId: ownerId,
       targetUserId: reactivateDeleteTargetId,
     });
-
-    try {
-      await reactivateUser({
-        currentUserId: ownerId,
-        targetUserId: reactivateDeleteTargetId,
-      });
-      throw new Error("deleted user unexpectedly reactivated");
-    } catch (error) {
-      assert(
-        error instanceof Error &&
-          error.message === "Only disabled users can be reactivated.",
-        "deleted users should not reactivate through normal flow",
-      );
-    }
+    await assertRejectsWithMessage(
+      () =>
+        reactivateUser({
+          currentUserId: ownerId,
+          targetUserId: reactivateDeleteTargetId,
+        }),
+      "Only disabled users can be reactivated.",
+      "deleted users should not reactivate through normal flow",
+    );
 
     /**
      * Search should find users by partial username/email lookup text.
@@ -359,19 +289,14 @@ async function main(): Promise<void> {
 
     console.log("User database tests passed.");
   } finally {
-    /**
-     * Clean up all temporary rows, including rows created during reuse checks.
-     * This physical deletion is only for test data created by this script.
-     */
-    await turso.execute({
-      sql: "DELETE FROM users WHERE id LIKE ?",
-      args: [`${testPrefix}%`],
-    });
+    await deleteTestUsers(turso, testPrefix);
   }
 }
 
-main().catch((error: unknown) => {
-  // Report script failures and return a non-zero exit code for the terminal.
-  console.error(error);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  runUserDatabaseTests().catch((error: unknown) => {
+    // Script failure reporting.
+    console.error(error);
+    process.exit(1);
+  });
+}

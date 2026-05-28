@@ -17,8 +17,7 @@
 
 .jasonWaltonLogo {
   /*
-   * The button slot controls layout. The art variables below control only the
-   * visible JWW logo, so resizing it will not push the knob or IHM logo.
+   * JWW logo layout slot and artwork dimensions.
    */
   --jww-logo-slot-width: calc(146px * var(--artwork-cell-scale));
   --jww-logo-slot-height: var(--knob-logo-band-height);
@@ -50,8 +49,7 @@
 
 .jasonWaltonLogoFrame {
   /*
-   * Layered logo art mirrors EIS: both states occupy the same measured frame,
-   * then opacity chooses which SVG is visible.
+   * Layered JWW logo art frame.
    */
   position: absolute;
   left: 50%;
@@ -100,8 +98,7 @@
 }
 
 /*
- * Hover/focus/press use the alternate logo art. The selected page state does
- * not lock this layer on, so revisiting the logo behaves like the EIS logo.
+ * JWW logo hover/focus/press glow.
  */
 .jasonWaltonLogo:hover .jasonWaltonLogoImageOn,
 .jasonWaltonLogo:focus-visible .jasonWaltonLogoImageOn,

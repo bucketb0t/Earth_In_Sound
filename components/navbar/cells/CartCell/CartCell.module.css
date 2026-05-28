@@ -15,7 +15,7 @@
 
   flex: 0 0 auto;
   min-width: 0;
-  /* Final navbar edge spacing lives here, separate from artwork sizing logic. */
+  /* Right edge navbar spacing. */
   margin-right: calc(16px * var(--artwork-cell-scale));
   background-image: url("/NavbarAssets/DesktopAssets/SVG/CartPlaqueNavbar.svg");
   background-repeat: no-repeat;
@@ -24,7 +24,7 @@
 }
 
 .cartCounter {
-  /* Counter box owns both display artwork and the future item count text. */
+  /* Cart counter display artwork and count text. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,7 +51,7 @@
 }
 
 .cartButton {
-  /* Button size is also the clickable hit target, by design. */
+  /* Cart button hit target. */
   width: calc(54px * var(--artwork-cell-scale));
   aspect-ratio: 1;
   transform: translate(0, calc(6px * var(--artwork-cell-scale)));

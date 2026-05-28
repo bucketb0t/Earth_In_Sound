@@ -7,8 +7,7 @@ interface SectionPlaceholderPageProps {
 }
 
 /**
- * Temporary content shell for navbar destinations that exist before final art.
- * Keeps route behavior correct without pretending the page design is finished.
+ * Shared content shell for undeveloped route pages.
  */
 export default function SectionPlaceholderPage({
   eyebrow,

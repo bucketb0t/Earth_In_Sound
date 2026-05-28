@@ -26,9 +26,7 @@
 
 .loginRow {
   /*
-   * The row only aligns the independent switch with the login status plate.
-   * AccountLogNavbar is applied to .loginStatusPanel, not to this wrapper,
-   * so it cannot paint behind the toggle button.
+   * Login switch and status panel grid.
   */
   display: grid;
   grid-template-columns: var(--account-button-size) var(
@@ -49,7 +47,7 @@
 }
 
 .accountToggleButton {
-  /* Switch size is also its clickable hit target. */
+  /* Login switch hit target. */
   appearance: none;
   display: block;
   width: var(--account-button-size);
@@ -81,8 +79,7 @@
 
 .loginStatusPanel {
   /*
-   * Only the LED/text panel receives AccountLogNavbar. The background is
-   * clipped to this button, so it stays separate from the side switch.
+   * Login status plate and text button.
    */
   appearance: none;
   display: flex;
@@ -136,7 +133,7 @@
 }
 
 .accountScreenButton {
-  /* Screen button shares the login-row width so both account rows align. */
+  /* Account screen button. */
   appearance: none;
   display: flex;
   align-items: center;
@@ -175,9 +172,7 @@
 }
 
 /*
- * Logged-out screen interference.
- * The class marks Sign Up as glitch-capable; hover selectors below activate
- * the motion so the idle screen stays readable.
+ * Logged-out screen interference effect.
  */
 .accountScreenButton:hover .accountScreenTextGlitch {
   text-shadow:

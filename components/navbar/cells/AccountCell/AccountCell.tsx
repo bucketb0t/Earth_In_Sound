@@ -5,7 +5,6 @@ import styles from "./AccountCell.module.css";
 
 /**
  * Account cell.
- * Hardware-style auth control plus future account/signup screen button.
  */
 export default function AccountCell() {
   const { isLoggedIn, openAccountPage, toggleLogin } = useNavbarContext();
@@ -15,7 +14,7 @@ export default function AccountCell() {
   return (
     <div className={`navbar-cell navbar-cell--center ${styles.accountCell}`}>
       <div className={styles.loginRow}>
-        {/* The artwork button is the real login/logout toggle. */}
+        {/* Login switch artwork button. */}
         <button
           type="button"
           className={`${styles.accountToggleButton} ${
@@ -29,7 +28,7 @@ export default function AccountCell() {
           aria-label={toggleLabel}
         />
 
-        {/* The status plate is also a button, synced with the side switch. */}
+        {/* Login status panel button. */}
         <button
           type="button"
           className={styles.loginStatusPanel}
@@ -47,7 +46,7 @@ export default function AccountCell() {
         </button>
       </div>
 
-      {/* Future account/signup route trigger; visual state follows login state. */}
+      {/* Account screen route button. */}
       <button
         type="button"
         className={`${styles.accountScreenButton} ${

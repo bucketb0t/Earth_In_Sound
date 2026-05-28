@@ -61,7 +61,7 @@ function PodcastContent({ show }: { show: PodcastShow }) {
 
         {show.imageUrl && (
           <div className={styles.coverFrame}>
-            {/* Public RSS artwork can change host, so this avoids remote image config churn. */}
+            {/* Public RSS artwork image. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={show.imageUrl} alt={`${show.title} cover art`} />
           </div>

@@ -52,9 +52,6 @@ function seekAudioTo(audioElement: HTMLAudioElement, seconds: number): void {
   try {
     audioElement.currentTime = Math.max(0, seconds);
   } catch {
-    /*
-     * Some browsers reject seeking before metadata exists. In that case the
-     * audio handoff simply starts from the browser's current playable point.
-     */
+    /* Metadata-safe seek guard. */
   }
 }

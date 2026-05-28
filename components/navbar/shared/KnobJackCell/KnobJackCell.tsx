@@ -25,7 +25,6 @@ function artworkScaledPixelValue(sourcePixelValue: number): string {
 
 /*
  * CSS variable handoff for the shared knob/jack layout.
- * config.ts stays the tuning source; CSS modules still own visuals and assets.
  */
 const knobJackLayoutVars = {
   "--knob-max-width": artworkScaledPixelValue(KNOB_LAYOUT.module.maxWidth),
@@ -177,19 +176,19 @@ export default function KnobJackCell({
   return (
     <div className={styles.knobJackModule} style={knobJackLayoutVars}>
       <div className={styles.knobWrap}>
-        {/* Section-specific artwork is visible; the SVG circle below remains the hit target. */}
+        {/* Section-specific knob artwork. */}
         <div
           className={`${styles.knobArtwork} ${knobTurnClass} ${knobArtworkClassName}`}
           aria-hidden="true"
         />
 
-        {/* One SVG keeps the hit target, choice dots, and labels scaling together. */}
+        {/* SVG interaction layer for knob face, LEDs, and labels. */}
         <svg
           className={styles.knobSvg}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
           width="100%"
         >
-          {/* Knob face: click cycles stops; vertical drag selects by physical position. */}
+          {/* Knob face hit target. */}
           <circle
             className={styles.knobFace}
             cx={KNOB_CENTER_X}
@@ -209,7 +208,7 @@ export default function KnobJackCell({
             }
           />
 
-          {/* Choice groups: each dot + label is one selectable navigation target. */}
+          {/* Menu choice hit targets. */}
           {sectionLinks.map((link, linkIndex) => {
             const linkIsSelected =
               sectionIsActive && linkIndex === activeLinkIndex;
@@ -281,7 +280,7 @@ export default function KnobJackCell({
 
       {showJackPort ? (
         <div className={styles.jackPort} aria-hidden="true">
-          {/* One anchor keeps the socket and cable mirrored between JWW and IHM. */}
+          {/* Jack socket and cable anchor. */}
           <div className={styles.jackAnchor}>
             <div className={styles.jackSocket} />
             {sectionIsActive ? <div className={styles.jackPlug} /> : null}

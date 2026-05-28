@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavbarContext } from "../../state";
 import styles from "./StoreCell.module.css";
 
-// Public media paths keep the navbar assets centralized under /public.
+// Store media asset paths.
 const HOVER_VIDEO_URL =
   "/NavbarAssets/DesktopAssets/Animations/StoreHoverNavbar.mp4";
 const PRESSED_VIDEO_URL =
@@ -22,8 +22,6 @@ function playVideoFromStart(video: HTMLVideoElement): void {
 
 /**
  * Store cell.
- * Shows a static PNG by default, a one-shot hover video on mouse-over,
- * and a looping active video while Store stays latched as pressed.
  */
 export default function StoreCell() {
   const { isStorePressed, storePress } = useNavbarContext();
@@ -32,7 +30,7 @@ export default function StoreCell() {
   const hoverVideoRef = useRef<HTMLVideoElement>(null);
   const pressedVideoRef = useRef<HTMLVideoElement>(null);
 
-  /* Play the hover video only while the cursor is over the idle store cell. */
+  /* Hover-state video controller. */
   useEffect(() => {
     const video = hoverVideoRef.current;
     if (!video) return;
@@ -46,8 +44,7 @@ export default function StoreCell() {
   }, [isHovered, isStorePressed]);
 
   /*
-   * The pressed video owns the screen while Store is latched.
-   * It starts from frame 0 when pressed, then loops until navigation clears it.
+   * Pressed-state video controller.
    */
   useEffect(() => {
     const video = pressedVideoRef.current;
@@ -72,7 +69,7 @@ export default function StoreCell() {
         aria-label="Store"
         aria-pressed={isStorePressed}
       >
-        {/* Default state: static artwork shown when idle and not hovered. */}
+        {/* Static screen layer. */}
         <div
           aria-hidden="true"
           className={`${styles.screenAsset} ${styles.screenAssetStatic} ${
@@ -80,7 +77,7 @@ export default function StoreCell() {
           }`}
         />
 
-        {/* Hover state: plays once while the cursor is over the idle store cell. */}
+        {/* Hover video layer. */}
         <video
           ref={hoverVideoRef}
           src={HOVER_VIDEO_URL}
@@ -92,7 +89,7 @@ export default function StoreCell() {
           preload="auto"
         />
 
-        {/* Pressed state: loops for as long as Store stays latched. */}
+        {/* Pressed video layer. */}
         <video
           ref={pressedVideoRef}
           src={PRESSED_VIDEO_URL}

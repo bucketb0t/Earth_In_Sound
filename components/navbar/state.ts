@@ -20,7 +20,7 @@ import {
   type SectionId,
 } from "./config";
 
-// Seeded until the real cart data source exists; keeps the counter testable now.
+// Initial cart counter value used by the navbar state.
 const INITIAL_CART_COUNT = 1;
 const HOME_ROUTE = "/";
 const ACCOUNT_ROUTE = "/account";
@@ -122,7 +122,7 @@ export function activateOnEnterOrSpace<T extends Element>(
   action();
 }
 
-// Guards every position-based navigation call before it reaches render state.
+// Navigation index guard.
 function clampSectionLinkIndex(
   section: SectionId,
   requestedLinkIndex: number,
@@ -152,8 +152,7 @@ function getNavbarContentWidth(contentElement: HTMLDivElement): number {
   );
 
   /*
-   * Child cells are the source of truth. The row wrapper width is also written
-   * by Navbar.tsx for overflow layout, so using it first can create feedback.
+   * Cell-based row width measurement.
    */
   if (childWidth > 0) return childWidth;
 
@@ -165,9 +164,7 @@ function getNavbarContentWidth(contentElement: HTMLDivElement): number {
 
 function getLayoutViewportWidth(fallbackElement: HTMLElement): number {
   /*
-   * Use the layout viewport as the single source of truth for navbar fitting.
-   * `visualViewport` differs between desktop browsers under zoom; the layout
-   * viewport is the stable width used by normal page layout and scrollbars.
+   * Layout viewport width used for navbar fitting.
    */
   return (
     document.documentElement.clientWidth ||
@@ -217,12 +214,7 @@ export function useNavbar(): NavbarState {
     currentVisualState;
 
   /*
-   * Measure before paint, then keep scale synced to real window resizing.
-   *
-   * Browser zoom reduces the CSS viewport width, but it should not be treated
-   * as a small window. The scale calculation keeps the viewport zoom-neutral:
-   * real window resizing can shrink the navbar, while browser zoom creates
-   * natural horizontal page overflow.
+   * Navbar scale measurement for real window resizing.
    */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
@@ -236,9 +228,7 @@ export function useNavbar(): NavbarState {
     const fullArtworkScale = faceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT;
 
     /*
-     * The first measurement must represent the unscaled artwork design.
-     * These defaults are written before measuring so the stored width does not
-     * depend on CSS fallback values or on a previously shrunken render.
+     * Full-size artwork variables used for baseline measurement.
      */
     shellElement.style.setProperty("--navbar-shell-height", `${DESIGN_HEIGHT}px`);
     shellElement.style.setProperty(
@@ -268,9 +258,7 @@ export function useNavbar(): NavbarState {
     };
 
     /*
-     * Fonts and SVG artwork can settle after the first layout pass,
-     * especially in Firefox. The measured row is normalized back to the
-     * full artwork scale so the stored design width stays browser-stable.
+     * Normalized full-scale row width measurement.
      */
     const syncFullScaleNavbarRowWidth = (): number => {
       const renderedNavbarRowWidth = getNavbarContentWidth(contentElement);
@@ -291,10 +279,7 @@ export function useNavbar(): NavbarState {
       const cssViewportWidth = getLayoutViewportWidth(shellElement);
 
       /*
-       * At the same browser zoom, this is the real content viewport width.
-       * When the user zooms in, CSS viewport width shrinks while DPR grows;
-       * multiplying by the DPR ratio prevents that zoom from shrinking navbar
-       * scale and lets normal horizontal scrolling handle the larger page.
+       * Resize-only viewport width used by the scale calculation.
        */
       return (
         cssViewportWidth *
@@ -319,9 +304,7 @@ export function useNavbar(): NavbarState {
     syncScaleFromCellEdges();
 
     /*
-     * Minimize/maximize and browser focus changes can report geometry before
-     * layout settles. Scheduling the scale sync two frames later keeps the
-     * stored design width stable while still reacting quickly to real resizes.
+     * Deferred scale sync after viewport and layout changes.
      */
     let firstFrameId: number | null = null;
     let secondFrameId: number | null = null;
@@ -383,9 +366,7 @@ export function useNavbar(): NavbarState {
   }, []);
 
   /*
-   * Utility cells are outside the EIS/JWW/IHM section selector.
-   * Accessing one clears the active section on the current route, returning
-   * knobs to idle and hiding section cables.
+   * Utility-cell action reset.
    */
   const resetActiveNavbarControls = useCallback((): void => {
     setVisualState({
@@ -398,8 +379,7 @@ export function useNavbar(): NavbarState {
   }, [currentVisualState, pathname]);
 
   /*
-   * Routes are attached to the shared navbar actions, not to individual cells.
-   * That keeps logos, labels, sliders, and knob selections in sync.
+   * Shared route navigation for navbar controls.
    */
   const navigateToLinkedRoute = useCallback(
     (sectionId: SectionId, linkIndex: number): void => {
@@ -468,8 +448,7 @@ export function useNavbar(): NavbarState {
   }, [resetActiveNavbarControls, router]);
 
   /*
-   * Store behaves like a latched page button.
-   * Once activated it stays visually pressed until another section is opened.
+   * Latched Store page action.
    */
   const storePress = useCallback((): void => {
     setVisualState({

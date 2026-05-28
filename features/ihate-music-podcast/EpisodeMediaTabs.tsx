@@ -82,8 +82,7 @@ export default function EpisodeMediaTabs({
       timestamp?: number,
     ): void => {
       /*
-       * Temporary debugging signal for the video/audio continuity feature.
-       * Sentences are easier to follow than object dumps while testing.
+       * Human-readable media transition log.
        */
       const readableEpisodeId = decodeURIComponent(episodeId)
         .split("/")
@@ -108,9 +107,7 @@ export default function EpisodeMediaTabs({
 
   const selectAudio = useCallback((): void => {
     /*
-     * Audio is the primary podcast mode. When selected, it behaves like normal
-     * browser audio: it may continue while the tab is hidden, minimized, or the
-     * phone screen is off, and it does not trigger any YouTube handoff logic.
+     * Select the primary Acast audio mode.
      */
     cancelVideoToAudioHandoff();
     logMediaSwitch("video", "audio", "manual tab selection");
@@ -124,16 +121,13 @@ export default function EpisodeMediaTabs({
     pauseAudio();
 
     /*
-     * Loading metadata early makes a later screen-off handoff more accurate
-     * without starting playback or changing normal Audio-tab behavior.
+     * Prepare the audio element for timestamp handoff.
      */
     audioRef.current?.load();
   }, [logMediaSwitch, pauseAudio]);
 
   /*
-   * Consent is explicit because the Video tab can start Acast audio while the
-   * page is hidden. The muted warm-up gives browsers a user-triggered media
-   * interaction before any later screen-off handoff is attempted.
+   * Background audio consent and media warm-up.
    */
   const changeBackgroundAudioConsent = async (
     consentGiven: boolean,
@@ -223,11 +217,7 @@ export default function EpisodeMediaTabs({
     let componentIsMounted = true;
     let playerInitTimer: number | null = null;
 
-    /*
-     * Next/React dev mode can run effects twice to detect unsafe side effects.
-     * Deferring one tick lets that cleanup cancel before YouTube starts its
-     * internal postMessage polling, which avoids the localhost-origin warning.
-     */
+    /* Deferred YouTube player initialization. */
     playerInitTimer = window.setTimeout(() => {
       const currentVideoHost = videoHostRef.current;
       if (!componentIsMounted || !currentVideoHost) return;
@@ -278,13 +268,7 @@ export default function EpisodeMediaTabs({
   ]);
 
   /*
-   * Video-only screen-off handoff:
-   * - If the YouTube video is actively playing and the page becomes hidden,
-   *   Acast audio takes over from the same timestamp.
-   * - When the page becomes visible again, YouTube seeks to the audio time.
-   *
-   * Direct Audio-tab playback intentionally bypasses this effect and is left to
-   * the browser's native <audio> background behavior.
+   * Visibility-based synchronization between YouTube video and Acast audio.
    */
   useEffect(() => {
     if (!videoContinuityIsEnabled) return;

@@ -19,10 +19,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      {/*
-        Browser extensions can inject body attributes before React hydrates.
-        Suppressing only this level keeps extension noise out of development.
-      */}
+      {/* Root body for the persistent navbar and route content. */}
       <body suppressHydrationWarning>
         <Navbar />
         {children}

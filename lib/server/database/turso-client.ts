@@ -15,7 +15,6 @@ const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
 
 /**
  * Fail early if the app starts without database credentials.
- * This avoids confusing database errors later in the request lifecycle.
  */
 if (!tursoDatabaseUrl) {
   throw new Error("Missing TURSO_DATABASE_URL in .env.local.");
@@ -27,9 +26,6 @@ if (!tursoAuthToken) {
 
 /**
  * Shared server-side Turso client.
- *
- * Keep this file out of "use client" components because TURSO_AUTH_TOKEN must
- * never be bundled into browser JavaScript.
  */
 export const turso = createClient({
   url: tursoDatabaseUrl,

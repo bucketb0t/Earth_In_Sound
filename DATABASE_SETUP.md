@@ -6,6 +6,26 @@ This guide explains how a collaborator can create their own Turso database and r
 
 Earth In Sound is being migrated to Turso for portable SQL-style database work.
 
+Database-related files are split by role:
+
+```text
+lib/server/database/turso-client.ts
+  Server-only Turso client.
+
+lib/server/database/users
+  User database code split by role:
+  validation/validate-user-input.ts
+  permissions/user-permissions.ts
+  read/read-users.ts
+  write/write-users.ts
+
+database/migrations
+  SQL files that create or change database tables.
+
+database/scripts
+  Terminal setup scripts and database test hubs.
+```
+
 The project expects these local environment variables:
 
 ```env
@@ -208,7 +228,7 @@ In Command Prompt:
 ```cmd
 set LOCAL_OWNER_EMAIL=owner@example.com
 set LOCAL_OWNER_USERNAME=OwnerName
-npx tsx database/scripts/create-local-owner.ts
+npx tsx database/scripts/run-database-setup.ts
 ```
 
 In PowerShell:
@@ -216,10 +236,24 @@ In PowerShell:
 ```powershell
 $env:LOCAL_OWNER_EMAIL="owner@example.com"
 $env:LOCAL_OWNER_USERNAME="OwnerName"
-npx tsx database/scripts/create-local-owner.ts
+npx tsx database/scripts/run-database-setup.ts
 ```
 
-The script refuses to create a second owner. Ownership transfer will be handled later by a separate database function.
+`run-database-setup.ts` is the database setup hub. It calls the user owner setup script now, and future database setup scripts can be added to the same hub.
+
+The owner setup refuses to create a second owner. Ownership transfer will be handled later by a separate database function.
+
+Run all database tests from the test hub:
+
+```powershell
+npx tsx database/scripts/test-database.ts
+```
+
+The user database test can also be run by itself:
+
+```powershell
+npx tsx database/scripts/users/test-users/test-user-database.ts
+```
 
 ## 12. Run The Project
 

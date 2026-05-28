@@ -18,7 +18,7 @@
 .screenButton {
   /*
    * Stable screen box and real hit target. Keeping this as the only button
-   * prevents clicks on empty plaque space from triggering Store.
+   * clickable Store screen area.
    */
   position: relative;
   appearance: none;

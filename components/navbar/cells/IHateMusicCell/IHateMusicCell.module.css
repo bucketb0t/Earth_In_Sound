@@ -17,8 +17,7 @@
 
 .iHateMusicLogo {
   /*
-   * The button slot controls layout. The art variables below control only the
-   * visible IHM logo, so resizing it will not push the knob or JWW logo.
+   * IHM logo layout slot and artwork dimensions.
    */
   --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
   --ihm-logo-slot-height: var(--knob-logo-band-height);
@@ -51,8 +50,7 @@
 
 .iHateMusicLogoFrame {
   /*
-   * Layered logo art mirrors EIS: both states occupy the same measured frame,
-   * then opacity chooses which SVG is visible.
+   * Layered IHM logo art frame.
    */
   position: absolute;
   left: 50%;
@@ -101,8 +99,7 @@
 }
 
 /*
- * Hover/focus/press use the alternate logo art. The selected page state does
- * not lock this layer on, so revisiting the logo behaves like the EIS logo.
+ * IHM logo hover/focus/press glow.
  */
 .iHateMusicLogo:hover .iHateMusicLogoImageOn,
 .iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,

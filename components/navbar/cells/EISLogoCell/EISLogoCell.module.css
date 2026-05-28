@@ -45,7 +45,7 @@
   flex: 0 0 auto;
   align-items: stretch;
   aspect-ratio: var(--cell-plaque-aspect);
-  /* First navbar edge spacing lives here, separate from artwork sizing logic. */
+  /* Left edge navbar spacing. */
   margin-left: calc(16px * var(--artwork-cell-scale));
   isolation: isolate;
 }
@@ -147,7 +147,7 @@
 }
 
 .eisControls {
-  /* min-width: 0 lets the slider column shrink instead of overflowing. */
+  /* Shrinkable slider column. */
   width: 100%;
   min-width: 0;
   padding-inline: clamp(
@@ -272,6 +272,6 @@
 }
 
 .eisLinkLabelOn {
-  /* Active EIS text stays white; the LED artwork carries selection state. */
+  /* Active EIS label state. */
   color: #ffffff;
 }

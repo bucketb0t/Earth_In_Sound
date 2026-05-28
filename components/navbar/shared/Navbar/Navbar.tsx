@@ -29,19 +29,14 @@ function toNonNegativePixelValue(rawPixelValue: number): string {
 
 function getLayoutViewportWidth(): number {
   /*
-   * Match state.ts: use the layout viewport, not visualViewport. Firefox,
-   * Chrome, and Safari disagree less here, and this is the width that creates
-   * the browser's native horizontal scrollbar.
+   * Layout viewport width used for row fitting and native horizontal scrolling.
    */
   return document.documentElement.clientWidth || window.innerWidth;
 }
 
 function getPaintViewportWidth(layoutViewportWidth: number): number {
   /*
-   * Layout width and paint width are intentionally separate.
-   * clientWidth excludes the vertical scrollbar gutter, which is correct for
-   * fitting cells. innerWidth includes that gutter, which prevents a thin body
-   * colored strip from appearing beside the navbar after restore/refresh.
+   * Paint viewport width used by the banner and baseline background layers.
    */
   return Math.max(layoutViewportWidth, window.innerWidth || 0);
 }
@@ -58,9 +53,7 @@ function measureRenderedNavbarCellsWidth(contentElement: HTMLDivElement): number
   const navbarCellElements = Array.from(contentElement.children);
 
   /*
-   * Measure the individual cell boxes instead of the row wrapper. Firefox can
-   * report a smaller wrapper width when children visually overflow it, while
-   * each child rect remains reliable.
+   * Sum the rendered cell boxes and margins that define the visible row.
    */
   return navbarCellElements.reduce((totalRenderedWidth, navbarCellElement) => {
     const cellRenderedWidth = navbarCellElement.getBoundingClientRect().width;
@@ -104,9 +97,7 @@ export default function Navbar() {
     if (!shellElement || !rootElement || !contentElement) return;
 
     /*
-     * Window minimize/restore can leave a stale horizontal scroll value behind.
-     * If the measured row fits again, reset the document to the normal left
-     * edge. When the row is wider, native browser scrolling remains in charge.
+     * Reset horizontal scroll when the visible row fits inside the viewport.
      */
     const clearStaleHorizontalScrollWhenRowFits = (
       visibleViewportWidth: number,
@@ -125,9 +116,7 @@ export default function Navbar() {
 
     const rememberPointerZoomAnchor = (event: MouseEvent | PointerEvent) => {
       /*
-       * Browser zoom changes viewport width after this event. Storing the last
-       * pointer position lets us restore a mouse-centered horizontal view once
-       * the navbar becomes wider than the viewport.
+       * Store pointer position for mouse-centered horizontal overflow.
        */
       pointerZoomAnchorRef.current = {
         pointerX: event.clientX,
@@ -187,9 +176,7 @@ export default function Navbar() {
       );
 
       /*
-       * The layout viewport is the browser-stable sizing contract. Using the
-       * same width here and in state.ts keeps Firefox from entering overflow
-       * mode earlier than Chrome/Edge.
+       * Measure viewport and cell row widths for centering and overflow.
        */
       const visibleViewportWidth = Math.round(getLayoutViewportWidth());
       const paintViewportWidth = Math.round(
@@ -208,11 +195,7 @@ export default function Navbar() {
       );
 
       /*
-       * Browser-safe row alignment. React writes the same concrete numbers to
-       * every browser:
-       * - scrollable layout width for the banner/shell and interactive layer
-       * - real child-cell row width for the interactive layer
-       * - left offset for centering while the row fits
+       * Write layout variables for the shell, banner, and interactive row.
        */
       setCssVariable(
         rootElement,
@@ -250,9 +233,7 @@ export default function Navbar() {
     syncNavbarGeometry();
 
     /*
-     * Browser restore/focus events can fire before layout has fully settled.
-     * Two animation frames let Chrome, Firefox, and Safari finish viewport and
-     * font/layout updates before we write the final CSS variables.
+     * Defer geometry sync until viewport and font layout have settled.
      */
     let firstFrameId: number | null = null;
     let secondFrameId: number | null = null;
@@ -316,7 +297,7 @@ export default function Navbar() {
           isScaleReady ? styles.navbarShellReady : ""
         }`}
       >
-        {/* Interactive faceplate: excludes the reserved baseline height. */}
+        {/* Interactive faceplate layer. */}
         <div
           ref={rootRef}
           className={styles.navbarRoot}

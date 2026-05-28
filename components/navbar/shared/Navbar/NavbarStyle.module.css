@@ -9,7 +9,7 @@
 
 /*
  * Navbar shell styles.
- * Banner and baseline artwork live here because they belong to the whole bar.
+ * Shared banner, baseline, and cell row layers.
  */
 
 .navbarShell {
@@ -48,9 +48,7 @@
 
 .navbarShell::before {
   /*
-   * The banner shares the same scrollable width as the cell layer. This keeps
-   * artwork and controls glued together after window restore and horizontal
-   * scrolling while still filling the full viewport when the row fits.
+   * Full navbar banner artwork layer.
    */
   top: 0;
   height: var(--navbar-shell-height);
@@ -63,8 +61,7 @@
 
 .navbarShell::after {
   /*
-   * The baseline follows the banner width so it cannot separate from the cells
-   * when browser zoom or window restore creates horizontal page overflow.
+   * Full navbar baseline artwork layer.
    */
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
   z-index: var(--navbar-layer-baseline);
@@ -83,17 +80,14 @@
   --navbar-row-width: auto;
 
   /*
-   * The interactive cell layer is relative so browser zoom can expose natural
-   * horizontal page overflow instead of hiding it behind a fixed overlay.
+   * Interactive cell layer.
    */
   position: relative;
   top: 0;
   left: 0;
   z-index: var(--navbar-layer-cells);
   /*
-   * Cross-browser layout width.
-   * React writes this value from measured DOM geometry so every browser uses
-   * the same viewport/overflow math instead of interpreting max-content rules.
+   * Measured layout width shared by the shell and cell row.
    */
   width: var(--navbar-layout-width);
   min-width: var(--navbar-layout-width);
@@ -107,10 +101,7 @@
 
 .navbarInner {
   /*
-   * The cell row is positioned with measured values:
-   * - --navbar-row-offset centers the cells while they fit the viewport.
-   * - offset becomes 0 when the row is wider; Navbar.tsx then scrolls the
-   *   document toward the pointer so both overflowing sides remain reachable.
+   * Measured cell row container.
    */
   position: relative;
   z-index: 2;
