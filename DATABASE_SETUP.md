@@ -180,6 +180,24 @@ updated_at
 
 The lookup fields are lowercase search/uniqueness helpers. The original `email` and `username` fields keep the visible values exactly as typed.
 
+Account status rules:
+
+```text
+active
+  The account can act normally.
+  The user can change their own username.
+
+disabled
+  The account cannot act.
+  The email and username remain reserved.
+  The account can be reactivated later.
+
+deleted
+  The account cannot act.
+  The email lookup is released so the same email can create a new account.
+  The account cannot be reactivated through the normal account flow.
+```
+
 ## 11. Create The First Owner Account
 
 The project includes a setup script for creating the first owner account.
