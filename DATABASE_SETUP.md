@@ -159,6 +159,7 @@ From WSL/Ubuntu:
 
 ```bash
 turso db shell earth-in-sound-dev < database/migrations/001_create_users.sql
+turso db shell earth-in-sound-dev < database/migrations/002_allow_deleted_user_status.sql
 ```
 
 Replace `earth-in-sound-dev` with your own Turso database name if different.
