@@ -25,6 +25,10 @@ export interface SearchUsersInput {
   limit?: number;
 }
 
+export interface GetCurrentUserInput {
+  authProviderUserId: string | null | undefined;
+}
+
 /**
  * Fetches one user by internal database id.
  */
@@ -61,6 +65,21 @@ export async function getUserByAuthProviderId(
   });
 
   return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+}
+
+/**
+ * Resolves the currently logged-in auth provider user to a stored user row.
+ */
+export async function getCurrentUser(
+  input: GetCurrentUserInput,
+): Promise<StoredUser | null> {
+  const authProviderUserId = input.authProviderUserId?.trim();
+
+  if (!authProviderUserId) {
+    return null;
+  }
+
+  return getUserByAuthProviderId(authProviderUserId);
 }
 
 /**
