@@ -2,7 +2,7 @@ import styles from "./page.module.css";
 
 /**
  * Home route.
- * Navbar is mounted once in the root layout, so pages only render content.
+ * Currently renders an empty stage because the navbar is the active focus.
  */
 export default function HomePage() {
   return <main className={styles.main} />;

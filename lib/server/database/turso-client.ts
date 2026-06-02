@@ -9,6 +9,10 @@ import { createClient } from "@libsql/client";
  * IMPORTANT:
  * This file must only be imported by server-side code or setup scripts.
  * TURSO_AUTH_TOKEN is private and must never be exposed to browser code.
+ *
+ * Project database modules use this client directly for Earth In Sound tables
+ * such as users. Better Auth has a separate Kysely connection because Better
+ * Auth expects that shape for its internal auth tables.
  */
 const tursoDatabaseUrl = process.env.TURSO_DATABASE_URL;
 const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
@@ -26,6 +30,9 @@ if (!tursoAuthToken) {
 
 /**
  * Shared server-side Turso client.
+ *
+ * Read/write database functions import this single client instead of creating a
+ * fresh connection in every file.
  */
 export const turso = createClient({
   url: tursoDatabaseUrl,

@@ -7,7 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
-  type FormEvent,
+  type SubmitEvent,
 } from "react";
 import { playAudioFromTimestamp } from "./mediaTiming";
 import styles from "./EpisodeMediaTabs.module.css";
@@ -32,21 +32,37 @@ interface EpisodeMediaTabsProps {
 /**
  * Episode-local media controls.
  * Acast audio stays the reliable timeline; YouTube is an optional visual tab.
+ *
+ * Ownership split:
+ * - React decides which tab is visible and which YouTube URL is loaded;
+ * - the native audio element owns Acast playback;
+ * - the YouTube iframe API owns video playback;
+ * - this component coordinates timestamp handoff only when the user allows it.
  */
 export default function EpisodeMediaTabs({
   episodeId,
   audioMimeType,
   audioUrl,
 }: EpisodeMediaTabsProps) {
+  /*
+   * Stable ids connect tab buttons with their matching panels.
+   */
   const audioPanelId = useId();
   const videoPanelId = useId();
   const videoInputId = useId();
   const backgroundAudioConsentId = useId();
+
+  /*
+   * DOM refs bridge React controls with browser media elements and YouTube.
+   */
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoHostRef = useRef<HTMLDivElement | null>(null);
   const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
   const shouldResumeVideoFromAudioRef = useRef(false);
 
+  /*
+   * UI state for tabs, user consent, temporary video input, and visible errors.
+   */
   const [activeMode, setActiveMode] = useState<MediaMode>("audio");
   const [backgroundAudioConsentGiven, setBackgroundAudioConsentGiven] =
     useState(false);
@@ -60,6 +76,9 @@ export default function EpisodeMediaTabs({
     [youtubeUrl],
   );
 
+  /*
+   * Derived booleans keep render conditions readable.
+   */
   const hasVideo = youtubeVideoId !== null;
   const audioTabIsActive = activeMode === "audio";
   const videoTabIsActive = activeMode === "video";
@@ -67,10 +86,17 @@ export default function EpisodeMediaTabs({
     backgroundAudioConsentGiven && hasVideo && videoTabIsActive && !!audioUrl;
 
   const pauseAudio = useCallback((): void => {
+    /*
+     * Small wrapper used by effects/callbacks so they do not repeat ref checks.
+     */
     audioRef.current?.pause();
   }, []);
 
   const pauseVideo = useCallback((): void => {
+    /*
+     * YouTube player exists only after the Video tab is opened and a valid URL
+     * has been loaded.
+     */
     youtubePlayerRef.current?.pauseVideo();
   }, []);
 
@@ -102,6 +128,10 @@ export default function EpisodeMediaTabs({
   );
 
   const cancelVideoToAudioHandoff = useCallback((): void => {
+    /*
+     * The flag means "video was playing when the page became hidden; resume it
+     * when the page is visible again." Clearing it cancels that future resume.
+     */
     shouldResumeVideoFromAudioRef.current = false;
   }, []);
 
@@ -132,6 +162,11 @@ export default function EpisodeMediaTabs({
   const changeBackgroundAudioConsent = async (
     consentGiven: boolean,
   ): Promise<void> => {
+    /*
+     * Browser media rules usually require user interaction before background
+     * playback. This muted play/pause warms the audio element so the later
+     * hidden-screen handoff can start more reliably.
+     */
     cancelVideoToAudioHandoff();
     setBackgroundAudioError("");
 
@@ -172,7 +207,11 @@ export default function EpisodeMediaTabs({
     }
   };
 
-  const loadVideo = (event: FormEvent<HTMLFormElement>): void => {
+  const loadVideo = (event: SubmitEvent<HTMLFormElement>): void => {
+    /*
+     * Manual video attachment for now.
+     * Later this can read saved owner-managed video URLs from the database.
+     */
     event.preventDefault();
 
     const nextVideoUrl = youtubeUrlInput.trim();
@@ -194,12 +233,20 @@ export default function EpisodeMediaTabs({
 
   const stopHiddenHandoffIfVideoStopped = useCallback(
     (event: YouTubePlayerEvent): void => {
+      /*
+       * If the user pauses/stops the visible video, background handoff should
+       * not continue secretly after the tab becomes hidden.
+       */
       const videoWasStoppedByTheUser =
         !document.hidden &&
         (event.data === YOUTUBE_PAUSED_STATE ||
           event.data === YOUTUBE_ENDED_STATE);
 
       if (videoWasStoppedByTheUser) {
+        /*
+         * If the user paused or ended video while the page is visible, the app
+         * should not continue audio secretly when the page later becomes hidden.
+         */
         cancelVideoToAudioHandoff();
       }
     },
@@ -217,7 +264,11 @@ export default function EpisodeMediaTabs({
     let componentIsMounted = true;
     let playerInitTimer: number | null = null;
 
-    /* Deferred YouTube player initialization. */
+    /*
+     * Deferred YouTube player initialization.
+     * The timeout gives React time to reveal the panel so the mount element has
+     * real dimensions before YouTube replaces it with an iframe.
+     */
     playerInitTimer = window.setTimeout(() => {
       const currentVideoHost = videoHostRef.current;
       if (!componentIsMounted || !currentVideoHost) return;
@@ -274,6 +325,11 @@ export default function EpisodeMediaTabs({
     if (!videoContinuityIsEnabled) return;
 
     const syncMediaOnVisibilityChange = (): void => {
+      /*
+       * Switching rule:
+       * - hidden while YouTube is playing: start Acast audio at video time;
+       * - visible again: seek YouTube to Acast time and resume video.
+       */
       const audioElement = audioRef.current;
       const youtubePlayer = youtubePlayerRef.current;
       if (!audioElement || !youtubePlayer) {
@@ -281,6 +337,9 @@ export default function EpisodeMediaTabs({
       }
 
       if (document.hidden) {
+        /*
+         * No background audio starts unless video was actually playing.
+         */
         const videoWasPlaying =
           youtubePlayer.getPlayerState() === YOUTUBE_PLAYING_STATE;
 
@@ -316,6 +375,9 @@ export default function EpisodeMediaTabs({
       }
 
       if (!shouldResumeVideoFromAudioRef.current) {
+        /*
+         * If no hidden handoff happened, there is no video resume to perform.
+         */
         return;
       }
 
@@ -341,6 +403,9 @@ export default function EpisodeMediaTabs({
   }, [cancelVideoToAudioHandoff, logMediaSwitch, videoContinuityIsEnabled]);
 
   const stopHiddenHandoffIfUserPausedAudio = (): void => {
+    /*
+     * A manual pause while hidden means the user wants media stopped.
+     */
     if (document.hidden) {
       cancelVideoToAudioHandoff();
     }
@@ -348,6 +413,7 @@ export default function EpisodeMediaTabs({
 
   return (
     <section className={styles.mediaTabs} aria-label="Episode media">
+      {/* Audio/Video mode selector. */}
       <div className={styles.tabList} role="tablist">
         <button
           type="button"
@@ -382,6 +448,7 @@ export default function EpisodeMediaTabs({
         role="tabpanel"
         hidden={!audioTabIsActive}
       >
+        {/* Primary Acast audio player. */}
         {audioUrl ? (
           <audio
             ref={audioRef}
@@ -405,6 +472,7 @@ export default function EpisodeMediaTabs({
         role="tabpanel"
         hidden={!videoTabIsActive}
       >
+        {/* Manual YouTube URL loader. */}
         <form className={styles.videoSetup} onSubmit={loadVideo}>
           <input
             id={videoInputId}
@@ -420,6 +488,7 @@ export default function EpisodeMediaTabs({
           </button>
         </form>
 
+        {/* User consent gate for video-to-audio background handoff. */}
         <label className={styles.backgroundAudioConsent}>
           <input
             id={backgroundAudioConsentId}
@@ -436,6 +505,7 @@ export default function EpisodeMediaTabs({
           </span>
         </label>
 
+        {/* Status messages for video loading and background audio setup. */}
         {backgroundAudioError && (
           <p className={styles.invalidVideoMessage}>{backgroundAudioError}</p>
         )}
@@ -448,6 +518,7 @@ export default function EpisodeMediaTabs({
           </p>
         )}
 
+        {/* YouTube iframe mount area. */}
         {hasVideo && (
           <div className={styles.videoFrame}>
             <div
@@ -463,6 +534,9 @@ export default function EpisodeMediaTabs({
 }
 
 function createYouTubePlayerMount(videoHost: HTMLDivElement): HTMLDivElement {
+  /*
+   * YouTube mutates the mount node, so React only owns the wrapper.
+   */
   const youtubeMount = document.createElement("div");
   youtubeMount.className = styles.youtubePlayerMount;
 
@@ -470,6 +544,9 @@ function createYouTubePlayerMount(videoHost: HTMLDivElement): HTMLDivElement {
   return youtubeMount;
 }
 
+/**
+ * Guards against initializing YouTube inside a collapsed hidden element.
+ */
 function elementHasRenderableSize(element: HTMLElement): boolean {
   return element.offsetWidth > 0 && element.offsetHeight > 0;
 }

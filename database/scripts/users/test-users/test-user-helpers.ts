@@ -15,6 +15,9 @@ export type TestUserSeed = {
 
 /**
  * Tiny assertion helper for script-based tests.
+ *
+ * Throws a normal Error so these scripts can run with plain tsx instead of a
+ * full test runner.
  */
 export function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -24,6 +27,9 @@ export function assert(condition: boolean, message: string): void {
 
 /**
  * Runs an action that should fail and verifies the exact error message.
+ *
+ * This is useful for permission/validation tests, where success means "the
+ * dangerous action was rejected for the reason we expected."
  */
 export async function assertRejectsWithMessage(
   action: () => Promise<unknown>,
@@ -45,12 +51,18 @@ export async function assertRejectsWithMessage(
 
 /**
  * Inserts seeded user rows for tests.
+ *
+ * The tests bypass signup here because they need exact role/status setups such
+ * as owner, admin, disabled user, and delete target.
  */
 export async function seedTestUsers(
   turso: Client,
   users: TestUserSeed[],
   createdAt: number,
 ): Promise<void> {
+  /*
+   * Tests seed exact rows so each rule can target a known role/status.
+   */
   for (const user of users) {
     await turso.execute({
       sql: `
@@ -86,11 +98,16 @@ export async function seedTestUsers(
 
 /**
  * Removes seeded user rows created by a test run.
+ *
+ * Cleanup keeps the real Turso database usable after repeated local tests.
  */
 export async function deleteTestUsers(
   turso: Client,
   testPrefix: string,
 ): Promise<void> {
+  /*
+   * Every seeded id begins with the run prefix, so cleanup is deterministic.
+   */
   await turso.execute({
     sql: "DELETE FROM users WHERE id LIKE ?",
     args: [`${testPrefix}%`],

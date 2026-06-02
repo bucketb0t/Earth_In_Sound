@@ -23,10 +23,23 @@ interface PointerZoomAnchor {
   viewportWidth: number;
 }
 
+/**
+ * Converts measured numbers into safe CSS pixel strings.
+ *
+ * Measurement can occasionally produce fractional or tiny negative values after
+ * browser zoom/resize. CSS variables receive rounded non-negative pixels so the
+ * layout stays stable.
+ */
 function toNonNegativePixelValue(rawPixelValue: number): string {
   return `${Math.max(0, Math.ceil(rawPixelValue))}px`;
 }
 
+/**
+ * Reads the layout viewport width used for fitting the cell row.
+ *
+ * clientWidth is preferred because it excludes the browser scrollbar. That is
+ * the visible width the navbar row must fit inside before it starts scaling.
+ */
 function getLayoutViewportWidth(): number {
   /*
    * Layout viewport width used for row fitting and native horizontal scrolling.
@@ -34,6 +47,13 @@ function getLayoutViewportWidth(): number {
   return document.documentElement.clientWidth || window.innerWidth;
 }
 
+/**
+ * Reads the paint width used by the full-width banner layer.
+ *
+ * The banner can need the paint viewport width while the cell row needs the
+ * layout viewport width. Separating them keeps the background edge-to-edge
+ * without letting it distort row centering.
+ */
 function getPaintViewportWidth(layoutViewportWidth: number): number {
   /*
    * Paint viewport width used by the banner and baseline background layers.
@@ -41,6 +61,9 @@ function getPaintViewportWidth(layoutViewportWidth: number): number {
   return Math.max(layoutViewportWidth, window.innerWidth || 0);
 }
 
+/**
+ * Reads horizontal margins because the visual row includes cell spacing.
+ */
 function readHorizontalMarginWidth(element: HTMLElement): number {
   const elementStyles = window.getComputedStyle(element);
   const leftMarginWidth = parseFloat(elementStyles.marginLeft) || 0;
@@ -49,6 +72,12 @@ function readHorizontalMarginWidth(element: HTMLElement): number {
   return leftMarginWidth + rightMarginWidth;
 }
 
+/**
+ * Measures the rendered width of the interactive navbar cells.
+ *
+ * The row width is the sum of actual cell boxes plus margins. This value drives
+ * centering, overflow width, and mouse-positioned horizontal scroll.
+ */
 function measureRenderedNavbarCellsWidth(contentElement: HTMLDivElement): number {
   const navbarCellElements = Array.from(contentElement.children);
 
@@ -66,6 +95,11 @@ function measureRenderedNavbarCellsWidth(contentElement: HTMLDivElement): number
   }, 0);
 }
 
+/**
+ * Writes CSS variables only when their value actually changes.
+ *
+ * This avoids unnecessary style writes during ResizeObserver cycles.
+ */
 function setCssVariable(
   element: HTMLElement,
   variableName: string,
@@ -78,6 +112,10 @@ function setCssVariable(
 /**
  * Navbar shell.
  * Paints the shared banner/baseline and positions the independent cells.
+ *
+ * JSX here is intentionally small: it only orders the cells. Most layout values
+ * are measured at runtime and handed to CSS through variables because the row
+ * must react to window resize, browser zoom, fonts, and artwork dimensions.
  */
 export default function Navbar() {
   const navbarState = useNavbar();
@@ -103,6 +141,10 @@ export default function Navbar() {
       visibleViewportWidth: number,
       renderedNavbarRowWidth: number,
     ) => {
+      /*
+       * If the user previously zoomed/overflowed horizontally and the row now
+       * fits again, reset scrollLeft so the navbar returns to its centered view.
+       */
       const overflowWidth = renderedNavbarRowWidth - visibleViewportWidth;
       if (overflowWidth > 1) return;
 
@@ -128,6 +170,11 @@ export default function Navbar() {
       visibleViewportWidth: number,
       renderedNavbarRowWidth: number,
     ) => {
+      /*
+       * When browser zoom makes the row wider than the viewport, this positions
+       * horizontal scroll near the mouse. It does not scale the navbar; it only
+       * chooses which part of the overflow is visible.
+       */
       const overflowWidth = renderedNavbarRowWidth - visibleViewportWidth;
       const pointerZoomAnchor = pointerZoomAnchorRef.current;
       if (overflowWidth <= 1 || !pointerZoomAnchor) return;
@@ -177,6 +224,8 @@ export default function Navbar() {
 
       /*
        * Measure viewport and cell row widths for centering and overflow.
+       * visibleViewportWidth controls row placement. paintViewportWidth controls
+       * the background layer. renderedNavbarRowWidth controls natural overflow.
        */
       const visibleViewportWidth = Math.round(getLayoutViewportWidth());
       const paintViewportWidth = Math.round(
@@ -196,6 +245,8 @@ export default function Navbar() {
 
       /*
        * Write layout variables for the shell, banner, and interactive row.
+       * CSS consumes these values in NavbarStyle.module.css so browser-specific
+       * layout differences are handled by measured numbers, not guessed CSS.
        */
       setCssVariable(
         rootElement,

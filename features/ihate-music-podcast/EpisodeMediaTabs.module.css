@@ -5,16 +5,19 @@
  */
 
 .mediaTabs {
+  /* Outer spacing for one episode's media controls. */
   margin: 18px 0;
 }
 
 .tabList {
+  /* Horizontal Audio/Video selector. */
   display: flex;
   gap: 4px;
   margin-bottom: 8px;
 }
 
 .tabButton {
+  /* Shared tab button surface. */
   appearance: none;
   background: #111;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -37,23 +40,27 @@
 }
 
 .mediaPanel {
+  /* Panel body that holds either audio controls or video controls. */
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.22);
   padding: 12px;
 }
 
 .audioPlayer {
+  /* Native audio element should fill the episode card width. */
   display: block;
   width: 100%;
 }
 
 .videoSetup {
+  /* Manual YouTube link entry row. */
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
 }
 
 .videoInput {
+  /* Text input for the manually supplied YouTube URL. */
   background: #070707;
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #fff;
@@ -69,6 +76,7 @@
 }
 
 .videoLoadButton {
+  /* Button that creates or replaces the YouTube iframe player. */
   appearance: none;
   background: #06140b;
   border: 1px solid rgba(34, 197, 94, 0.55);
@@ -91,6 +99,7 @@
 }
 
 .backgroundAudioConsent {
+  /* User permission toggle for video-to-audio background handoff. */
   align-items: flex-start;
   color: #cfcfcf;
   cursor: pointer;
@@ -112,6 +121,7 @@
 }
 
 .videoFrame {
+  /* Stable 16:9 frame for the embedded YouTube player. */
   aspect-ratio: 16 / 9;
   background: #050505;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -121,12 +131,14 @@
 
 .videoHost,
 .videoHost iframe {
+  /* YouTube API mount and iframe occupy the whole frame. */
   display: block;
   height: 100%;
   width: 100%;
 }
 
 .youtubePlayerMount {
+  /* Empty mount element replaced by the YouTube iframe API. */
   height: 100%;
   width: 100%;
 }
@@ -134,6 +146,7 @@
 .emptyVideoMessage,
 .invalidVideoMessage,
 .audioUnavailableMessage {
+  /* Small status messages inside the current media panel. */
   color: #bdbdbd;
   font-size: 0.86rem;
   line-height: 1.5;
@@ -145,6 +158,7 @@
 }
 
 @media (max-width: 620px) {
+  /* Stack video form controls on narrow cards. */
   .videoSetup {
     flex-direction: column;
   }

@@ -1,3 +1,8 @@
+/*
+ * Shared navbar style module.
+ * Owns the full-width banner, baseline, sticky shell, and measured cell row.
+ */
+
 @font-face {
   font-family: "FuturaHeavy";
   src: url("/NavbarAssets/DesktopAssets/Fonts/FuturaHeavy_GeneralCaps.ttf")

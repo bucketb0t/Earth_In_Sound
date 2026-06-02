@@ -2,6 +2,9 @@ import type { StoredUser, UserRole } from "../read/read-users";
 
 /**
  * Confirms that a loaded user row actually exists.
+ *
+ * Read functions return null when a row is missing. Write functions call this
+ * helper when missing data should stop the action immediately.
  */
 export function requireStoredUser(
   user: StoredUser | null,
@@ -17,6 +20,9 @@ export function requireStoredUser(
 /**
  * Disabled or deleted users should not perform account actions.
  * Deleted is treated as a soft-deleted account, not a physically removed row.
+ *
+ * This guard protects write functions from being used by accounts that are no
+ * longer allowed to act.
  */
 export function requireActiveUser(user: StoredUser): StoredUser {
   if (user.status !== "active") {
@@ -28,6 +34,9 @@ export function requireActiveUser(user: StoredUser): StoredUser {
 
 /**
  * Owner is the highest role, then admin, then normal user.
+ *
+ * Using a number makes permission comparisons simple: a manager must have a
+ * strictly higher rank than the account they manage.
  */
 export function getRoleRank(role: UserRole): number {
   const roleRanks: Record<UserRole, number> = {
@@ -47,6 +56,9 @@ export function getRoleRank(role: UserRole): number {
  * - owner can manage admins and users
  * - admin can manage normal users
  * - users cannot manage other users
+ *
+ * This does not decide whether the current user is active. Call
+ * requireActiveUser before this helper when performing a real action.
  */
 export function requireCanManageUser(
   currentUser: StoredUser,

@@ -4,9 +4,15 @@ import {
   toLookupValue,
 } from "../validation/validate-user-input";
 
+/*
+ * Role and status values allowed by the users table.
+ */
 export type UserRole = "owner" | "admin" | "user";
 export type UserStatus = "active" | "disabled" | "deleted";
 
+/*
+ * Database row shape returned by the project users table.
+ */
 export interface StoredUser {
   id: string;
   auth_provider_user_id: string | null;
@@ -31,8 +37,14 @@ export interface GetCurrentUserInput {
 
 /**
  * Fetches one user by internal database id.
+ *
+ * Use this when code already knows the Earth In Sound users.id value. This id
+ * is different from Better Auth's user.id.
  */
 export async function getUserById(userId: string): Promise<StoredUser | null> {
+  /*
+   * Trim ids from route/session input before querying.
+   */
   const cleanedUserId = userId.trim();
 
   if (!cleanedUserId) {
@@ -49,10 +61,16 @@ export async function getUserById(userId: string): Promise<StoredUser | null> {
 
 /**
  * Fetches one user by the external auth provider id.
+ *
+ * This is the bridge from Better Auth into the project table. Better Auth owns
+ * its user.id; the project stores that same value in auth_provider_user_id.
  */
 export async function getUserByAuthProviderId(
   authProviderUserId: string,
 ): Promise<StoredUser | null> {
+  /*
+   * auth_provider_user_id links Better Auth's user.id to the project user row.
+   */
   const cleanedAuthProviderUserId = authProviderUserId.trim();
 
   if (!cleanedAuthProviderUserId) {
@@ -69,6 +87,9 @@ export async function getUserByAuthProviderId(
 
 /**
  * Resolves the currently logged-in auth provider user to a stored user row.
+ *
+ * Future server-side pages/actions can call this after reading the Better Auth
+ * session. If there is no logged-in auth id, there is no project user to load.
  */
 export async function getCurrentUser(
   input: GetCurrentUserInput,
@@ -84,6 +105,9 @@ export async function getCurrentUser(
 
 /**
  * Fetches one user by email using the lookup value.
+ *
+ * The visible email keeps the user's original casing, but email_lookup is
+ * lowercase so searches and duplicate checks behave consistently.
  */
 export async function getUserByEmail(
   email: string,
@@ -99,11 +123,41 @@ export async function getUserByEmail(
 }
 
 /**
+ * Fetches one user by username using the lookup value.
+ *
+ * Usernames are preserved for display, but username_lookup lets the database
+ * reject case-insensitive duplicates.
+ */
+export async function getUserByUsername(
+  username: string,
+): Promise<StoredUser | null> {
+  const cleanedUsername = username.trim();
+
+  if (!cleanedUsername) {
+    throw new Error("Username is required.");
+  }
+
+  const result = await turso.execute({
+    sql: "SELECT * FROM users WHERE username_lookup = ? LIMIT 1",
+    args: [toLookupValue(cleanedUsername)],
+  });
+
+  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+}
+
+/**
  * Searches users by partial email or username.
+ *
+ * This is intended for owner/admin panels later. It searches lookup fields, not
+ * visible fields, so "and" can find "Andrew" and "andreea" without caring about
+ * original letter casing.
  */
 export async function searchUsers(
   input: SearchUsersInput,
 ): Promise<StoredUser[]> {
+  /*
+   * Empty search returns no rows instead of dumping the user table.
+   */
   const cleanedSearchText = input.searchText.trim();
 
   if (!cleanedSearchText) {
@@ -111,6 +165,9 @@ export async function searchUsers(
   }
 
   const searchLookup = `%${toLookupValue(cleanedSearchText)}%`;
+  /*
+   * Clamp limits so a caller cannot request an unbounded user list.
+   */
   const resultLimit = Math.min(Math.max(input.limit ?? 20, 1), 50);
 
   const result = await turso.execute({

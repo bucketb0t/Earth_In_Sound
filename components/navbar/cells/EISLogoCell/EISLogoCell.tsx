@@ -20,6 +20,10 @@ interface DragState {
 /**
  * EIS logo + local navigation cell.
  * Owns plaque artwork, logo hover state, custom slider, and EIS link rows.
+ *
+ * This cell is self-contained visually, but it does not own navigation state.
+ * It reads activePage/eisSliderPos from navbar context and writes changes back
+ * through eisNavTo/goHome.
  */
 export default function EISLogoCell() {
   /* Shared state keeps this cell synchronized with the rest of the navbar. */
@@ -40,6 +44,10 @@ export default function EISLogoCell() {
 
   /* Convert selected link index into the thumb's current pixel top. */
   const linkIndexToThumbTop = useCallback((linkIndex: number): number => {
+    /*
+     * The slider uses rendered DOM sizes instead of hard-coded pixels. This is
+     * why the thumb can still line up after navbar scaling or browser zoom.
+     */
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
     if (!trackElement || !thumbElement) return 0;
@@ -51,6 +59,10 @@ export default function EISLogoCell() {
 
   /* Convert a dragged thumb top into the nearest valid link index. */
   const thumbTopToLinkIndex = useCallback((thumbTop: number): number => {
+    /*
+     * Dragging produces a pixel position. This converts that pixel position
+     * back into the nearest menu index: Home, About, or Contact.
+     */
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
     if (!trackElement || !thumbElement) return 0;
@@ -158,6 +170,9 @@ export default function EISLogoCell() {
 
   /* Keyboard support mirrors normal slider expectations. */
   const onThumbKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    /*
+     * Keyboard mapping keeps the custom slider accessible like a real slider.
+     */
     const keyToLinkIndex: Partial<Record<string, number>> = {
       ArrowDown: eisSliderPos + 1,
       ArrowRight: eisSliderPos + 1,

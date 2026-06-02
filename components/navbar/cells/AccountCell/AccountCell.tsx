@@ -5,8 +5,16 @@ import styles from "./AccountCell.module.css";
 
 /**
  * Account cell.
+ *
+ * This is the small navbar hardware control, not the full account form. It
+ * toggles local navbar login visuals and opens the /account page when the
+ * screen button is pressed.
  */
 export default function AccountCell() {
+  /*
+   * The navbar account cell still uses local visual state.
+   * The full auth UI lives on the /account route.
+   */
   const { isLoggedIn, openAccountPage, toggleLogin } = useNavbarContext();
   const toggleLabel = isLoggedIn ? "Log Out" : "Log In";
   const screenLabel = isLoggedIn ? "JasonW" : "Sign up";

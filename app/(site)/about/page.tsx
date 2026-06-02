@@ -1,9 +1,16 @@
 import SectionPlaceholderPage from "@/features/section-placeholder/SectionPlaceholderPage";
 
+/**
+ * Browser metadata for the About route.
+ */
 export const metadata = {
   title: "About | Earth In Sound",
 };
 
+/**
+ * Temporary About page content.
+ * Uses the shared placeholder until the full page design is built.
+ */
 export default function AboutPage() {
   return (
     <SectionPlaceholderPage

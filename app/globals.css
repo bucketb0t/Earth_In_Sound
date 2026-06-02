@@ -43,6 +43,10 @@ a {
 /* Shared navbar primitives; cell-specific artwork stays in each component. */
 
 .navbar-cell {
+  /*
+   * Shared plaque box.
+   * Individual cells provide --cell-plaque-aspect and their own artwork.
+   */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -54,6 +58,9 @@ a {
 }
 
 .navbar-fit {
+  /*
+   * Utility used inside artwork cells so inner controls can shrink cleanly.
+   */
   min-width: 0;
   max-width: 100%;
   flex-shrink: 1;
@@ -68,6 +75,10 @@ a {
 }
 
 .led {
+  /*
+   * Generic circular LED primitive for simple cells.
+   * EIS and knob cells use SVG-specific LED artwork instead.
+   */
   width: calc(10px * var(--artwork-cell-scale));
   aspect-ratio: 1;
   border-radius: 50%;
@@ -81,6 +92,9 @@ a {
 }
 
 .link-label {
+  /*
+   * Shared navbar text primitive.
+   */
   font-size: calc(9px * var(--artwork-cell-scale));
   letter-spacing: 0.05em;
   text-transform: uppercase;

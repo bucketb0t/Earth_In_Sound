@@ -19,6 +19,9 @@ import {
   toLookupValue,
 } from "../validation/validate-user-input";
 
+/*
+ * Write input types keep function calls explicit and readable.
+ */
 export interface CreateLocalOwnerInput {
   email: string;
   username: string;
@@ -64,10 +67,17 @@ export interface SetUserRoleInput {
 }
 /**
  * Creates the first local owner account.
+ *
+ * This setup path is intentionally separate from public signup. Public signup
+ * must never create owner/admin users. This function is for the project setup
+ * script, where you explicitly decide who the first owner is.
  */
 export async function createLocalOwner(
   input: CreateLocalOwnerInput,
 ): Promise<string> {
+  /*
+   * The local owner script is the only intended caller for this setup function.
+   */
   const email = requireValidEmail(input.email);
   const username = requireValidUsername(input.username);
   const now = Date.now();
@@ -76,6 +86,10 @@ export async function createLocalOwner(
     sql: "SELECT id FROM users WHERE role = 'owner' LIMIT 1",
   });
 
+  /*
+   * Only one owner is allowed. If an owner row exists, ownership should be
+   * transferred with transferOwnership instead of creating another owner.
+   */
   if (existingOwner.rows.length > 0) {
     throw new Error("Owner already exists.");
   }
@@ -100,6 +114,9 @@ export async function createLocalOwner(
 
   const ownerId = randomUUID();
 
+  /*
+   * Owner has no auth provider id until a real auth account is connected.
+   */
   await turso.execute({
     sql: `
       INSERT INTO users (
@@ -132,10 +149,18 @@ export async function createLocalOwner(
 
 /**
  * Creates a normal user row after signup authentication succeeds.
+ *
+ * Better Auth creates the secure auth record first. This function then creates
+ * the Earth In Sound profile row and links it to Better Auth through
+ * auth_provider_user_id. The role is hardcoded to "user" so public signup
+ * cannot promote itself.
  */
 export async function createNormalUserAfterSignup(
   input: CreateNormalUserAfterSignupInput,
 ): Promise<StoredUser> {
+  /*
+   * Better Auth passes its generated user id after password signup succeeds.
+   */
   const authProviderUserId = input.authProviderUserId.trim();
 
   if (!authProviderUserId) {
@@ -144,6 +169,9 @@ export async function createNormalUserAfterSignup(
 
   const existingAuthUser = await getUserByAuthProviderId(authProviderUserId);
 
+  /*
+   * Idempotency guard for repeated hooks or retry attempts.
+   */
   if (existingAuthUser) {
     return existingAuthUser;
   }
@@ -172,6 +200,9 @@ export async function createNormalUserAfterSignup(
 
   const userId = randomUUID();
 
+  /*
+   * Signup always creates a normal active user.
+   */
   await turso.execute({
     sql: `
       INSERT INTO users (
@@ -207,10 +238,17 @@ export async function createNormalUserAfterSignup(
 
 /**
  * Updates the current user's own visible username.
+ *
+ * No owner/admin override is accepted here. The caller can only pass the
+ * current user's id, and the function updates that same row after validating
+ * the new username and checking that it is not already taken.
  */
 export async function updateUsername(
   input: UpdateUsernameInput,
 ): Promise<StoredUser> {
+  /*
+   * Username changes are self-service only.
+   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -247,10 +285,17 @@ export async function updateUsername(
 
 /**
  * Disables a user account without removing the database row.
+ *
+ * Disabled means "temporarily blocked or inactive." The row keeps its original
+ * email_lookup and username_lookup, so nobody else can reuse that identity
+ * while the account is disabled. A disabled user can later be reactivated.
  */
 export async function disableUser(
   input: DisableUserInput,
 ): Promise<StoredUser> {
+  /*
+   * Disabled accounts keep email/username reservations.
+   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -291,8 +336,16 @@ export async function disableUser(
 
 /**
  * Soft-deletes a user account.
+ *
+ * Deleted means "closed account." The row remains for audit/history, but the
+ * auth link is removed and email_lookup is replaced so a future signup may use
+ * the same email again. Deleted users are not reactivated through the normal
+ * reactivateUser path.
  */
 export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
+  /*
+   * Deleted accounts are soft-deleted so history can remain auditable.
+   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -317,6 +370,9 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
 
   const now = Date.now();
 
+  /*
+   * Replacing email_lookup frees the original email for a future account.
+   */
   await turso.execute({
     sql: `
       UPDATE users
@@ -337,10 +393,16 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
 
 /**
  * Reactivates a disabled account.
+ *
+ * This only accepts status = "disabled". Deleted accounts are intentionally
+ * excluded because their lookup fields/auth link were released.
  */
 export async function reactivateUser(
   input: ReactivateUserInput,
 ): Promise<StoredUser> {
+  /*
+   * Only disabled accounts can come back through normal reactivation.
+   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -379,10 +441,16 @@ export { getUserByEmail };
 
 /**
  * Transfers the single owner role to another active account.
+ *
+ * This is the only way ownership should move. The old owner becomes an admin,
+ * and the target active user becomes owner in one batch write.
  */
 export async function transferOwnership(
   input: TransferOwnershipInput,
 ): Promise<StoredUser> {
+  /*
+   * The project allows exactly one owner.
+   */
   const currentOwner = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentOwnerId),
@@ -407,6 +475,9 @@ export async function transferOwnership(
 
   const now = Date.now();
 
+  /*
+   * Batch keeps the old owner demotion and new owner promotion together.
+   */
   await turso.batch(
     [
       {
@@ -436,10 +507,16 @@ export async function transferOwnership(
 
 /**
  * Lets the owner promote or demote active non-owner accounts.
+ *
+ * The owner role is excluded from targetRole. To change who owns the site, use
+ * transferOwnership so the single-owner rule remains intact.
  */
 export async function setUserRole(
   input: SetUserRoleInput,
 ): Promise<StoredUser> {
+  /*
+   * Role assignment intentionally excludes the owner role.
+   */
   const currentOwner = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentOwnerId),

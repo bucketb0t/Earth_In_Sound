@@ -22,6 +22,10 @@ import {
 
 // Initial cart counter value used by the navbar state.
 const INITIAL_CART_COUNT = 1;
+
+/*
+ * Route constants keep navigation targets centralized.
+ */
 const HOME_ROUTE = "/";
 const ACCOUNT_ROUTE = "/account";
 const CART_ROUTE = "/cart";
@@ -34,6 +38,11 @@ export interface ActivePage {
 }
 
 interface NavbarVisualState {
+  /*
+   * Local visual state combines the highlighted route section with latched
+   * utility buttons such as Store and Cart. sourcePathname tells the navbar
+   * whether this state still belongs to the current route.
+   */
   activePage: ActivePage | null;
   eisSliderPos: number;
   isCartPressed: boolean;
@@ -44,6 +53,10 @@ interface NavbarVisualState {
 const NAVBAR_LINK_ROUTES: Partial<
   Record<SectionId, Partial<Record<number, string>>>
 > = {
+  /*
+   * Physical control positions map to routes. Example: EIS slider index 1 is
+   * About, so eisNavTo(1) pushes /about.
+   */
   eis: {
     0: HOME_ROUTE,
     1: "/about",
@@ -62,6 +75,10 @@ const NAVBAR_LINK_ROUTES: Partial<
 };
 
 const ACTIVE_PAGE_BY_ROUTE: Partial<Record<string, ActivePage>> = {
+  /*
+   * Reverse route lookup. When the page changes by browser history, refresh, or
+   * direct URL entry, this tells the navbar which control should look active.
+   */
   [HOME_ROUTE]: { section: "eis", linkIndex: 0 },
   "/about": { section: "eis", linkIndex: 1 },
   "/contact": { section: "eis", linkIndex: 2 },
@@ -73,6 +90,9 @@ const ACTIVE_PAGE_BY_ROUTE: Partial<Record<string, ActivePage>> = {
   "/i-hate-music/patreon": { section: "ihm", linkIndex: 2 },
 };
 
+/*
+ * Public state and actions consumed by every navbar cell.
+ */
 export interface NavbarState {
   activePage: ActivePage | null;
   eisSliderPos: number;
@@ -133,6 +153,9 @@ function clampSectionLinkIndex(
 }
 
 function getElementOuterWidth(element: Element): number {
+  /*
+   * Row measurement needs margins because cell spacing is visual width too.
+   */
   if (!(element instanceof HTMLElement)) {
     return element.getBoundingClientRect().width;
   }
@@ -145,6 +168,9 @@ function getElementOuterWidth(element: Element): number {
 }
 
 function getNavbarContentWidth(contentElement: HTMLDivElement): number {
+  /*
+   * Prefer children sum because scrollWidth differs across browsers with zoom.
+   */
   const childWidth = Array.from(contentElement.children).reduce(
     (totalWidth, childElement) =>
       totalWidth + getElementOuterWidth(childElement),
@@ -177,6 +203,9 @@ function getRouteVisualState(
   pathname: string,
   cartCount: number,
 ): NavbarVisualState {
+  /*
+   * Route-derived state keeps highlighted controls synced after navigation.
+   */
   const routeActivePage = ACTIVE_PAGE_BY_ROUTE[pathname] ?? null;
 
   return {
@@ -207,6 +236,12 @@ export function useNavbar(): NavbarState {
   const [visualState, setVisualState] = useState<NavbarVisualState>(() =>
     getRouteVisualState(pathname, INITIAL_CART_COUNT),
   );
+
+  /*
+   * Route changes win over stale local visual state.
+   * If navigation has already changed pathname, routeVisualState becomes the
+   * source of truth so Store/Cart/knob highlights do not stay stuck.
+   */
   const routeVisualState = getRouteVisualState(pathname, cartCount);
   const currentVisualState =
     visualState.sourcePathname === pathname ? visualState : routeVisualState;
@@ -229,6 +264,8 @@ export function useNavbar(): NavbarState {
 
     /*
      * Full-size artwork variables used for baseline measurement.
+     * These values establish the unshrunk navbar first. The real scale is then
+     * computed from how much room the cell row actually needs.
      */
     shellElement.style.setProperty("--navbar-shell-height", `${DESIGN_HEIGHT}px`);
     shellElement.style.setProperty(
@@ -266,6 +303,10 @@ export function useNavbar(): NavbarState {
       const normalizedNavbarRowWidth =
         renderedNavbarRowWidth * (fullArtworkScale / currentArtworkScale);
 
+      /*
+       * Store the last known full-scale width. This avoids losing the original
+       * design width after the row has already been scaled down.
+       */
       if (normalizedNavbarRowWidth > 0) {
         designContentWidthRef.current = normalizedNavbarRowWidth;
       }
@@ -280,6 +321,9 @@ export function useNavbar(): NavbarState {
 
       /*
        * Resize-only viewport width used by the scale calculation.
+       * Browser zoom changes CSS pixels and devicePixelRatio together. This
+       * normalization lets real window resize shrink the navbar, while browser
+       * zoom is allowed to overflow naturally.
        */
       return (
         cssViewportWidth *
@@ -295,6 +339,10 @@ export function useNavbar(): NavbarState {
           ? Math.min(1, resizeOnlyViewportWidth / fullScaleNavbarRowWidth)
           : 1;
 
+      /*
+       * Avoid tiny floating point updates. Without this guard, ResizeObserver
+       * can cause visual jitter by setting almost-identical scale values.
+       */
       setScale((currentScale) =>
         Math.abs(currentScale - nextScale) > 0.001 ? nextScale : currentScale,
       );
@@ -369,6 +417,10 @@ export function useNavbar(): NavbarState {
    * Utility-cell action reset.
    */
   const resetActiveNavbarControls = useCallback((): void => {
+    /*
+     * Utility controls like login/account should clear section highlights
+     * without changing the current route by themselves.
+     */
     setVisualState({
       ...currentVisualState,
       activePage: null,
@@ -383,6 +435,10 @@ export function useNavbar(): NavbarState {
    */
   const navigateToLinkedRoute = useCallback(
     (sectionId: SectionId, linkIndex: number): void => {
+      /*
+       * All navigation goes through this helper so cells do not need to know
+       * route strings directly.
+       */
       const targetRoute = NAVBAR_LINK_ROUTES[sectionId]?.[linkIndex];
       if (targetRoute) router.push(targetRoute);
     },
@@ -390,6 +446,10 @@ export function useNavbar(): NavbarState {
   );
 
   const eisNavTo = useCallback((linkIndex: number): void => {
+    /*
+     * EIS slider/link navigation updates visual state first, then moves the
+     * browser route. Clamping protects against invalid slider indexes.
+     */
     const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
     setVisualState({
       activePage: { section: "eis", linkIndex: clampedEisLinkIndex },
@@ -403,6 +463,9 @@ export function useNavbar(): NavbarState {
 
   const knobNavTo = useCallback(
     (sectionId: KnobSectionId, linkIndex: number): void => {
+      /*
+       * Direct knob link clicks choose an exact menu stop.
+       */
       const clampedLinkIndex = clampSectionLinkIndex(sectionId, linkIndex);
       setVisualState({
         activePage: { section: sectionId, linkIndex: clampedLinkIndex },
@@ -417,6 +480,10 @@ export function useNavbar(): NavbarState {
   );
 
   const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
+    /*
+     * Pressing the knob face cycles through that section's menu stops. If the
+     * section was inactive, it starts at the first stop.
+     */
     const linkCount = SECTION_LINKS[sectionId].length;
     const selectedLinkIndex =
       activePage?.section === sectionId
@@ -451,6 +518,10 @@ export function useNavbar(): NavbarState {
    * Latched Store page action.
    */
   const storePress = useCallback((): void => {
+    /*
+     * Store is a latched utility action: it clears section highlights and keeps
+     * Store visually pressed while the route is /store.
+     */
     setVisualState({
       activePage: null,
       eisSliderPos: 0,
@@ -462,6 +533,10 @@ export function useNavbar(): NavbarState {
   }, [pathname, router]);
 
   const cartPress = useCallback((): void => {
+    /*
+     * Cart can only latch when there is at least one item. The count is still a
+     * temporary seed until real cart data exists.
+     */
     if (cartCount <= 0) return;
     setVisualState({
       activePage: null,

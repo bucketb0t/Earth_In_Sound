@@ -18,6 +18,10 @@ loadEnvConfig(process.cwd());
 export async function runUserDatabaseTests(): Promise<void> {
   /**
    * Database module imports that depend on environment variables.
+   *
+   * These imports happen inside the test function, after loadEnvConfig, because
+   * the imported database modules read TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
+   * as soon as they load.
    */
   const { turso } = await import("../../../../lib/server/database/turso-client");
   const {
@@ -34,6 +38,9 @@ export async function runUserDatabaseTests(): Promise<void> {
 
   /**
    * Unique namespace for all rows created by this test run.
+   *
+   * Every test row begins with this prefix. The cleanup helper can then delete
+   * only rows created by this run and leave real project data alone.
    */
   const testRunId = randomUUID().slice(0, 8);
   const testPrefix = `t-${testRunId}`;
@@ -105,6 +112,8 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Active users should be able to change only their own username.
+     *
+     * This verifies the normal self-service username path.
      */
     const updatedUser = await updateUsername({
       currentUserId: activeUserId,
@@ -117,6 +126,8 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Disabled users cannot act, so username changes must be rejected.
+     *
+     * This protects actions from accounts that are temporarily blocked.
      */
     await assertRejectsWithMessage(
       () =>
@@ -130,6 +141,8 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * A username already owned by another row must stay reserved.
+     *
+     * The function should reject duplicates before updating the database.
      */
     await assertRejectsWithMessage(
       () =>
@@ -143,6 +156,9 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Owner self-disable protection.
+     *
+     * The only owner cannot disable themselves because the project would lose
+     * the account that can transfer ownership and manage roles.
      */
     await assertRejectsWithMessage(
       () => disableUser({ currentUserId: ownerId, targetUserId: ownerId }),
@@ -152,6 +168,8 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Admins can disable normal users.
+     *
+     * This exercises role hierarchy: admin rank is higher than user rank.
      */
     await disableUser({ currentUserId: adminId, targetUserId: activeUserId });
     const disabledActiveUser = await getUserById(activeUserId);
@@ -163,6 +181,9 @@ export async function runUserDatabaseTests(): Promise<void> {
     /**
      * Disabled accounts keep email_lookup reserved.
      * A direct insert with the same email_lookup should fail.
+     *
+     * Disabled is not the same as deleted. Disabled accounts are expected to
+     * return later, so their email cannot be reused.
      */
     try {
       await turso.execute({
@@ -197,6 +218,9 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Disabled account reactivation.
+     *
+     * Reactivation moves status from disabled back to active without changing
+     * the user's email, username, or role.
      */
     const reactivatedUser = await reactivateUser({
       currentUserId: adminId,
@@ -210,6 +234,8 @@ export async function runUserDatabaseTests(): Promise<void> {
     /**
      * Deleted accounts are soft-deleted.
      * The row remains, but status changes and auth uniqueness is released.
+     *
+     * This checks that deleted accounts do not keep the external auth id.
      */
     const deletedUser = await deleteUser({
       currentUserId: adminId,
@@ -224,6 +250,9 @@ export async function runUserDatabaseTests(): Promise<void> {
     /**
      * Deleted accounts release email_lookup.
      * This insert proves the same email can be used by a new account row.
+     *
+     * The original deleted row remains in the table, but its lookup value has
+     * been changed to a generated deleted-email key.
      */
     await turso.execute({
       sql: `
@@ -261,6 +290,9 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Deleted accounts cannot be reactivated through the normal flow.
+     *
+     * A deleted account released identity fields, so bringing it back through
+     * reactivateUser would be ambiguous.
      */
     await deleteUser({
       currentUserId: ownerId,
@@ -278,6 +310,8 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     /**
      * Search should find users by partial username/email lookup text.
+     *
+     * The search function is meant for future owner/admin panels.
      */
     const searchResults = await searchUsers({
       searchText: `${testPrefix}-renamed`,

@@ -1,5 +1,7 @@
+-- Rebuilds users so the status CHECK includes 'deleted'.
 BEGIN TRANSACTION;
 
+-- Replacement table with the expanded status rule.
 CREATE TABLE users_next (
   id TEXT PRIMARY KEY NOT NULL,
 
@@ -21,6 +23,7 @@ CREATE TABLE users_next (
   updated_at INTEGER NOT NULL
 );
 
+-- Copy all existing users into the replacement table.
 INSERT INTO users_next (
   id,
   auth_provider_user_id,
@@ -46,10 +49,12 @@ SELECT
   updated_at
 FROM users;
 
+-- Swap replacement table into the original table name.
 DROP TABLE users;
 
 ALTER TABLE users_next RENAME TO users;
 
+-- Recreate indexes after table replacement.
 CREATE INDEX IF NOT EXISTS users_role_index
 ON users (role);
 

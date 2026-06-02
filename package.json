@@ -11,12 +11,16 @@
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
+    "@libsql/kysely-libsql": "^0.4.1",
+    "better-auth": "^1.6.13",
     "fast-xml-parser": "^5.8.0",
+    "kysely": "0.28.17",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "overrides": {
+    "kysely": "0.28.17",
     "postcss": "8.5.10"
   },
   "devDependencies": {

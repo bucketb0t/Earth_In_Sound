@@ -10,11 +10,17 @@ const HOVER_VIDEO_URL =
 const PRESSED_VIDEO_URL =
   "/NavbarAssets/DesktopAssets/Animations/StoreOnNavbar.mp4";
 
+/**
+ * Pauses a video and rewinds it to its first frame.
+ */
 function resetVideo(video: HTMLVideoElement): void {
   video.pause();
   video.currentTime = 0;
 }
 
+/**
+ * Starts a video from the beginning.
+ */
 function playVideoFromStart(video: HTMLVideoElement): void {
   video.currentTime = 0;
   void video.play();
@@ -22,8 +28,14 @@ function playVideoFromStart(video: HTMLVideoElement): void {
 
 /**
  * Store cell.
+ *
+ * The button has three visual layers: static image, hover video, and pressed
+ * video. React state only decides which layer is visible; CSS owns the layout.
  */
 export default function StoreCell() {
+  /*
+   * isStorePressed is route/navbar state; isHovered is local pointer state.
+   */
   const { isStorePressed, storePress } = useNavbarContext();
   const [isHovered, setIsHovered] = useState(false);
 
@@ -32,6 +44,10 @@ export default function StoreCell() {
 
   /* Hover-state video controller. */
   useEffect(() => {
+    /*
+     * Hover video runs only while the pointer is over Store and Store is not
+     * already latched as the active route.
+     */
     const video = hoverVideoRef.current;
     if (!video) return;
 
@@ -47,6 +63,10 @@ export default function StoreCell() {
    * Pressed-state video controller.
    */
   useEffect(() => {
+    /*
+     * Pressed video loops while /store is the active route. Navigating away
+     * resets isStorePressed in navbar state, which rewinds this video.
+     */
     const video = pressedVideoRef.current;
     if (!video) return;
 

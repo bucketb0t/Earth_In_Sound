@@ -4,5 +4,6 @@
  */
 
 .main {
+  /* Empty home stage below the persistent navbar. */
   padding: 40px 24px;
 }

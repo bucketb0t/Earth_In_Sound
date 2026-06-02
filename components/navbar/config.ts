@@ -46,14 +46,28 @@ export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
  * labels, and jack hardware. CSS owns assets/styles; this object owns layout.
  */
 export const KNOB_LAYOUT = {
+  /*
+   * dragStepPx controls how many pointer pixels equal one menu step while
+   * dragging a knob vertically.
+   */
   dragStepPx: 18,
+  /*
+   * choiceLightSize is the SVG foreignObject box used for LED artwork.
+   */
   choiceLightSize: 11,
+  /*
+   * labelOrbitGap pushes text labels farther from the knob center than LEDs.
+   */
   labelOrbitGap: 16,
   module: {
     maxWidth: 160,
     offset: { x: -2, y: 10 },
   },
   artwork: {
+    /*
+     * These values place and animate the visible knob SVG inside the invisible
+     * SVG hit target used for pointer/keyboard interaction.
+     */
     size: 52.5,
     leftPercent: 23,
     topPercent: 52,
@@ -66,6 +80,10 @@ export const KNOB_LAYOUT = {
     },
   },
   jack: {
+    /*
+     * Jack values place the socket and cable relative to the knob cell. Socket
+     * and plug sizes are separate because their artwork proportions differ.
+     */
     socketWidth: 16,
     plugWidth: 22,
     plugHeight: 48,
@@ -102,14 +120,23 @@ export interface SvgPoint {
   y: number;
 }
 
+/**
+ * Converts designer-friendly clock angles into SVG math angles.
+ */
 export function ledAngleToTrigDegrees(degreesFromTop: number): number {
   return 90 - degreesFromTop;
 }
 
+/**
+ * Converts degrees into radians for Math.sin/cos.
+ */
 export function degreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
+/**
+ * Converts polar knob coordinates into SVG x/y coordinates.
+ */
 export function svgPoint(radius: number, trigDegrees: number): SvgPoint {
   const radians = degreesToRadians(trigDegrees);
   return {

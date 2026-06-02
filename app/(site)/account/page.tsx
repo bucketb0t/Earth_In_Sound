@@ -1,15 +1,16 @@
-import SectionPlaceholderPage from "@/features/section-placeholder/SectionPlaceholderPage";
+import AccountAuthPanel from "@/features/account-auth/AccountAuthPanel";
 
+/**
+ * Browser metadata for the Account route.
+ */
 export const metadata = {
   title: "Account | Earth In Sound",
 };
 
+/**
+ * Account route.
+ * Renders the Better Auth login/signup interface.
+ */
 export default function AccountPage() {
-  return (
-    <SectionPlaceholderPage
-      eyebrow="Earth In Sound"
-      title="Account"
-      description="This page will later hold sign up, login, account details, and order history once the backend is introduced."
-    />
-  );
+  return <AccountAuthPanel />;
 }

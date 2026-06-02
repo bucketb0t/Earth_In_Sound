@@ -8,6 +8,9 @@ import styles from "./IHateMusicCell.module.css";
 /**
  * I Hate Music podcast section.
  * Owns IHM-specific plaque/logo artwork and feeds behavior into the knob.
+ *
+ * The IHM logo click sends users to the first IHM route. The shared knob then
+ * handles podcast/community/patreon selection and active jack cable display.
  */
 export default function IHateMusicCell() {
   const { knobNavTo } = useNavbarContext();
