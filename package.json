@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "database:setup": "tsx database/scripts/run-database-setup.ts",
+    "test:database": "tsx database/scripts/test-database.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",

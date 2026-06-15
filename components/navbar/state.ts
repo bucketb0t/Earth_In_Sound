@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/lib/client/auth/auth-client";
 import {
   ARTWORK_CELL_SCALE_BASE_HEIGHT,
   BASE_LINE_HEIGHT,
@@ -97,6 +98,8 @@ export interface NavbarState {
   activePage: ActivePage | null;
   eisSliderPos: number;
   isLoggedIn: boolean;
+  accountDisplayName: string;
+  isAuthPending: boolean;
   cartCount: number;
   isStorePressed: boolean;
   shellRef: RefObject<HTMLDivElement | null>;
@@ -108,7 +111,7 @@ export interface NavbarState {
   knobNavTo: (sectionId: KnobSectionId, linkIndex: number) => void;
   knobFacePress: (sectionId: KnobSectionId) => void;
   goHome: () => void;
-  toggleLogin: () => void;
+  toggleLogin: () => Promise<void>;
   openAccountPage: () => void;
   resetActiveNavbarControls: () => void;
   storePress: () => void;
@@ -225,13 +228,13 @@ function getRouteVisualState(
 export function useNavbar(): NavbarState {
   const router = useRouter();
   const pathname = usePathname();
+  const session = authClient.useSession();
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const designContentWidthRef = useRef(0);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [cartCount] = useState(INITIAL_CART_COUNT);
   const [visualState, setVisualState] = useState<NavbarVisualState>(() =>
     getRouteVisualState(pathname, INITIAL_CART_COUNT),
@@ -247,6 +250,8 @@ export function useNavbar(): NavbarState {
     visualState.sourcePathname === pathname ? visualState : routeVisualState;
   const { activePage, eisSliderPos, isCartPressed, isStorePressed } =
     currentVisualState;
+  const isLoggedIn = Boolean(session.data?.user);
+  const accountDisplayName = session.data?.user.name ?? "Sign up";
 
   /*
    * Navbar scale measurement for real window resizing.
@@ -504,10 +509,21 @@ export function useNavbar(): NavbarState {
     eisNavTo(0);
   }, [eisNavTo]);
 
-  const toggleLogin = useCallback((): void => {
-    setIsLoggedIn((wasLoggedIn) => !wasLoggedIn);
+  const toggleLogin = useCallback(async (): Promise<void> => {
     resetActiveNavbarControls();
-  }, [resetActiveNavbarControls]);
+
+    if (!isLoggedIn) {
+      router.push(ACCOUNT_ROUTE);
+      return;
+    }
+
+    const result = await authClient.signOut();
+    if (result.error) {
+      throw new Error(result.error.message ?? "Sign out failed.");
+    }
+
+    await session.refetch();
+  }, [isLoggedIn, resetActiveNavbarControls, router, session]);
 
   const openAccountPage = useCallback((): void => {
     resetActiveNavbarControls();
@@ -552,6 +568,8 @@ export function useNavbar(): NavbarState {
     activePage,
     eisSliderPos,
     isLoggedIn,
+    accountDisplayName,
+    isAuthPending: session.isPending,
     cartCount,
     shellRef,
     contentRef,

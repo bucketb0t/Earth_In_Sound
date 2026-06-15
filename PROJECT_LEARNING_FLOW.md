@@ -333,11 +333,14 @@ NavbarStyle.module.css:
   Paints the baseline.
   Positions the measured cell row.
 
-state.ts:
+components/navbar/state.ts:
   Stores active navbar visual state.
   Maps navbar controls to routes.
   Handles scaling for real window resize.
   Keeps browser zoom as natural overflow.
+  Defines NavbarContext and the useNavbarContext() accessor used by the cells.
+  Exports useNavbar(), which Navbar.tsx calls to obtain the shared navbar state,
+  DOM refs, calculated scale, and navigation/action functions.
 
 config.ts:
   Stores section ids, labels, navbar height, baseline height, knob geometry,
@@ -379,7 +382,7 @@ flowchart TD
   Navbar --> Geometry["measured CSS variables"]
   Geometry --> Css["NavbarStyle.module.css"]
 
-  EIS --> State["state.ts actions"]
+  EIS --> State["components/navbar/state.ts actions"]
   JWW --> State
   IHM --> State
   Account --> State
@@ -465,7 +468,7 @@ center, shrink on real window resize, and overflow on browser zoom.
 
 ```mermaid
 flowchart TD
-  Navbar["Navbar.tsx"] --> UseNavbar["useNavbar() from state.ts"]
+  Navbar["Navbar.tsx"] --> UseNavbar["useNavbar() from components/navbar/state.ts"]
   UseNavbar --> Provider["NavbarContext.Provider"]
   Provider --> Row["rowPrimary"]
   Row --> EIS["EISLogoCell"]
@@ -536,7 +539,7 @@ File:
 
 Consumes variables from:
   Navbar.tsx
-  state.ts through Navbar.tsx
+  components/navbar/state.ts through Navbar.tsx
 ```
 
 #### Shell Code
@@ -563,7 +566,8 @@ Consumes variables from:
 `position: sticky` keeps the navbar visible at the top while scrolling.
 
 `visibility: hidden` hides the first unmeasured layout. The class
-`.navbarShellReady` makes it visible after `state.ts` has calculated scale.
+`.navbarShellReady` makes it visible after
+`components/navbar/state.ts` has calculated scale.
 
 #### Banner Code
 
@@ -791,7 +795,7 @@ The navbar has two separate visual responsibilities:
 
 ```mermaid
 flowchart TD
-  Resize["resize, focus, pageshow, font ready, cell resize"] --> StateScale["state.ts calculates scale"]
+  Resize["resize, focus, pageshow, font ready, cell resize"] --> StateScale["components/navbar/state.ts calculates scale"]
   StateScale --> NavbarEffect["Navbar.tsx useLayoutEffect"]
   NavbarEffect --> MeasureViewport["measure viewport width"]
   NavbarEffect --> MeasureCells["measure rendered cell row width"]
@@ -908,7 +912,7 @@ versus browser zoom.
 
 ```mermaid
 flowchart TD
-  ResizeOrZoom["Browser resize, zoom, font load, focus"] --> UseNavbar["state.ts useLayoutEffect"]
+  ResizeOrZoom["Browser resize, zoom, font load, focus"] --> UseNavbar["components/navbar/state.ts useLayoutEffect"]
   UseNavbar --> FullWidth["Measure full-size cell row"]
   UseNavbar --> Viewport["Measure viewport"]
   FullWidth --> Scale["scale = min(1, viewport / row)"]
@@ -916,7 +920,7 @@ flowchart TD
   NavbarTsx --> Css["NavbarStyle.module.css paints layout"]
 ```
 
-#### state.ts Scale Calculation
+#### `components/navbar/state.ts`: Scale Calculation
 
 ```ts
 const baselineDevicePixelRatio = window.devicePixelRatio || 1;
@@ -948,7 +952,7 @@ Browser zoom:
   navbar should remain visually zoomed and may overflow horizontally.
 ```
 
-#### state.ts Row Width Memory
+#### `components/navbar/state.ts`: Row Width Memory
 
 ```ts
 const designContentWidthRef = useRef(0);
@@ -977,7 +981,7 @@ If the row is already scaled down, measuring only the current visible width woul
 make the next scale calculation weaker and weaker. The ref keeps the full design
 width as the reference.
 
-#### state.ts Final Scale
+#### `components/navbar/state.ts`: Final Scale
 
 ```ts
 const syncScaleFromCellEdges = () => {
@@ -1014,7 +1018,7 @@ This prevents jitter from tiny browser measurement differences.
 
 ### Navbar Geometry Variables Written By Navbar.tsx
 
-`state.ts` computes `scale`.
+`components/navbar/state.ts` computes `scale`.
 
 `Navbar.tsx` converts live DOM measurements into CSS variables.
 
@@ -1404,7 +1408,7 @@ The cell does not need to know the URL. It only says:
 knobNavTo("ihm", 0)
 ```
 
-Then `state.ts` converts that into:
+Then `components/navbar/state.ts` converts that into:
 
 ```text
 /i-hate-music/podcast
@@ -1547,11 +1551,21 @@ Important:
 Important code:
 
 ```ts
-const { isLoggedIn, openAccountPage, toggleLogin } = useNavbarContext();
+const {
+  accountDisplayName,
+  isAuthPending,
+  isLoggedIn,
+  openAccountPage,
+  toggleLogin,
+} = useNavbarContext();
 ```
 
-`toggleLogin` changes local navbar visuals. The real Better Auth login form is
-on `/account`.
+`isLoggedIn`, `accountDisplayName`, and `isAuthPending` are derived from
+`authClient.useSession()` in `components/navbar/state.ts`.
+
+When logged out, `toggleLogin` opens `/account`. When logged in, it signs out
+through Better Auth and refetches the session. The full sign-in/sign-up form
+still lives on `/account`.
 
 #### StoreCell
 
@@ -1686,6 +1700,13 @@ Better Auth:
 
 Earth In Sound users table:
   Owns username, role, status, and link to Better Auth user id.
+
+Auth lifecycle bridge:
+  Revokes sessions and deletes Better Auth users when project status changes.
+
+Owner setup:
+  Creates or verifies the owner's Better Auth account in a trusted server-only
+  context, then links the project owner profile.
 ```
 
 #### Auth Flow Schema
@@ -1700,6 +1721,8 @@ flowchart TD
   BetterAuthTables["Better Auth tables"]
   UserRead["lib/server/database/users/read/read-users.ts"]
   UserWrite["lib/server/database/users/write/write-users.ts"]
+  AuthLifecycle["lib/server/auth/auth-user-lifecycle.ts"]
+  OwnerSetup["database/scripts/users/create-owner/create-owner.ts"]
   ProjectUsers["users table"]
 
   AccountPanel --> AuthClient
@@ -1711,6 +1734,10 @@ flowchart TD
   AuthServer --> UserWrite
   UserWrite --> ProjectUsers
   UserRead --> ProjectUsers
+  UserWrite --> AuthLifecycle
+  AuthLifecycle --> BetterAuthTables
+  OwnerSetup --> AuthServer
+  OwnerSetup --> UserWrite
 ```
 
 ### How The Auth Layers Fit Together
@@ -1743,9 +1770,11 @@ flowchart TD
   BetterAuthDB --> BetterAuthTables["Better Auth tables"]
 
   AuthConfig --> Hooks["databaseHooks.user.create"]
+  AuthConfig --> SessionHook["databaseHooks.session.create.before"]
   Hooks --> Validation["validate-user-input.ts"]
   Hooks --> ReadUsers["read-users.ts duplicate checks"]
-  Hooks --> WriteUsers["write-users.ts createNormalUserAfterSignup"]
+  Hooks --> WriteUsers["normal user or trusted owner creation/linking"]
+  SessionHook --> ReadUsers
   WriteUsers --> UsersTable["users table"]
 ```
 
@@ -2088,10 +2117,15 @@ Called by:
 
 Imports project user functions:
   createNormalUserAfterSignup
+  createOrLinkOwnerAfterSignup
+  getUserByAuthProviderId
   getUserByEmail
   getUserByUsername
   requireValidEmail
   requireValidUsername
+
+Imports auth helpers:
+  getOwnerSetupIdentity from owner-setup-context.ts
 ```
 
 #### Base Config Code
@@ -2111,6 +2145,10 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 128,
     autoSignIn: true,
+  },
+  databaseHooks: {
+    user: { create: { before: ..., after: ... } },
+    session: { create: { before: ... } },
   },
   plugins: [nextCookies()],
 });
@@ -2136,6 +2174,12 @@ emailAndPassword:
 
 nextCookies:
   Lets Better Auth work with Next.js cookies.
+
+databaseHooks.user.create:
+  Validates signup and mirrors it into the project users table.
+
+databaseHooks.session.create:
+  Refuses sessions for missing, disabled, or deleted project profiles.
 ```
 
 ### How Better Auth Is Configured
@@ -2197,11 +2241,15 @@ flowchart TD
   BeforeHook --> ValidateUsername["requireValidUsername"]
   BeforeHook --> CheckEmail["getUserByEmail"]
   BeforeHook --> CheckUsername["getUserByUsername"]
+  BeforeHook --> OwnerContext["check trusted owner setup identity"]
   CheckEmail --> BetterAuthCreate["Better Auth creates auth user"]
   CheckUsername --> BetterAuthCreate
   BetterAuthCreate --> AfterHook["databaseHooks.user.create.after"]
-  AfterHook --> CreateProjectUser["createNormalUserAfterSignup"]
+  AfterHook --> ChooseProfile["trusted owner or normal user?"]
+  ChooseProfile --> CreateProjectUser["createNormalUserAfterSignup"]
+  ChooseProfile --> CreateOwner["createOrLinkOwnerAfterSignup"]
   CreateProjectUser --> UsersTable["users table"]
+  CreateOwner --> UsersTable
 ```
 
 #### Before Hook Code
@@ -2210,12 +2258,26 @@ flowchart TD
 before: async (user) => {
   const email = requireValidEmail(user.email);
   const username = requireValidUsername(String(user.name ?? ""));
+  const isOwnerSetup = isOwnerSetupIdentity(email, username);
+  const existingEmailUser = await getUserByEmail(email);
 
-  if (await getUserByEmail(email)) {
+  if (
+    existingEmailUser &&
+    !(
+      isOwnerSetup &&
+      existingEmailUser.role === "owner" &&
+      existingEmailUser.status === "active" &&
+      existingEmailUser.auth_provider_user_id === null
+    )
+  ) {
     throw new Error("Email is already registered.");
   }
 
-  if (await getUserByUsername(username)) {
+  const existingUsernameUser = await getUserByUsername(username);
+  if (
+    existingUsernameUser &&
+    existingUsernameUser.id !== existingEmailUser?.id
+  ) {
     throw new Error("Username is already registered.");
   }
 
@@ -2263,6 +2325,9 @@ getUserByUsername(username)
 
 Checks the project `users` table before Better Auth creates its own auth user.
 
+The only exception is a trusted server-side owner setup matching one active,
+unlinked owner row. A normal browser signup cannot create that context.
+
 #### What Leaves
 
 If validation passes, the hook returns cleaned data to Better Auth.
@@ -2273,10 +2338,15 @@ If validation fails, it throws an error and signup stops.
 
 ```ts
 after: async (user) => {
-  await createNormalUserAfterSignup({
+  const username = String(user.name ?? "");
+  const createProjectUser = isOwnerSetupIdentity(user.email, username)
+    ? createOrLinkOwnerAfterSignup
+    : createNormalUserAfterSignup;
+
+  await createProjectUser({
     authProviderUserId: user.id,
     email: user.email,
-    username: String(user.name ?? ""),
+    username,
   });
 },
 ```
@@ -2287,11 +2357,12 @@ after: async (user) => {
 
 #### What The Hook Does
 
-It calls the project database function:
+It chooses one project database function:
 
 ```text
 lib/server/database/users/write/write-users.ts
-createNormalUserAfterSignup
+normal signup -> createNormalUserAfterSignup
+trusted setup -> createOrLinkOwnerAfterSignup
 ```
 
 #### What Leaves
@@ -2304,7 +2375,33 @@ status = "active"
 auth_provider_user_id = Better Auth user.id
 ```
 
-Public signup cannot create an `admin` or `owner`.
+The trusted setup can create or link the owner. Public signup cannot create an
+`admin` or `owner`.
+
+#### Session Creation Hook
+
+```ts
+before: async (session, context) => {
+  const projectUser = await getUserByAuthProviderId(session.userId);
+
+  if (
+    !projectUser &&
+    (context?.path === "/sign-up/email" || getOwnerSetupIdentity())
+  ) {
+    return;
+  }
+
+  if (!projectUser || projectUser.status !== "active") {
+    throw new APIError("FORBIDDEN", {
+      message: "User account is not active.",
+    });
+  }
+},
+```
+
+Better Auth may create the automatic signup session before the project profile
+after-hook has finished, so that narrow signup window is allowed. Every normal
+session creation must resolve to an active project profile.
 
 ### How Signup Hooks Protect User Creation
 
@@ -2354,7 +2451,7 @@ Stops signup if the account should not be created.
 
 This runs after Better Auth creates its auth user.
 
-It creates the matching Earth In Sound user row:
+For public signup it creates the matching Earth In Sound user row:
 
 ```text
 auth_provider_user_id = Better Auth user.id
@@ -2363,6 +2460,9 @@ status = "active"
 ```
 
 Public signup cannot create an admin or owner.
+
+For the trusted setup script it calls `createOrLinkOwnerAfterSignup` instead.
+The trusted context cannot be supplied by a browser request.
 
 ### Better Auth Database Connection
 
@@ -2396,41 +2496,31 @@ export const betterAuthDatabase = new Kysely<Record<string, never>>({
 
 #### What This Does
 
-Better Auth expects a Kysely database connection.
-
-Turso is libSQL.
-
-`LibsqlDialect` lets Kysely talk to Turso.
+Better Auth expects a Kysely database connection. `LibsqlDialect` creates that
+connection from the same Turso credentials used by the project.
 
 #### Important Separation
 
-This file is for Better Auth internal tables.
+Better Auth owns its internal tables through:
 
-Project user role/status functions use:
+```text
+lib/server/auth/better-auth-database.ts
+```
+
+Project user functions own the application tables through:
 
 ```text
 lib/server/database/turso-client.ts
 ```
 
-The separation makes it clear whether a query belongs to auth internals or to
-Earth In Sound app data.
+They point to the same database but keep separate connection APIs and package
+versions. This avoids coupling project queries to Better Auth's adapter.
 
 ### How Better Auth Connects To Turso
 
 #### Real Code
 
 ```ts
-const databaseUrl = process.env.TURSO_DATABASE_URL;
-const databaseToken = process.env.TURSO_AUTH_TOKEN;
-
-if (!databaseUrl) {
-  throw new Error("Missing TURSO_DATABASE_URL in .env.local.");
-}
-
-if (!databaseToken) {
-  throw new Error("Missing TURSO_AUTH_TOKEN in .env.local.");
-}
-
 export const betterAuthDatabase = new Kysely<Record<string, never>>({
   dialect: new LibsqlDialect({
     url: databaseUrl,
@@ -2443,21 +2533,9 @@ export const betterAuthDatabase = new Kysely<Record<string, never>>({
 
 Better Auth expects a Kysely database connection.
 
-This file gives Better Auth that connection.
-
-Your own database functions use:
-
-```text
-lib/server/database/turso-client.ts
-```
-
-Better Auth uses:
-
-```text
-lib/server/auth/better-auth-database.ts
-```
-
-They point to the same Turso database but serve different code paths.
+This file gives Better Auth the Kysely shape it needs. Project modules use a
+separate `@libsql/client` instance for direct SQL against application tables.
+Both connections use the same Turso URL and token.
 
 ### Long-Form Auth And Database Deep Dive
 
@@ -2503,9 +2581,35 @@ flowchart TD
   BeforeHook --> ReadUsers["read-users.ts duplicate checks"]
 
   Auth --> AfterHook["databaseHooks.user.create.after"]
-  AfterHook --> WriteUsers["write-users.ts createNormalUserAfterSignup"]
+  AfterHook --> WriteUsers["normal profile or trusted owner link"]
   WriteUsers --> ProjectUsers["Earth In Sound users table"]
+
+  Auth --> SessionHook["databaseHooks.session.create.before"]
+  SessionHook --> ReadUsers
+  SessionHook --> ActiveOnly["require linked active profile"]
+
+  WriteUsers --> Lifecycle["auth-user-lifecycle.ts"]
+  Lifecycle --> BetterTables
 ```
+
+#### Why The Lifecycle Bridge Uses Better Auth's Internal Adapter
+
+`disableUser` and `deleteUser` manage another account after the project has
+already checked its own owner/admin permissions. Better Auth's public user
+endpoints are designed around the current HTTP session, while its admin plugin
+would add a second role model and extra auth-table fields.
+
+`auth-user-lifecycle.ts` therefore uses Better Auth's internal adapter only for
+two narrow operations:
+
+```text
+deleteUserSessions(authProviderUserId)
+deleteUser(authProviderUserId)
+```
+
+Keeping these calls in one small module limits the dependency on that internal
+API. If Better Auth later exposes context-free server administration methods,
+this module is the single replacement point.
 
 #### Why There Are Two User Concepts
 
@@ -2611,8 +2715,11 @@ flowchart TD
   Before --> UsernameDuplicate["getUserByUsername"]
   BetterAuth --> AuthWrite["Better Auth creates auth user"]
   AuthWrite --> After["databaseHooks.user.create.after"]
-  After --> ProjectWrite["createNormalUserAfterSignup"]
-  ProjectWrite --> UsersTable["INSERT INTO users role=user status=active"]
+  After --> ChooseWrite["trusted owner setup?"]
+  ChooseWrite --> ProjectWrite["createNormalUserAfterSignup"]
+  ChooseWrite --> OwnerWrite["createOrLinkOwnerAfterSignup"]
+  ProjectWrite --> UsersTable["INSERT role=user status=active"]
+  OwnerWrite --> UsersTable
   ProjectWrite --> Session["Better Auth session becomes active"]
 ```
 
@@ -3025,13 +3132,18 @@ username: String(user.name ?? ""),
 
 These are passed to the project database function.
 
-```ts
-await createNormalUserAfterSignup(...)
+The after hook selects one write function:
+
+```text
+public signup:
+  createNormalUserAfterSignup
+
+trusted owner setup:
+  createOrLinkOwnerAfterSignup
 ```
 
-Creates the Earth In Sound user row.
-
-This is the function that makes the normal project profile after signup.
+Both store the Better Auth user id in the project profile. Only the trusted
+server setup path can create or link an owner.
 
 #### Better Auth Database Connection
 
@@ -3060,10 +3172,8 @@ Better Auth
   -> Turso
 ```
 
-This connection is for Better Auth's own tables.
-
-The project user functions use a different Turso client because they execute
-plain SQL directly.
+This Kysely object is used for Better Auth's own tables. Project functions use
+their own direct libSQL client.
 
 #### Project Turso Client
 
@@ -3093,10 +3203,11 @@ export const turso = createClient({
 });
 ```
 
-#### Why This Is Separate From betterAuthDatabase
+#### Why The Connections Are Separate
 
-Both connections point to the same Turso database, but they serve different
-callers.
+Better Auth requires a Kysely-compatible database object. Project modules use
+the current `@libsql/client` API directly. Keeping separate connections avoids
+downgrading or coupling the project client to the adapter's dependency version.
 
 ```text
 better-auth-database.ts:
@@ -3873,19 +3984,27 @@ disabled:
   account is blocked/inactive
   email stays reserved
   username stays reserved
+  existing Better Auth sessions are revoked
+  future session creation is rejected
   account can be reactivated
 
 deleted:
   account is closed
   row stays for history
+  Better Auth user, accounts, and sessions are removed
   auth link is removed
   email lookup is released
+  username lookup remains reserved
   normal reactivation is not allowed
 ```
 
 #### disableUser Code
 
 ```ts
+if (targetUser.auth_provider_user_id) {
+  await revokeAuthUserSessions(targetUser.auth_provider_user_id);
+}
+
 await turso.execute({
   sql: `
     UPDATE users
@@ -3896,7 +4015,7 @@ await turso.execute({
 });
 ```
 
-This only changes:
+This first revokes Better Auth sessions, then changes:
 
 ```text
 status
@@ -3916,6 +4035,10 @@ That means the identity stays reserved.
 #### deleteUser Code
 
 ```ts
+if (targetUser.auth_provider_user_id) {
+  await deleteAuthUser(targetUser.auth_provider_user_id);
+}
+
 await turso.execute({
   sql: `
     UPDATE users
@@ -3926,11 +4049,21 @@ await turso.execute({
       updated_at = ?
     WHERE id = ?
   `,
-  args: [getDeletedEmailLookup(targetUser.id, now), now, targetUser.id],
+  args: [
+    getDeletedEmailLookup(targetUser.id, now),
+    now,
+    targetUser.id,
+  ],
 });
 ```
 
 This changes more than disable.
+
+```ts
+await deleteAuthUser(targetUser.auth_provider_user_id)
+```
+
+Deletes the Better Auth user and its related password account and sessions.
 
 ```ts
 auth_provider_user_id = NULL
@@ -3945,6 +4078,9 @@ email_lookup = getDeletedEmailLookup(targetUser.id, now)
 Releases the original email lookup.
 
 That lets the same email be used again by a future account.
+
+`username_lookup` is intentionally absent from the update. Its original value
+stays in the unique column, permanently reserving that public identity.
 
 ```ts
 status = 'deleted'
@@ -3964,79 +4100,38 @@ This is the rule that separates disabled from deleted.
 
 Only disabled accounts can return through normal reactivation.
 
-Deleted accounts are not reactivated because their auth link and email lookup
-were released.
+Deleted accounts are not reactivated because their Better Auth account and auth
+link were removed and their email identity may already belong to a new account.
 
 #### Owner Setup And Transfer
 
-Owner creation is separate from public signup.
+Owner creation is separate from public browser signup, but it still goes
+through Better Auth.
 
-Code:
-
-```ts
-export async function createLocalOwner(
-  input: CreateLocalOwnerInput,
-): Promise<string> {
-  const email = requireValidEmail(input.email);
-  const username = requireValidUsername(input.username);
-  const now = Date.now();
-
-  const existingOwner = await turso.execute({
-    sql: "SELECT id FROM users WHERE role = 'owner' LIMIT 1",
-  });
-
-  if (existingOwner.rows.length > 0) {
-    throw new Error("Owner already exists.");
-  }
-
-  const ownerId = randomUUID();
-
-  await turso.execute({
-    sql: `
-      INSERT INTO users (
-        id,
-        auth_provider_user_id,
-        email,
-        email_lookup,
-        username,
-        username_lookup,
-        role,
-        status,
-        created_at,
-        updated_at
-      )
-      VALUES (?, NULL, ?, ?, ?, ?, 'owner', 'active', ?, ?)
-    `,
-    args: [
-      ownerId,
-      email,
-      toLookupValue(email),
-      username,
-      toLookupValue(username),
-      now,
-      now,
-    ],
-  });
-
-  return ownerId;
-}
-```
-
-Important:
-
-```sql
-VALUES (?, NULL, ?, ?, ?, ?, 'owner', 'active', ?, ?)
-```
-
-The owner starts without:
+Flow:
 
 ```text
-auth_provider_user_id
+create-owner.ts reads owner email, username, and password
+  -> runWithOwnerSetupContext marks one trusted server call
+  -> existing auth account: Better Auth sign-in verifies the password
+  -> the script calls createOrLinkOwnerAfterSignup with that verified auth id
+  -> new auth account: Better Auth signup runs the auth.ts after-hook
+  -> the after-hook calls createOrLinkOwnerAfterSignup
+  -> first owner is created, or a matching legacy owner is linked
+  -> temporary setup sessions are revoked
 ```
 
-because this setup script creates the project role row, not a Better Auth login.
+`createOrLinkOwnerAfterSignup` first checks for an already-linked auth id. It
+then verifies that an existing owner has the same active email and username, or
+creates the first owner with `auth_provider_user_id` already populated.
 
-Later you can connect the owner to an auth account or use a controlled transfer.
+The database partial unique index is the final protection against two owners:
+
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS users_single_owner_index
+ON users (role)
+WHERE role = 'owner';
+```
 
 #### Why Public Signup Cannot Create Owner Or Admin
 
@@ -4242,8 +4337,9 @@ Answer:
 
 ```text
 No.
-Signup only calls createNormalUserAfterSignup.
+Public browser signup calls createNormalUserAfterSignup.
 That function hardcodes role = 'user'.
+Only the server-side owner setup context selects createOrLinkOwnerAfterSignup.
 ```
 
 Question:
@@ -4272,6 +4368,20 @@ Answer:
 Yes.
 deleteUser replaces email_lookup with deleted-email:<id>:<time>.
 The original email_lookup becomes available.
+```
+
+Question:
+
+```text
+Can a deleted username be reused?
+```
+
+Answer:
+
+```text
+No.
+deleteUser leaves username_lookup unchanged.
+The unique database constraint keeps that public identity reserved.
 ```
 
 Question:
@@ -4319,9 +4429,10 @@ authClient sends it to Better Auth.
 Better Auth route keeps secrets on the server.
 auth.ts validates signup through hooks.
 Better Auth stores password/session data.
-createNormalUserAfterSignup stores the project profile.
+The after-hook creates a normal profile or links the trusted owner.
+The session hook requires an active project profile.
 read-users.ts loads project users.
-write-users.ts changes project users.
+write-users.ts changes project users and calls the auth lifecycle bridge.
 user-permissions.ts guards who can do what.
 validate-user-input.ts guards input shape.
 turso-client.ts is the project database doorway.
@@ -4372,7 +4483,7 @@ id:
   Earth In Sound internal user id.
 
 auth_provider_user_id:
-  Better Auth user.id. Null for setup owner before auth connection or deleted users.
+  Better Auth user.id. Null only for a legacy unlinked owner or a deleted user.
 
 email:
   Visible email exactly as the user entered it after trimming edge spaces.
@@ -4940,7 +5051,7 @@ File:
   lib/server/database/users/write/write-users.ts
 
 Exports:
-  createLocalOwner
+  createOrLinkOwnerAfterSignup
   createNormalUserAfterSignup
   updateUsername
   disableUser
@@ -4950,14 +5061,14 @@ Exports:
   setUserRole
 ```
 
-#### createLocalOwner
+#### createOrLinkOwnerAfterSignup
 
 ```text
 Caller:
-  database/scripts/users/create-local-owner/create-local-owner.ts
+  lib/server/auth/auth.ts after-hook during trusted owner setup
 
 Purpose:
-  Create the first owner during setup only.
+  Create the first authenticated owner or link a matching legacy owner profile.
 
 Not for:
   public signup
@@ -4966,16 +5077,23 @@ Not for:
 Important code:
 
 ```ts
-const existingOwner = await turso.execute({
-  sql: "SELECT id FROM users WHERE role = 'owner' LIMIT 1",
-});
+const existingOwner = await getOwner();
 
-if (existingOwner.rows.length > 0) {
-  throw new Error("Owner already exists.");
+if (existingOwner) {
+  if (
+    existingOwner.email_lookup !== emailLookup ||
+    existingOwner.username_lookup !== usernameLookup
+  ) {
+    throw new Error("Owner setup identity does not match the existing owner.");
+  }
+
+  // Link the verified Better Auth account to the legacy owner row.
 }
 ```
 
-This enforces the single-owner model.
+The function does not accept a role from the caller. It is reached only through
+the server-only owner setup context. The database unique index independently
+enforces the single-owner model.
 
 #### createNormalUserAfterSignup
 
@@ -5070,6 +5188,7 @@ Purpose:
 Identity behavior:
   email_lookup remains reserved.
   username_lookup remains reserved.
+  Better Auth sessions are revoked.
 
 Can be reactivated:
   yes
@@ -5092,9 +5211,11 @@ Purpose:
   Soft-delete an account.
 
 Identity behavior:
+  Better Auth user/account/session data is deleted.
   auth_provider_user_id is released.
   email_lookup is replaced.
-  email can be reused by a future account.
+  username_lookup remains reserved.
+  email can be reused with a different username.
 
 Can be reactivated:
   no, not through reactivateUser.
@@ -5104,7 +5225,8 @@ Important code:
 
 > Repeated code omitted here (30). The full code already appears in **Long-Form Auth And Database Deep Dive**; this local section is **deleteUser**, so only the explanation continues.
 
-This keeps the row but releases the original email lookup.
+This keeps the historical row, releases the email login identity, and preserves
+the public username against impersonation.
 
 #### reactivateUser
 
@@ -5187,17 +5309,18 @@ Only the current owner can use this function.
 
 ### How User Write Functions Work
 
-#### createLocalOwner Code
+#### createOrLinkOwnerAfterSignup Code
 
-> Repeated code omitted here (32). The full code already appears in **Long-Form Auth And Database Deep Dive**; this local section is **createLocalOwner Code**, so only the explanation continues.
+> The full owner flow appears in **Owner Setup And Transfer**. This local
+> section explains the write function's responsibility.
 
 #### What This Does
 
-This is a setup-only function.
+This is a setup-only write function called after Better Auth has authenticated
+or created the owner identity.
 
-It creates the first owner.
-
-It is separate from signup because public signup must only create normal users.
+It either links a matching legacy owner or creates the first owner with the auth
+id already attached. Public signup still creates only normal users.
 
 #### createNormalUserAfterSignup Code
 
@@ -5293,12 +5416,15 @@ disabled:
   account cannot act
   email remains reserved
   username remains reserved
+  existing sessions are revoked
   can be reactivated
 
 deleted:
   soft-deleted for history
+  Better Auth account and sessions removed
   auth link removed
   email lookup released
+  username lookup permanently reserved
   cannot be normally reactivated
 ```
 
@@ -5314,11 +5440,17 @@ auth_provider_user_id = NULL
 
 Disconnects the deleted row from the auth account.
 
+Before this project update runs, `deleteAuthUser(...)` deletes the Better Auth
+user and its related account/session records.
+
 ```ts
 email_lookup = getDeletedEmailLookup(...)
 ```
 
 Releases the real email so it can be used again.
+
+`username_lookup` is not updated, so the database continues rejecting that name
+for every future signup.
 
 ```ts
 status = 'deleted'
@@ -5368,11 +5500,14 @@ Owner changes must go through `transferOwnership`.
 Hub:
   database/scripts/run-database-setup.ts
 
+Project migration script:
+  database/scripts/run-project-migrations/run-project-migrations.ts
+
 Auth migration script:
   database/scripts/auth/run-better-auth-migrations/run-better-auth-migrations.ts
 
 Owner script:
-  database/scripts/users/create-local-owner/create-local-owner.ts
+  database/scripts/users/create-owner/create-owner.ts
 ```
 
 #### Setup Hub Code
@@ -5380,19 +5515,44 @@ Owner script:
 ```ts
 const databaseScripts = [
   {
+    name: "run-project-migrations",
+    run: runProjectMigrationsScript,
+  },
+  {
     name: "auth/run-better-auth-migrations",
     run: runBetterAuthMigrationsScript,
   },
   {
-    name: "users/create-local-owner",
-    run: runCreateLocalOwnerScript,
+    name: "users/create-owner",
+    run: runCreateOwnerScript,
   },
 ];
 ```
 
-This is the script order.
+This order matters: the project profile table and Better Auth tables must exist
+before the owner account is created and linked.
 
 Future setup scripts should be added to this array.
+
+#### Project Migration Script
+
+The project migration runner creates a small history table, reads
+`database/migrations/*.sql` in filename order, and skips files already present
+in `project_migrations`.
+
+```text
+001_create_users.sql
+002_allow_deleted_user_status.sql
+003_enforce_single_owner.sql
+```
+
+Migrations `001` and `002` remain unchanged historical records. Migration `003`
+adds a partial unique index that prevents multiple owner rows. Owner creation
+and transfer logic are still responsible for ensuring that one owner exists.
+
+When `project_migrations` is introduced to an existing database, the runner
+detects an existing `users` table and records `001` and `002` as its baseline.
+This prevents the old table-rebuild migration from running again.
 
 #### Better Auth Migration Script
 
@@ -5405,15 +5565,16 @@ await runMigrations();
 
 This asks Better Auth what tables it needs, then runs those migrations.
 
-#### Local Owner Script
+#### Owner Script
 
 ```ts
-const ownerEmail = process.env.LOCAL_OWNER_EMAIL;
-const ownerUsername = process.env.LOCAL_OWNER_USERNAME;
+const ownerEmail = process.env.LOCAL_OWNER_EMAIL?.trim();
+const ownerUsername = process.env.LOCAL_OWNER_USERNAME?.trim();
+const ownerPassword = process.env.LOCAL_OWNER_PASSWORD;
 
-if (!ownerEmail || !ownerUsername) {
+if (!ownerEmail || !ownerUsername || !ownerPassword) {
   console.log(
-    "LOCAL_OWNER_EMAIL or LOCAL_OWNER_USERNAME is missing. Skipping owner creation.",
+    "Owner setup variables are missing. Skipping owner creation.",
   );
   return;
 }
@@ -5426,9 +5587,14 @@ It reads:
 ```text
 LOCAL_OWNER_EMAIL
 LOCAL_OWNER_USERNAME
+LOCAL_OWNER_PASSWORD
 ```
 
 If those are missing, it skips owner creation.
+
+The password is passed only to Better Auth. The project `users` table never
+stores or compares it. After setup, the script revokes the temporary owner
+session so running a terminal command does not leave an active browser session.
 
 ### How Database Setup And Tests Work
 
@@ -5449,12 +5615,16 @@ database/scripts/test-database.ts
 ```ts
 const databaseScripts = [
   {
+    name: "run-project-migrations",
+    run: runProjectMigrationsScript,
+  },
+  {
     name: "auth/run-better-auth-migrations",
     run: runBetterAuthMigrationsScript,
   },
   {
-    name: "users/create-local-owner",
-    run: runCreateLocalOwnerScript,
+    name: "users/create-owner",
+    run: runCreateOwnerScript,
   },
 ];
 
@@ -5539,35 +5709,38 @@ This lets one command run all database test suites.
 #### Test Data Pattern
 
 ```ts
-const testRunId = randomUUID().slice(0, 8);
-const testPrefix = `t-${testRunId}`;
+const testDirectory = await mkdtemp(join(tmpdir(), "earth-in-sound-"));
+process.env.TURSO_DATABASE_URL = `file:${databasePath}`;
 ```
 
-Every test row starts with a unique prefix.
-
-Cleanup then deletes only rows created by this test run:
-
-```ts
-await turso.execute({
-  sql: "DELETE FROM users WHERE id LIKE ?",
-  args: [`${testPrefix}%`],
-});
-```
+The suite replaces the configured database URL before importing the database
+modules. Project and Better Auth use separate connections to one disposable
+local database file. The file and its temporary directory are removed after
+the suite, so tests cannot modify development or production rows.
 
 #### What The Current Tests Cover
 
 ```text
-active user can change own username
-disabled user cannot change username
-duplicate username is rejected
-owner cannot disable themselves
-admin can disable normal user
+public signup cannot claim an unlinked owner profile
+trusted setup links that owner to Better Auth
+the linked owner can sign in with the configured password
+normal signup creates an active role=user project profile
+active users can change their username
+duplicate usernames remain reserved
+search finds users by partial username
+the owner cannot disable themselves
+disabling revokes existing Better Auth sessions
+disabled users cannot create new sessions
+disabled users cannot change username
 disabled email remains reserved
-disabled user can be reactivated
-deleted user releases auth_provider_user_id
-deleted email can be reused
-deleted user cannot be reactivated
-searchUsers finds partial username/email matches
+reactivation restores sign-in
+owner can assign admin
+admin can disable a normal user
+ownership transfer leaves exactly one owner
+the database rejects a second owner directly
+deletion removes Better Auth user/account/session data
+deleted users cannot reactivate through the normal flow
+deletion releases the email but permanently reserves the username
 ```
 
 ## 6. Podcast RSS, Episode Page, And Media Handoff
@@ -6546,8 +6719,10 @@ File:
 #### Better Auth Rules
 
 ```text
-File:
+Files:
   lib/server/auth/auth.ts
+  lib/server/auth/owner-setup-context.ts
+  lib/server/auth/auth-user-lifecycle.ts
 ```
 
 #### User Role/Status Rules
@@ -6556,6 +6731,19 @@ File:
 Files:
   lib/server/database/users/permissions/user-permissions.ts
   lib/server/database/users/write/write-users.ts
+```
+
+#### Database Setup And Migrations
+
+```text
+Files:
+  database/scripts/run-database-setup.ts
+  database/scripts/run-project-migrations/run-project-migrations.ts
+  database/scripts/users/create-owner/create-owner.ts
+
+Commands:
+  npm run database:setup
+  npm run test:database
 ```
 
 #### Podcast Feed Parsing
@@ -6598,9 +6786,13 @@ This is the single safety checklist for the project. The first block is the curr
 Never expose TURSO_AUTH_TOKEN in browser code.
 Never import turso-client.ts into a "use client" component.
 Never let public signup choose role.
+Never accept an owner-setup marker from browser input.
 Never assign owner through setUserRole.
 Never treat disabled and deleted as the same state.
+Never change only project status when auth sessions must also be revoked.
 Never let a deleted account reactivate through reactivateUser.
+Never release a deleted user's username_lookup; public usernames remain
+permanently reserved to prevent impersonation.
 Never parse raw RSS inside UI components.
 Never put individual cell artwork rules into Navbar.tsx.
 Never change shared knob behavior when you only want to move a logo.
@@ -6635,20 +6827,25 @@ Read the project in this order:
 11. lib/client/auth/auth-client.ts
 12. app/api/auth/[...all]/route.ts
 13. lib/server/auth/auth.ts
-14. lib/server/auth/better-auth-database.ts
-15. lib/server/database/turso-client.ts
-16. lib/server/database/users/validation/validate-user-input.ts
-17. lib/server/database/users/permissions/user-permissions.ts
-18. lib/server/database/users/read/read-users.ts
-19. lib/server/database/users/write/write-users.ts
-20. database/scripts/test-database.ts
-21. database/scripts/users/test-users/test-user-database.ts
-22. app/(site)/i-hate-music/podcast/page.tsx
-23. lib/podcast/acast.ts
-24. features/ihate-music-podcast/IHateMusicPodcastPage.tsx
-25. features/ihate-music-podcast/EpisodeMediaTabs.tsx
-26. features/ihate-music-podcast/youtubePlayer.ts
-27. features/ihate-music-podcast/mediaTiming.ts
+14. lib/server/auth/owner-setup-context.ts
+15. lib/server/auth/auth-user-lifecycle.ts
+16. lib/server/auth/better-auth-database.ts
+17. lib/server/database/turso-client.ts
+18. lib/server/database/users/validation/validate-user-input.ts
+19. lib/server/database/users/permissions/user-permissions.ts
+20. lib/server/database/users/read/read-users.ts
+21. lib/server/database/users/write/write-users.ts
+22. database/scripts/run-project-migrations/run-project-migrations.ts
+23. database/scripts/users/create-owner/create-owner.ts
+24. database/scripts/run-database-setup.ts
+25. database/scripts/test-database.ts
+26. database/scripts/users/test-users/test-user-database.ts
+27. app/(site)/i-hate-music/podcast/page.tsx
+28. lib/podcast/acast.ts
+29. features/ihate-music-podcast/IHateMusicPodcastPage.tsx
+30. features/ihate-music-podcast/EpisodeMediaTabs.tsx
+31. features/ihate-music-podcast/youtubePlayer.ts
+32. features/ihate-music-podcast/mediaTiming.ts
 ```
 
 Read in this order when studying the project:
@@ -6664,16 +6861,21 @@ Read in this order when studying the project:
 8. lib/client/auth/auth-client.ts
 9. app/api/auth/[...all]/route.ts
 10. lib/server/auth/auth.ts
-11. lib/server/auth/better-auth-database.ts
-12. lib/server/database/turso-client.ts
-13. lib/server/database/users/validation/validate-user-input.ts
-14. lib/server/database/users/read/read-users.ts
-15. lib/server/database/users/write/write-users.ts
-16. lib/podcast/acast.ts
-17. features/ihate-music-podcast/IHateMusicPodcastPage.tsx
-18. features/ihate-music-podcast/EpisodeMediaTabs.tsx
-19. features/ihate-music-podcast/youtubePlayer.ts
-20. features/ihate-music-podcast/mediaTiming.ts
+11. lib/server/auth/owner-setup-context.ts
+12. lib/server/auth/auth-user-lifecycle.ts
+13. lib/server/auth/better-auth-database.ts
+14. lib/server/database/turso-client.ts
+15. lib/server/database/users/validation/validate-user-input.ts
+16. lib/server/database/users/read/read-users.ts
+17. lib/server/database/users/write/write-users.ts
+18. database/scripts/run-project-migrations/run-project-migrations.ts
+19. database/scripts/users/create-owner/create-owner.ts
+20. database/scripts/users/test-users/test-user-database.ts
+21. lib/podcast/acast.ts
+22. features/ihate-music-podcast/IHateMusicPodcastPage.tsx
+23. features/ihate-music-podcast/EpisodeMediaTabs.tsx
+24. features/ihate-music-podcast/youtubePlayer.ts
+25. features/ihate-music-podcast/mediaTiming.ts
 ```
 
 ### Glossary
@@ -6752,16 +6954,21 @@ This final summary is intentionally short compared with the rest of the guide, b
 app/layout.tsx keeps Navbar on every page.
 Navbar.tsx orders cells and writes measured CSS variables.
 NavbarStyle.module.css paints the banner, baseline, and measured row.
-state.ts owns navbar route state, utility state, and scale logic.
+components/navbar/state.ts owns navbar route state, session-derived account
+state, utility state, and scale logic.
 config.ts owns navbar constants and geometry.
 
 AccountAuthPanel collects auth input.
 authClient sends it to Better Auth.
 /api/auth/[...all] forwards requests to auth.ts.
-auth.ts validates signup and runs hooks.
+auth.ts validates signup, mirrors profiles, and blocks inactive sessions.
 Better Auth stores passwords and sessions.
-write-users.ts creates the project user row.
+owner-setup-context.ts protects server-only owner provisioning.
+auth-user-lifecycle.ts revokes sessions and deletes Better Auth users.
+write-users.ts creates/links profiles and enforces account lifecycle rules.
+Deletion releases email_lookup but permanently reserves username_lookup.
 read-users.ts and write-users.ts own project user data rules.
+database:setup runs project migrations, auth migrations, then owner setup.
 
 Podcast route fetches Acast RSS hourly.
 acast.ts parses RSS into clean objects.
@@ -6775,14 +6982,17 @@ EpisodeMediaTabs controls audio/video and optional handoff.
 ```text
 app/layout.tsx keeps Navbar alive.
 Navbar.tsx orders cells and measures geometry.
-state.ts owns navbar actions and route navigation.
+components/navbar/state.ts owns navbar actions, route navigation, and real
+Better Auth session state.
 CSS modules paint artwork and scaled layout.
 
 AccountAuthPanel uses authClient.
 authClient talks to /api/auth/[...all].
 Better Auth stores passwords/sessions.
-Better Auth hooks create normal project users.
-Project user functions own role/status rules.
+Better Auth hooks create normal users or link the trusted owner.
+Session hooks reject inactive project profiles.
+Project user functions coordinate role/status rules with Better Auth lifecycle
+operations.
 
 Podcast route fetches Acast RSS hourly.
 acast.ts parses RSS into objects.
@@ -6790,4 +7000,3 @@ Podcast page renders those objects.
 EpisodeMediaTabs controls audio/video playback.
 YouTube handoff only runs with user consent.
 ```
-

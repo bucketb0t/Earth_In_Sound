@@ -7,17 +7,23 @@ import styles from "./AccountCell.module.css";
  * Account cell.
  *
  * This is the small navbar hardware control, not the full account form. It
- * toggles local navbar login visuals and opens the /account page when the
- * screen button is pressed.
+ * follows the Better Auth session and opens the /account page when the screen
+ * button is pressed.
  */
 export default function AccountCell() {
   /*
-   * The navbar account cell still uses local visual state.
-   * The full auth UI lives on the /account route.
+   * The full auth UI lives on the /account route; session state comes from the
+   * shared navbar hook.
    */
-  const { isLoggedIn, openAccountPage, toggleLogin } = useNavbarContext();
+  const {
+    accountDisplayName,
+    isAuthPending,
+    isLoggedIn,
+    openAccountPage,
+    toggleLogin,
+  } = useNavbarContext();
   const toggleLabel = isLoggedIn ? "Log Out" : "Log In";
-  const screenLabel = isLoggedIn ? "JasonW" : "Sign up";
+  const screenLabel = isLoggedIn ? accountDisplayName : "Sign up";
 
   return (
     <div className={`navbar-cell navbar-cell--center ${styles.accountCell}`}>
@@ -30,7 +36,8 @@ export default function AccountCell() {
               ? styles.accountToggleButtonOn
               : styles.accountToggleButtonOff
           }`}
-          onClick={toggleLogin}
+          onClick={() => void toggleLogin()}
+          disabled={isAuthPending}
           role="switch"
           aria-checked={isLoggedIn}
           aria-label={toggleLabel}
@@ -40,7 +47,8 @@ export default function AccountCell() {
         <button
           type="button"
           className={styles.loginStatusPanel}
-          onClick={toggleLogin}
+          onClick={() => void toggleLogin()}
+          disabled={isAuthPending}
           aria-label={toggleLabel}
           aria-pressed={isLoggedIn}
         >

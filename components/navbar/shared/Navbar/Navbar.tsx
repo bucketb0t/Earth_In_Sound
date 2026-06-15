@@ -319,7 +319,6 @@ export default function Navbar() {
 
     observedCells.forEach((cellElement) => observer.observe(cellElement));
     window.addEventListener("pointermove", rememberPointerZoomAnchor);
-    window.addEventListener("mousemove", rememberPointerZoomAnchor);
     window.addEventListener("resize", scheduleNavbarGeometrySync);
     window.addEventListener("focus", scheduleNavbarGeometrySync);
     window.addEventListener("pageshow", scheduleNavbarGeometrySync);
@@ -329,7 +328,6 @@ export default function Navbar() {
       cancelScheduledNavbarGeometrySync();
       observer.disconnect();
       window.removeEventListener("pointermove", rememberPointerZoomAnchor);
-      window.removeEventListener("mousemove", rememberPointerZoomAnchor);
       window.removeEventListener("resize", scheduleNavbarGeometrySync);
       window.removeEventListener("focus", scheduleNavbarGeometrySync);
       window.removeEventListener("pageshow", scheduleNavbarGeometrySync);

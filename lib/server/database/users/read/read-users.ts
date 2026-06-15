@@ -86,6 +86,19 @@ export async function getUserByAuthProviderId(
 }
 
 /**
+ * Fetches the single project owner.
+ *
+ * The database prevents multiple owner rows with a partial unique index.
+ */
+export async function getOwner(): Promise<StoredUser | null> {
+  const result = await turso.execute(
+    "SELECT * FROM users WHERE role = 'owner' LIMIT 1",
+  );
+
+  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+}
+
+/**
  * Resolves the currently logged-in auth provider user to a stored user row.
  *
  * Future server-side pages/actions can call this after reading the Better Auth

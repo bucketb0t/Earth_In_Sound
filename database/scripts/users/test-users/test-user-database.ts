@@ -1,263 +1,80 @@
 import { randomUUID } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { loadEnvConfig } from "@next/env";
 import {
   assert,
+  assertRejects,
   assertRejectsWithMessage,
-  deleteTestUsers,
-  seedTestUsers,
-  type TestUserSeed,
 } from "./test-user-helpers";
 
-/**
- * Environment loader for database scripts.
- */
 loadEnvConfig(process.cwd());
 
+/**
+ * Runs user/auth integration tests in a disposable local database.
+ */
 export async function runUserDatabaseTests(): Promise<void> {
-  /**
-   * Database module imports that depend on environment variables.
-   *
-   * These imports happen inside the test function, after loadEnvConfig, because
-   * the imported database modules read TURSO_DATABASE_URL and TURSO_AUTH_TOKEN
-   * as soon as they load.
-   */
-  const { turso } = await import("../../../../lib/server/database/turso-client");
-  const {
-    getUserByEmail,
-    getUserById,
-    searchUsers,
-  } = await import("../../../../lib/server/database/users/read/read-users");
-  const {
-    deleteUser,
-    disableUser,
-    reactivateUser,
-    updateUsername,
-  } = await import("../../../../lib/server/database/users/write/write-users");
+  const testDirectory = await mkdtemp(join(tmpdir(), "earth-in-sound-"));
+  const databasePath = join(testDirectory, "test.db").replaceAll("\\", "/");
 
-  /**
-   * Unique namespace for all rows created by this test run.
-   *
-   * Every test row begins with this prefix. The cleanup helper can then delete
-   * only rows created by this run and leave real project data alone.
-   */
-  const testRunId = randomUUID().slice(0, 8);
-  const testPrefix = `t-${testRunId}`;
-  const now = Date.now();
+  process.env.TURSO_DATABASE_URL = `file:${databasePath}`;
+  process.env.TURSO_AUTH_TOKEN = "local-test-token";
+  process.env.BETTER_AUTH_SECRET =
+    "earth-in-sound-test-secret-at-least-thirty-two-characters";
+  process.env.BETTER_AUTH_URL = "http://localhost:3000";
 
-  /**
-   * Temporary users used by the script.
-   * They are inserted directly so the test can focus on exported functions.
-   */
-  const testUsers: TestUserSeed[] = [
-    {
-      id: `${testPrefix}-owner`,
-      email: `${testPrefix}-owner@example.com`,
-      username: `${testPrefix}-owner`,
-      role: "owner",
-      status: "active",
-    },
-    {
-      id: `${testPrefix}-admin`,
-      email: `${testPrefix}-admin@example.com`,
-      username: `${testPrefix}-admin`,
-      role: "admin",
-      status: "active",
-    },
-    {
-      id: `${testPrefix}-active-user`,
-      email: `${testPrefix}-active-user@example.com`,
-      username: `${testPrefix}-active-user`,
-      role: "user",
-      status: "active",
-    },
-    {
-      id: `${testPrefix}-disabled-user`,
-      email: `${testPrefix}-disabled-user@example.com`,
-      username: `${testPrefix}-disabled-user`,
-      role: "user",
-      status: "disabled",
-    },
-    {
-      id: `${testPrefix}-delete-target`,
-      authProviderUserId: `${testPrefix}-auth-delete-target`,
-      email: `${testPrefix}-delete-target@example.com`,
-      username: `${testPrefix}-delete-target`,
-      role: "user",
-      status: "active",
-    },
-    {
-      id: `${testPrefix}-reactivate-delete-target`,
-      email: `${testPrefix}-reactivate-delete-target@example.com`,
-      username: `${testPrefix}-reactivate-delete-target`,
-      role: "user",
-      status: "active",
-    },
-  ];
+  let closeConnections: (() => Promise<void>) | null = null;
 
   try {
-    await seedTestUsers(turso, testUsers, now);
+    const [{ runProjectMigrationsScript }, { runBetterAuthMigrationsScript }] =
+      await Promise.all([
+        import("../../run-project-migrations/run-project-migrations"),
+        import("../../auth/run-better-auth-migrations/run-better-auth-migrations"),
+      ]);
 
-    /**
-     * Test row ids.
-     * The names explain which rule each user is used to test.
-     */
-    const ownerId = `${testPrefix}-owner`;
-    const adminId = `${testPrefix}-admin`;
-    const activeUserId = `${testPrefix}-active-user`;
-    const disabledUserId = `${testPrefix}-disabled-user`;
-    const deleteTargetId = `${testPrefix}-delete-target`;
-    const reactivateDeleteTargetId = `${testPrefix}-reactivate-delete-target`;
+    await runProjectMigrationsScript();
+    await runProjectMigrationsScript();
+    await runBetterAuthMigrationsScript();
 
-    /**
-     * Active users should be able to change only their own username.
-     *
-     * This verifies the normal self-service username path.
-     */
-    const updatedUser = await updateUsername({
-      currentUserId: activeUserId,
-      username: `${testPrefix}-renamed-user`,
-    });
-    assert(
-      updatedUser.username === `${testPrefix}-renamed-user`,
-      "active users should be able to change their own username",
-    );
+    const [
+      { auth },
+      { betterAuthDatabase },
+      { runWithOwnerSetupContext },
+      { turso },
+      userReads,
+      userWrites,
+    ] = await Promise.all([
+      import("../../../../lib/server/auth/auth"),
+      import("../../../../lib/server/auth/better-auth-database"),
+      import("../../../../lib/server/auth/owner-setup-context"),
+      import("../../../../lib/server/database/turso-client"),
+      import("../../../../lib/server/database/users/read/read-users"),
+      import("../../../../lib/server/database/users/write/write-users"),
+    ]);
 
-    /**
-     * Disabled users cannot act, so username changes must be rejected.
-     *
-     * This protects actions from accounts that are temporarily blocked.
-     */
-    await assertRejectsWithMessage(
-      () =>
-        updateUsername({
-          currentUserId: disabledUserId,
-          username: `${testPrefix}-disabled-rename`,
-        }),
-      "User account is not active.",
-      "disabled users should not be able to change username",
-    );
+    closeConnections = async () => {
+      await betterAuthDatabase.destroy();
+      turso.close();
+    };
 
-    /**
-     * A username already owned by another row must stay reserved.
-     *
-     * The function should reject duplicates before updating the database.
-     */
-    await assertRejectsWithMessage(
-      () =>
-        updateUsername({
-          currentUserId: activeUserId,
-          username: `${testPrefix}-admin`,
-        }),
-      "Username is already registered.",
-      "existing usernames should stay reserved",
-    );
+    const testRunId = randomUUID().slice(0, 8);
+    const ownerEmail = `${testRunId}-owner@example.com`;
+    const ownerUsername = `${testRunId}-owner`;
+    const ownerPassword = "Owner-test-password-123";
+    const now = Date.now();
 
-    /**
-     * Owner self-disable protection.
-     *
-     * The only owner cannot disable themselves because the project would lose
-     * the account that can transfer ownership and manage roles.
-     */
-    await assertRejectsWithMessage(
-      () => disableUser({ currentUserId: ownerId, targetUserId: ownerId }),
-      "Transfer ownership before disabling the owner account.",
-      "owner should not be able to disable self",
-    );
-
-    /**
-     * Admins can disable normal users.
-     *
-     * This exercises role hierarchy: admin rank is higher than user rank.
-     */
-    await disableUser({ currentUserId: adminId, targetUserId: activeUserId });
-    const disabledActiveUser = await getUserById(activeUserId);
-    assert(
-      disabledActiveUser?.status === "disabled",
-      "admin should be able to disable a normal user",
-    );
-
-    /**
-     * Disabled accounts keep email_lookup reserved.
-     * A direct insert with the same email_lookup should fail.
-     *
-     * Disabled is not the same as deleted. Disabled accounts are expected to
-     * return later, so their email cannot be reused.
-     */
-    try {
-      await turso.execute({
-        sql: `
-          INSERT INTO users (
-            id,
-            email,
-            email_lookup,
-            username,
-            username_lookup,
-            role,
-            status,
-            created_at,
-            updated_at
-          )
-          VALUES (?, ?, ?, ?, ?, 'user', 'active', ?, ?)
-        `,
-        args: [
-          `${testPrefix}-disabled-email-reuse`,
-          `${testPrefix}-active-user@example.com`,
-          `${testPrefix}-active-user@example.com`,
-          `${testPrefix}-disabled-email-reuse`,
-          `${testPrefix}-disabled-email-reuse`,
-          now,
-          now,
-        ],
-      });
-      throw new Error("disabled account email was unexpectedly reusable");
-    } catch {
-      // Expected duplicate email_lookup rejection.
-    }
-
-    /**
-     * Disabled account reactivation.
-     *
-     * Reactivation moves status from disabled back to active without changing
-     * the user's email, username, or role.
-     */
-    const reactivatedUser = await reactivateUser({
-      currentUserId: adminId,
-      targetUserId: activeUserId,
-    });
-    assert(
-      reactivatedUser.status === "active",
-      "disabled users should be reactivatable",
-    );
-
-    /**
-     * Deleted accounts are soft-deleted.
-     * The row remains, but status changes and auth uniqueness is released.
-     *
-     * This checks that deleted accounts do not keep the external auth id.
-     */
-    const deletedUser = await deleteUser({
-      currentUserId: adminId,
-      targetUserId: deleteTargetId,
-    });
-    assert(deletedUser.status === "deleted", "deleteUser should soft-delete");
-    assert(
-      deletedUser.auth_provider_user_id === null,
-      "deleted users should release their auth provider id",
-    );
-
-    /**
-     * Deleted accounts release email_lookup.
-     * This insert proves the same email can be used by a new account row.
-     *
-     * The original deleted row remains in the table, but its lookup value has
-     * been changed to a generated deleted-email key.
+    /*
+     * Reproduce the original broken state: a project owner with no Better Auth
+     * account. Public signup must not be able to claim it.
      */
     await turso.execute({
       sql: `
         INSERT INTO users (
           id,
+          auth_provider_user_id,
           email,
           email_lookup,
           username,
@@ -267,69 +84,330 @@ export async function runUserDatabaseTests(): Promise<void> {
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, 'user', 'active', ?, ?)
+        VALUES (?, NULL, ?, ?, ?, ?, 'owner', 'active', ?, ?)
       `,
       args: [
-        `${testPrefix}-email-reuse`,
-        `${testPrefix}-delete-target@example.com`,
-        `${testPrefix}-delete-target@example.com`,
-        `${testPrefix}-email-reuse`,
-        `${testPrefix}-email-reuse`,
+        `${testRunId}-owner-profile`,
+        ownerEmail,
+        ownerEmail.toLowerCase(),
+        ownerUsername,
+        ownerUsername.toLowerCase(),
         now,
         now,
       ],
     });
 
-    const reusedEmailUser = await getUserByEmail(
-      `${testPrefix}-delete-target@example.com`,
-    );
-    assert(
-      reusedEmailUser?.id === `${testPrefix}-email-reuse`,
-      "deleted account email should be reusable by a new row",
+    await assertRejects(
+      () =>
+        auth.api.signUpEmail({
+          body: {
+            email: ownerEmail,
+            name: ownerUsername,
+            password: ownerPassword,
+          },
+        }),
+      "public signup should not claim an unlinked owner profile",
     );
 
-    /**
-     * Deleted accounts cannot be reactivated through the normal flow.
-     *
-     * A deleted account released identity fields, so bringing it back through
-     * reactivateUser would be ambiguous.
-     */
-    await deleteUser({
-      currentUserId: ownerId,
-      targetUserId: reactivateDeleteTargetId,
+    const ownerSignup = await runWithOwnerSetupContext(
+      { email: ownerEmail, username: ownerUsername },
+      () =>
+        auth.api.signUpEmail({
+          body: {
+            email: ownerEmail,
+            name: ownerUsername,
+            password: ownerPassword,
+          },
+        }),
+    );
+
+    const owner = await userReads.getOwner();
+    assert(owner !== null, "owner setup should preserve the owner profile");
+    assert(
+      owner?.auth_provider_user_id === ownerSignup.user.id,
+      "owner setup should link the Better Auth user id",
+    );
+
+    const authContext = await auth.$context;
+    await authContext.internalAdapter.deleteUserSessions(ownerSignup.user.id);
+    await auth.api.signInEmail({
+      body: { email: ownerEmail, password: ownerPassword },
     });
+    assert(
+      (await authContext.internalAdapter.listSessions(ownerSignup.user.id))
+        .length > 0,
+      "linked owner should be able to authenticate",
+    );
+
+    /*
+     * Normal signup must mirror a linked active project user with role=user.
+     */
+    const userEmail = `${testRunId}-user@example.com`;
+    const userUsername = `${testRunId}-user`;
+    const userPassword = "User-test-password-123";
+    const userSignup = await auth.api.signUpEmail({
+      body: {
+        email: userEmail,
+        name: userUsername,
+        password: userPassword,
+      },
+    });
+    const projectUser = await userReads.getUserByAuthProviderId(
+      userSignup.user.id,
+    );
+
+    assert(projectUser !== null, "signup should create a project profile");
+    assert(projectUser?.role === "user", "public signup should create role=user");
+    assert(
+      projectUser?.status === "active",
+      "public signup should create an active profile",
+    );
+
+    const renamedUsername = `${testRunId}-renamed`;
+    const renamedUser = await userWrites.updateUsername({
+      currentUserId: projectUser!.id,
+      username: renamedUsername,
+    });
+    assert(
+      renamedUser.username === renamedUsername,
+      "active users should be able to change their username",
+    );
     await assertRejectsWithMessage(
       () =>
-        reactivateUser({
-          currentUserId: ownerId,
-          targetUserId: reactivateDeleteTargetId,
+        userWrites.updateUsername({
+          currentUserId: projectUser!.id,
+          username: ownerUsername,
         }),
-      "Only disabled users can be reactivated.",
-      "deleted users should not reactivate through normal flow",
+      "Username is already registered.",
+      "existing usernames should remain reserved",
+    );
+    assert(
+      (
+        await userReads.searchUsers({
+          searchText: renamedUsername,
+        })
+      ).some((user) => user.id === projectUser!.id),
+      "search should find a user by partial username",
+    );
+    await assertRejectsWithMessage(
+      () =>
+        userWrites.disableUser({
+          currentUserId: owner!.id,
+          targetUserId: owner!.id,
+        }),
+      "Transfer ownership before disabling the owner account.",
+      "the owner should not be able to disable themselves",
     );
 
-    /**
-     * Search should find users by partial username/email lookup text.
-     *
-     * The search function is meant for future owner/admin panels.
+    /*
+     * Disabling revokes existing sessions and blocks future sign-in sessions.
      */
-    const searchResults = await searchUsers({
-      searchText: `${testPrefix}-renamed`,
+    await userWrites.disableUser({
+      currentUserId: owner!.id,
+      targetUserId: projectUser!.id,
     });
     assert(
-      searchResults.some((user) => user.id === activeUserId),
-      "searchUsers should find users by partial username",
+      (await authContext.internalAdapter.listSessions(userSignup.user.id))
+        .length === 0,
+      "disabling should revoke all Better Auth sessions",
+    );
+    await assertRejects(
+      () =>
+        auth.api.signInEmail({
+          body: { email: userEmail, password: userPassword },
+        }),
+      "disabled users should not create new sessions",
+    );
+    await assertRejectsWithMessage(
+      () =>
+        userWrites.updateUsername({
+          currentUserId: projectUser!.id,
+          username: `${testRunId}-disabled-rename`,
+        }),
+      "User account is not active.",
+      "disabled users should not be able to change username",
+    );
+    await assertRejects(
+      () =>
+        auth.api.signUpEmail({
+          body: {
+            email: userEmail,
+            name: `${testRunId}-duplicate-email`,
+            password: userPassword,
+          },
+        }),
+      "disabled account email should remain reserved",
     );
 
-    console.log("User database tests passed.");
+    await userWrites.reactivateUser({
+      currentUserId: owner!.id,
+      targetUserId: projectUser!.id,
+    });
+    await auth.api.signInEmail({
+      body: { email: userEmail, password: userPassword },
+    });
+
+    /*
+     * Role changes and ownership transfer keep exactly one owner.
+     */
+    const promotedUser = await userWrites.setUserRole({
+      currentOwnerId: owner!.id,
+      targetUserId: projectUser!.id,
+      targetRole: "admin",
+    });
+    assert(promotedUser.role === "admin", "owner should be able to assign admin");
+
+    const managedSignup = await auth.api.signUpEmail({
+      body: {
+        email: `${testRunId}-managed@example.com`,
+        name: `${testRunId}-managed`,
+        password: "Managed-test-password-123",
+      },
+    });
+    const managedUser = await userReads.getUserByAuthProviderId(
+      managedSignup.user.id,
+    );
+    const disabledByAdmin = await userWrites.disableUser({
+      currentUserId: projectUser!.id,
+      targetUserId: managedUser!.id,
+    });
+    assert(
+      disabledByAdmin.status === "disabled",
+      "admins should be able to disable normal users",
+    );
+    await userWrites.reactivateUser({
+      currentUserId: owner!.id,
+      targetUserId: managedUser!.id,
+    });
+
+    const newOwner = await userWrites.transferOwnership({
+      currentOwnerId: owner!.id,
+      targetUserId: projectUser!.id,
+    });
+    assert(newOwner.role === "owner", "ownership should transfer to target user");
+    assert(
+      (await userReads.getUserById(owner!.id))?.role === "admin",
+      "previous owner should become admin",
+    );
+
+    await assertRejects(
+      () =>
+        turso.execute({
+          sql: `
+            INSERT INTO users (
+              id,
+              email,
+              email_lookup,
+              username,
+              username_lookup,
+              role,
+              status,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, 'owner', 'active', ?, ?)
+          `,
+          args: [
+            `${testRunId}-second-owner`,
+            `${testRunId}-second-owner@example.com`,
+            `${testRunId}-second-owner@example.com`,
+            `${testRunId}-second-owner`,
+            `${testRunId}-second-owner`,
+            now,
+            now,
+          ],
+        }),
+      "database should reject a second owner",
+    );
+
+    /*
+     * Full deletion removes Better Auth state, releases the private login
+     * email, and permanently reserves the public username.
+     */
+    const deleteEmail = `${testRunId}-delete@example.com`;
+    const deleteUsername = `${testRunId}-delete`;
+    const deletePassword = "Delete-test-password-123";
+    const deleteSignup = await auth.api.signUpEmail({
+      body: {
+        email: deleteEmail,
+        name: deleteUsername,
+        password: deletePassword,
+      },
+    });
+    const deleteTarget = await userReads.getUserByAuthProviderId(
+      deleteSignup.user.id,
+    );
+
+    const deletedUser = await userWrites.deleteUser({
+      currentUserId: newOwner.id,
+      targetUserId: deleteTarget!.id,
+    });
+    assert(deletedUser.status === "deleted", "delete should soft-delete profile");
+    assert(
+      deletedUser.auth_provider_user_id === null,
+      "delete should release the auth provider id",
+    );
+    assert(
+      deletedUser.email_lookup !== deleteEmail.toLowerCase(),
+      "delete should release the email lookup",
+    );
+    assert(
+      deletedUser.username_lookup === deleteUsername.toLowerCase(),
+      "delete should keep the username lookup reserved",
+    );
+    assert(
+      (await authContext.internalAdapter.findUserById(deleteSignup.user.id)) ===
+        null,
+      "delete should remove the Better Auth user",
+    );
+    await assertRejectsWithMessage(
+      () =>
+        userWrites.reactivateUser({
+          currentUserId: newOwner.id,
+          targetUserId: deleteTarget!.id,
+        }),
+      "Only disabled users can be reactivated.",
+      "deleted users should not reactivate through the normal flow",
+    );
+
+    await assertRejects(
+      () =>
+        auth.api.signUpEmail({
+          body: {
+            email: deleteEmail,
+            name: deleteUsername,
+            password: deletePassword,
+          },
+        }),
+      "deleted username should remain permanently reserved",
+    );
+
+    const reusedEmailSignup = await auth.api.signUpEmail({
+      body: {
+        email: deleteEmail,
+        name: `${deleteUsername}-new`,
+        password: deletePassword,
+      },
+    });
+    assert(
+      reusedEmailSignup.user.id !== deleteSignup.user.id,
+      "deleted email should be reusable with a different username",
+    );
+
+    console.log("User and auth database tests passed.");
   } finally {
-    await deleteTestUsers(turso, testPrefix);
+    await closeConnections?.();
+    await rm(testDirectory, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
   }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   runUserDatabaseTests().catch((error: unknown) => {
-    // Script failure reporting.
     console.error(error);
     process.exit(1);
   });

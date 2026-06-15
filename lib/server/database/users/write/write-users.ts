@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import {
+  deleteAuthUser,
+  revokeAuthUserSessions,
+} from "@/lib/server/auth/auth-user-lifecycle";
 import { turso } from "../../turso-client";
 import {
   requireActiveUser,
@@ -9,6 +13,8 @@ import {
   getUserByAuthProviderId,
   getUserByEmail,
   getUserById,
+  getUserByUsername,
+  getOwner,
   type StoredUser,
   type UserRole,
 } from "../read/read-users";
@@ -22,10 +28,6 @@ import {
 /*
  * Write input types keep function calls explicit and readable.
  */
-export interface CreateLocalOwnerInput {
-  email: string;
-  username: string;
-}
 
 export interface UpdateUsernameInput {
   currentUserId: string;
@@ -58,6 +60,12 @@ export interface CreateNormalUserAfterSignupInput {
   username: string;
 }
 
+export interface CreateOrLinkOwnerAfterSignupInput {
+  authProviderUserId: string;
+  email: string;
+  username: string;
+}
+
 export type AssignableUserRole = Exclude<UserRole, "owner">;
 
 export interface SetUserRoleInput {
@@ -65,58 +73,89 @@ export interface SetUserRoleInput {
   targetUserId: string;
   targetRole: AssignableUserRole;
 }
+
 /**
- * Creates the first local owner account.
+ * Creates the first owner profile or links a legacy unlinked owner profile.
  *
- * This setup path is intentionally separate from public signup. Public signup
- * must never create owner/admin users. This function is for the project setup
- * script, where you explicitly decide who the first owner is.
+ * This function is called only from the server-only owner setup context after
+ * Better Auth has created and verified the corresponding auth record.
  */
-export async function createLocalOwner(
-  input: CreateLocalOwnerInput,
-): Promise<string> {
-  /*
-   * The local owner script is the only intended caller for this setup function.
-   */
-  const email = requireValidEmail(input.email);
-  const username = requireValidUsername(input.username);
-  const now = Date.now();
+export async function createOrLinkOwnerAfterSignup(
+  input: CreateOrLinkOwnerAfterSignupInput,
+): Promise<StoredUser> {
+  const authProviderUserId = input.authProviderUserId.trim();
 
-  const existingOwner = await turso.execute({
-    sql: "SELECT id FROM users WHERE role = 'owner' LIMIT 1",
-  });
-
-  /*
-   * Only one owner is allowed. If an owner row exists, ownership should be
-   * transferred with transferOwnership instead of creating another owner.
-   */
-  if (existingOwner.rows.length > 0) {
-    throw new Error("Owner already exists.");
+  if (!authProviderUserId) {
+    throw new Error("Auth provider user id is required.");
   }
 
-  const existingEmail = await turso.execute({
-    sql: "SELECT id FROM users WHERE email_lookup = ? LIMIT 1",
-    args: [toLookupValue(email)],
-  });
+  const linkedUser = await getUserByAuthProviderId(authProviderUserId);
+  if (linkedUser) {
+    if (linkedUser.role !== "owner") {
+      throw new Error("Auth account is already linked to a non-owner user.");
+    }
 
-  if (existingEmail.rows.length > 0) {
+    return linkedUser;
+  }
+
+  const email = requireValidEmail(input.email);
+  const username = requireValidUsername(input.username);
+  const emailLookup = toLookupValue(email);
+  const usernameLookup = toLookupValue(username);
+  const existingOwner = await getOwner();
+
+  if (existingOwner) {
+    if (
+      existingOwner.status !== "active" ||
+      existingOwner.email_lookup !== emailLookup ||
+      existingOwner.username_lookup !== usernameLookup
+    ) {
+      throw new Error("Owner setup identity does not match the existing owner.");
+    }
+
+    if (
+      existingOwner.auth_provider_user_id &&
+      existingOwner.auth_provider_user_id !== authProviderUserId
+    ) {
+      throw new Error("Owner is already linked to another auth account.");
+    }
+
+    const now = Date.now();
+    await turso.execute({
+      sql: `
+        UPDATE users
+        SET auth_provider_user_id = ?, updated_at = ?
+        WHERE id = ? AND auth_provider_user_id IS NULL
+      `,
+      args: [authProviderUserId, now, existingOwner.id],
+    });
+
+    const linkedOwner = await getUserById(existingOwner.id);
+    const storedLinkedOwner = requireStoredUser(
+      linkedOwner,
+      "Linked owner was not found.",
+    );
+
+    if (storedLinkedOwner.auth_provider_user_id !== authProviderUserId) {
+      throw new Error("Owner is already linked to another auth account.");
+    }
+
+    return storedLinkedOwner;
+  }
+
+  const existingEmail = await getUserByEmail(email);
+  if (existingEmail) {
     throw new Error("Email is already registered.");
   }
 
-  const existingUsername = await turso.execute({
-    sql: "SELECT id FROM users WHERE username_lookup = ? LIMIT 1",
-    args: [toLookupValue(username)],
-  });
-
-  if (existingUsername.rows.length > 0) {
+  const existingUsername = await getUserByUsername(username);
+  if (existingUsername) {
     throw new Error("Username is already registered.");
   }
 
   const ownerId = randomUUID();
+  const now = Date.now();
 
-  /*
-   * Owner has no auth provider id until a real auth account is connected.
-   */
   await turso.execute({
     sql: `
       INSERT INTO users (
@@ -131,20 +170,22 @@ export async function createLocalOwner(
         created_at,
         updated_at
       )
-      VALUES (?, NULL, ?, ?, ?, ?, 'owner', 'active', ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, 'owner', 'active', ?, ?)
     `,
     args: [
       ownerId,
+      authProviderUserId,
       email,
-      toLookupValue(email),
+      emailLookup,
       username,
-      toLookupValue(username),
+      usernameLookup,
       now,
       now,
     ],
   });
 
-  return ownerId;
+  const createdOwner = await getUserById(ownerId);
+  return requireStoredUser(createdOwner, "Created owner was not found.");
 }
 
 /**
@@ -320,6 +361,10 @@ export async function disableUser(
 
   const now = Date.now();
 
+  if (targetUser.auth_provider_user_id) {
+    await revokeAuthUserSessions(targetUser.auth_provider_user_id);
+  }
+
   await turso.execute({
     sql: `
       UPDATE users
@@ -338,9 +383,9 @@ export async function disableUser(
  * Soft-deletes a user account.
  *
  * Deleted means "closed account." The row remains for audit/history, but the
- * auth link is removed and email_lookup is replaced so a future signup may use
- * the same email again. Deleted users are not reactivated through the normal
- * reactivateUser path.
+ * auth link is removed and email_lookup is replaced so a future signup may
+ * reuse the email. username_lookup remains reserved to prevent impersonation.
+ * Deleted users are not reactivated through the normal reactivateUser path.
  */
 export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
   /*
@@ -371,8 +416,13 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
   const now = Date.now();
 
   /*
-   * Replacing email_lookup frees the original email for a future account.
+   * Better Auth must release the email and revoke every session before the
+   * project profile releases its auth link.
    */
+  if (targetUser.auth_provider_user_id) {
+    await deleteAuthUser(targetUser.auth_provider_user_id);
+  }
+
   await turso.execute({
     sql: `
       UPDATE users
@@ -383,7 +433,11 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
         updated_at = ?
       WHERE id = ?
     `,
-    args: [getDeletedEmailLookup(targetUser.id, now), now, targetUser.id],
+    args: [
+      getDeletedEmailLookup(targetUser.id, now),
+      now,
+      targetUser.id,
+    ],
   });
 
   const deletedUser = await getUserById(targetUser.id);

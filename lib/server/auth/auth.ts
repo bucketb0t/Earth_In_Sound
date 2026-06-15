@@ -1,8 +1,13 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 
-import { createNormalUserAfterSignup } from "@/lib/server/database/users/write/write-users";
 import {
+  createNormalUserAfterSignup,
+  createOrLinkOwnerAfterSignup,
+} from "@/lib/server/database/users/write/write-users";
+import {
+  getUserByAuthProviderId,
   getUserByEmail,
   getUserByUsername,
 } from "@/lib/server/database/users/read/read-users";
@@ -11,8 +16,21 @@ import {
   requireValidUsername,
 } from "@/lib/server/database/users/validation/validate-user-input";
 import { betterAuthDatabase } from "./better-auth-database";
+import { getOwnerSetupIdentity } from "./owner-setup-context";
 
 const appBaseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+
+function isOwnerSetupIdentity(email: string, username: string): boolean {
+  const ownerSetupIdentity = getOwnerSetupIdentity();
+
+  return (
+    ownerSetupIdentity !== null &&
+    requireValidEmail(ownerSetupIdentity.email).toLowerCase() ===
+      requireValidEmail(email).toLowerCase() &&
+    requireValidUsername(ownerSetupIdentity.username).toLowerCase() ===
+      requireValidUsername(username).toLowerCase()
+  );
+}
 
 /**
  * Better Auth server configuration.
@@ -65,12 +83,26 @@ export const auth = betterAuth({
         before: async (user) => {
           const email = requireValidEmail(user.email);
           const username = requireValidUsername(String(user.name ?? ""));
+          const isOwnerSetup = isOwnerSetupIdentity(email, username);
+          const existingEmailUser = await getUserByEmail(email);
 
-          if (await getUserByEmail(email)) {
+          if (
+            existingEmailUser &&
+            !(
+              isOwnerSetup &&
+              existingEmailUser.role === "owner" &&
+              existingEmailUser.status === "active" &&
+              existingEmailUser.auth_provider_user_id === null
+            )
+          ) {
             throw new Error("Email is already registered.");
           }
 
-          if (await getUserByUsername(username)) {
+          const existingUsernameUser = await getUserByUsername(username);
+          if (
+            existingUsernameUser &&
+            existingUsernameUser.id !== existingEmailUser?.id
+          ) {
             throw new Error("Username is already registered.");
           }
 
@@ -92,11 +124,39 @@ export const auth = betterAuth({
          * Auth user.id in auth_provider_user_id so both systems stay linked.
          */
         after: async (user) => {
-          await createNormalUserAfterSignup({
+          const username = String(user.name ?? "");
+          const createProjectUser = isOwnerSetupIdentity(user.email, username)
+            ? createOrLinkOwnerAfterSignup
+            : createNormalUserAfterSignup;
+
+          await createProjectUser({
             authProviderUserId: user.id,
             email: user.email,
-            username: String(user.name ?? ""),
+            username,
           });
+        },
+      },
+    },
+    session: {
+      create: {
+        /**
+         * Disabled, deleted, or unmirrored accounts cannot create sessions.
+         */
+        before: async (session, context) => {
+          const projectUser = await getUserByAuthProviderId(session.userId);
+
+          if (
+            !projectUser &&
+            (context?.path === "/sign-up/email" || getOwnerSetupIdentity())
+          ) {
+            return;
+          }
+
+          if (!projectUser || projectUser.status !== "active") {
+            throw new APIError("FORBIDDEN", {
+              message: "User account is not active.",
+            });
+          }
         },
       },
     },

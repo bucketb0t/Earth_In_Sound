@@ -31,6 +31,8 @@ The project expects these local environment variables:
 ```env
 TURSO_DATABASE_URL=
 TURSO_AUTH_TOKEN=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
 ```
 
 Never commit real values for these variables to GitHub.
@@ -147,6 +149,8 @@ Add:
 ```env
 TURSO_DATABASE_URL=libsql://your-database-url-here
 TURSO_AUTH_TOKEN=your-token-here
+BETTER_AUTH_SECRET=generate-a-long-random-secret
+BETTER_AUTH_URL=http://localhost:3000
 ```
 
 Do not use quotes.
@@ -173,16 +177,14 @@ git status --short
 
 The database schema is stored in committed SQL migration files.
 
-Run the first migration from the project root.
+Run the database setup hub from the project root:
 
-From WSL/Ubuntu:
-
-```bash
-turso db shell earth-in-sound-dev < database/migrations/001_create_users.sql
-turso db shell earth-in-sound-dev < database/migrations/002_allow_deleted_user_status.sql
+```powershell
+npm run database:setup
 ```
 
-Replace `earth-in-sound-dev` with your own Turso database name if different.
+The setup hub applies project migrations in filename order, records each applied
+migration, and then runs Better Auth's own migrations.
 
 This creates the `users` table with:
 
@@ -215,7 +217,9 @@ disabled
 
 deleted
   The account cannot act.
-  The email lookup is released so the same email can create a new account.
+  The Better Auth account and sessions are removed.
+  The email lookup is released for a new account.
+  The username remains permanently reserved to prevent impersonation.
   The account cannot be reactivated through the normal account flow.
 ```
 
@@ -228,7 +232,8 @@ In Command Prompt:
 ```cmd
 set LOCAL_OWNER_EMAIL=owner@example.com
 set LOCAL_OWNER_USERNAME=OwnerName
-npx tsx database/scripts/run-database-setup.ts
+set LOCAL_OWNER_PASSWORD=use-a-strong-password
+npm run database:setup
 ```
 
 In PowerShell:
@@ -236,17 +241,20 @@ In PowerShell:
 ```powershell
 $env:LOCAL_OWNER_EMAIL="owner@example.com"
 $env:LOCAL_OWNER_USERNAME="OwnerName"
-npx tsx database/scripts/run-database-setup.ts
+$env:LOCAL_OWNER_PASSWORD="use-a-strong-password"
+npm run database:setup
 ```
 
-`run-database-setup.ts` is the database setup hub. It calls the user owner setup script now, and future database setup scripts can be added to the same hub.
+`run-database-setup.ts` applies project migrations, runs Better Auth migrations,
+and creates or repairs the first owner as a real Better Auth account.
 
-The owner setup refuses to create a second owner. Ownership transfer will be handled later by a separate database function.
+The owner setup refuses to create a second owner. Existing legacy owner rows
+without an auth id are securely linked by this server-only setup flow.
 
 Run all database tests from the test hub:
 
 ```powershell
-npx tsx database/scripts/test-database.ts
+npm run test:database
 ```
 
 The user database test can also be run by itself:

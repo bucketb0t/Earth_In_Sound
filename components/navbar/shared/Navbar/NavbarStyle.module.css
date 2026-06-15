@@ -19,6 +19,7 @@
 
 .navbarShell {
   --navbar-layout-width: 100vw;
+
   --navbar-paint-width: 100vw;
   --navbar-shell-height: 132px;
   --navbar-line-height: 8px;
