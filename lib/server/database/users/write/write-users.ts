@@ -27,6 +27,9 @@ import {
 
 /*
  * Write input types keep function calls explicit and readable.
+ * Route handlers/server actions must derive currentUserId/currentOwnerId from
+ * the authenticated session before calling these functions; browser input
+ * should never be trusted to identify the acting user.
  */
 
 export interface UpdateUsernameInput {
@@ -78,7 +81,7 @@ export interface SetUserRoleInput {
  * Creates the first owner profile or links a legacy unlinked owner profile.
  *
  * This function is called only from the server-only owner setup context after
- * Better Auth has created and verified the corresponding auth record.
+ * Better Auth has created or found the corresponding auth record.
  */
 export async function createOrLinkOwnerAfterSignup(
   input: CreateOrLinkOwnerAfterSignupInput,
@@ -417,7 +420,8 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
 
   /*
    * Better Auth must release the email and revoke every session before the
-   * project profile releases its auth link.
+   * project profile releases its auth link. These are separate systems, so a
+   * future production route should add recovery/compensation around failures.
    */
   if (targetUser.auth_provider_user_id) {
     await deleteAuthUser(targetUser.auth_provider_user_id);

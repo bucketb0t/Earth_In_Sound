@@ -56,8 +56,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     /*
      * Email/password auth owns password hashing and session creation. The
-     * project never manually stores or compares raw passwords. When a visitor
-     * signs up or signs in, Better Auth handles the security-sensitive work.
+     * project never manually stores or compares raw passwords. This block does
+     * not yet prove mailbox ownership; email verification belongs here when
+     * that production hardening step is implemented.
      */
     enabled: true,
     minPasswordLength: 8,
@@ -77,7 +78,7 @@ export const auth = betterAuth({
          *
          * This hook is the "front gate" for new accounts:
          * 1. clean and validate the submitted email/username;
-         * 2. check the project users table for duplicates;
+         * 2. check project profile reservations, including deleted usernames;
          * 3. return cleaned data to Better Auth if everything is allowed.
          */
         before: async (user) => {
@@ -116,7 +117,7 @@ export const auth = betterAuth({
         },
 
         /**
-         * Mirrors a verified auth signup into the project users table.
+         * Mirrors a successful auth signup into the project users table.
          * The inserted role is always "user".
          *
          * At this point Better Auth has already created its own auth user. The
@@ -141,6 +142,9 @@ export const auth = betterAuth({
       create: {
         /**
          * Disabled, deleted, or unmirrored accounts cannot create sessions.
+         *
+         * Signup and owner setup briefly pass through before the project row
+         * exists, then the user.create.after hook links the project profile.
          */
         before: async (session, context) => {
           const projectUser = await getUserByAuthProviderId(session.userId);

@@ -14,6 +14,10 @@ export async function assertRejects(
   action: () => Promise<unknown>,
   failureMessage: string,
 ): Promise<void> {
+  /*
+   * Generic failure check. Prefer assertRejectsWithMessage when the reason for
+   * rejection matters, such as permissions or lifecycle rules.
+   */
   try {
     await action();
   } catch {

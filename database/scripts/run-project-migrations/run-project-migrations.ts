@@ -40,9 +40,10 @@ export async function runProjectMigrationsScript(): Promise<void> {
   const hasExistingUsersTable = usersTable.rows.length > 0;
 
   /*
-   * Existing databases predate project_migrations. Their users table already
-   * represents the historical 001/002 state, so record that baseline instead
-   * of replaying the old table-rebuild migration.
+   * Compatibility baseline for known project databases created before
+   * project_migrations existed. This assumes the existing users table already
+   * matches migrations 001/002. Unknown or hand-edited schemas should be
+   * inspected before this script is used.
    */
   if (!hasMigrationHistory && hasExistingUsersTable) {
     const now = Date.now();
@@ -78,6 +79,11 @@ export async function runProjectMigrationsScript(): Promise<void> {
       "utf8",
     );
 
+    /*
+     * Each SQL file is applied first, then recorded. Keep new migrations
+     * idempotent or transaction-wrapped so reruns are safe if this process is
+     * interrupted between the SQL and history insert.
+     */
     await turso.executeMultiple(migrationSql);
     await turso.execute({
       sql: "INSERT INTO project_migrations (id, applied_at) VALUES (?, ?)",

@@ -4,7 +4,11 @@ import { pathToFileURL } from "node:url";
 loadEnvConfig(process.cwd());
 
 /**
- * Creates the first owner through Better Auth, then links the project profile.
+ * Creates or repairs the first owner through Better Auth.
+ *
+ * LOCAL_OWNER_* values are trusted terminal-only setup inputs. The script
+ * signs up or signs in with Better Auth, links the project owner row, then
+ * removes setup-created sessions so the owner must log in normally afterward.
  */
 export async function runCreateOwnerScript(): Promise<void> {
   const ownerEmail = process.env.LOCAL_OWNER_EMAIL?.trim();

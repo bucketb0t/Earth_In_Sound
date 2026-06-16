@@ -18,11 +18,15 @@ site interface.
 - Custom navbar as the primary interface object.
 - Dedicated sections for Earth In Sound, Jason Walton, I Hate Music, account,
   store, and cart access.
+- Better Auth email/password sign-up, sign-in, sign-out, and project user
+  profiles with owner/admin/user roles.
+- I Hate Music podcast page powered by the public Acast RSS feed.
 - A structure that supports future custom artwork per cell.
 
 ## Out Of Scope For The Current Build
 
 - Full page content for every navigation target.
-- Checkout, authentication, and account backend behavior.
+- Checkout and payment behavior.
+- Full account-management UI beyond the current auth surface.
 - Podcast hosting infrastructure.
 - Store inventory or payment integration.
