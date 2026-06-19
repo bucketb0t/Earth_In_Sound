@@ -15,7 +15,7 @@ export async function playAudioFromTimestamp(
     await waitForAudioMetadata(audioElement);
   }
 
-  seekAudioTo(audioElement, seconds);
+  seekAudioToTimestamp(audioElement, seconds);
   await audioElement.play();
 }
 
@@ -62,7 +62,10 @@ function waitForAudioMetadata(audioElement: HTMLAudioElement): Promise<void> {
  * The try/catch protects against browsers that reject seeking before enough
  * audio data is available.
  */
-function seekAudioTo(audioElement: HTMLAudioElement, seconds: number): void {
+export function seekAudioToTimestamp(
+  audioElement: HTMLAudioElement,
+  seconds: number,
+): void {
   if (!Number.isFinite(seconds)) return;
 
   try {

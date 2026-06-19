@@ -137,12 +137,6 @@
   width: 100%;
 }
 
-.youtubePlayerMount {
-  /* Empty mount element replaced by the YouTube iframe API. */
-  height: 100%;
-  width: 100%;
-}
-
 .emptyVideoMessage,
 .invalidVideoMessage,
 .audioUnavailableMessage {
