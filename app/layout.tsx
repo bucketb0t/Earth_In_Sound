@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Navbar from "@/components/navbar/shared/Navbar/Navbar";
+import Navbar from "@/components/navbar/Navbar";
 import "./globals.css";
 
 /**

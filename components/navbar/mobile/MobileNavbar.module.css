@@ -1,0 +1,16 @@
+.mobileNavbar {
+  display: none;
+}
+
+.topRow .bottomRow {
+  display: grid;
+  gap: 4px;
+}
+
+.topRow {
+  grid-template-columns: 1.25fr 1fr 1fr;
+}
+
+.bottomRow {
+  grid-template-columns: 1fr 1.5fr 0.65fr;
+}

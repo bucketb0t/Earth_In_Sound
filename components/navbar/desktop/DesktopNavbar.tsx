@@ -6,17 +6,17 @@ import {
   ARTWORK_CELL_SCALE_BASE_HEIGHT,
   DESIGN_HEIGHT,
   BASE_LINE_HEIGHT,
-} from "../../config";
-import { NavbarContext, useNavbar } from "../../state";
+} from "../config";
+import { useNavbarContext } from "../state";
 
-import AccountCell from "../../cells/AccountCell/AccountCell";
-import CartCell from "../../cells/CartCell/CartCell";
-import EISLogoCell from "../../cells/EISLogoCell/EISLogoCell";
-import IHateMusicCell from "../../cells/IHateMusicCell/IHateMusicCell";
-import JasonWaltonCell from "../../cells/JasonWaltonCell/JasonWaltonCell";
-import StoreCell from "../../cells/StoreCell/StoreCell";
+import AccountCell from "../cells/AccountCell/AccountCell";
+import CartCell from "../cells/CartCell/CartCell";
+import EISLogoCell from "../cells/EISLogoCell/EISLogoCell";
+import IHateMusicCell from "../cells/IHateMusicCell/IHateMusicCell";
+import JasonWaltonCell from "../cells/JasonWaltonCell/JasonWaltonCell";
+import StoreCell from "../cells/StoreCell/StoreCell";
 
-import styles from "./NavbarStyle.module.css";
+import styles from "./DesktopNavbar.module.css";
 
 interface PointerZoomAnchor {
   pointerX: number;
@@ -110,16 +110,15 @@ function setCssVariable(
 }
 
 /**
- * Navbar shell.
+ * Desktop navbar shell.
  * Paints the shared banner/baseline and positions the independent cells.
  *
  * JSX here is intentionally small: it only orders the cells. Most layout values
  * are measured at runtime and handed to CSS through variables because the row
  * must react to window resize, browser zoom, fonts, and artwork dimensions.
  */
-export default function Navbar() {
-  const navbarState = useNavbar();
-  const { shellRef, contentRef, scale, isScaleReady } = navbarState;
+export default function DesktopNavbar() {
+  const { shellRef, contentRef, scale, isScaleReady } = useNavbarContext();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const pointerZoomAnchorRef = useRef<PointerZoomAnchor | null>(null);
 
@@ -245,7 +244,7 @@ export default function Navbar() {
 
       /*
        * Write layout variables for the shell, banner, and interactive row.
-       * CSS consumes these values in NavbarStyle.module.css so browser-specific
+       * CSS consumes these values in DesktopNavbar.module.css so browser-specific
        * layout differences are handled by measured numbers, not guessed CSS.
        */
       setCssVariable(
@@ -339,32 +338,30 @@ export default function Navbar() {
   }, [contentRef, scale, shellRef]);
 
   return (
-    <NavbarContext.Provider value={navbarState}>
+    <div
+      ref={shellRef}
+      className={`${styles.navbarShell} ${
+        isScaleReady ? styles.navbarShellReady : ""
+      }`}
+    >
+      {/* Interactive faceplate layer. */}
       <div
-        ref={shellRef}
-        className={`${styles.navbarShell} ${
-          isScaleReady ? styles.navbarShellReady : ""
-        }`}
+        ref={rootRef}
+        className={styles.navbarRoot}
+        role="navigation"
+        aria-label="Earth In Sound site navigation"
       >
-        {/* Interactive faceplate layer. */}
-        <div
-          ref={rootRef}
-          className={styles.navbarRoot}
-          role="navigation"
-          aria-label="Earth In Sound site navigation"
-        >
-          <div className={styles.navbarInner}>
-            <div ref={contentRef} className={styles.rowPrimary}>
-              <EISLogoCell />
-              <JasonWaltonCell />
-              <IHateMusicCell />
-              <AccountCell />
-              <StoreCell />
-              <CartCell />
-            </div>
+        <div className={styles.navbarInner}>
+          <div ref={contentRef} className={styles.rowPrimary}>
+            <EISLogoCell />
+            <JasonWaltonCell />
+            <IHateMusicCell />
+            <AccountCell />
+            <StoreCell />
+            <CartCell />
           </div>
         </div>
       </div>
-    </NavbarContext.Provider>
+    </div>
   );
 }
