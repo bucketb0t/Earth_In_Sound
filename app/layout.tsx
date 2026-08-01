@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Navbar from "@/components/navbar/Navbar";
+import SiteShell from "@/front-end/site/SiteShell";
 import "./globals.css";
 
 /**
@@ -24,11 +24,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" data-scroll-behavior="smooth">
       {/* Browser extension attributes can appear before React hydrates. */}
       <body suppressHydrationWarning>
-        {/* Persistent site navigation. */}
-        <Navbar />
-
-        {/* Current route content supplied by the App Router. */}
-        {children}
+        {/* Global responsive shell: navbar plus current route content. */}
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   );

@@ -1,0 +1,65 @@
+.mobileNavbar {
+  /*
+   * Navbar.tsx mounts this component only in mobile mode, so this root can
+   * remain visible and focusable when it exists.
+   */
+  display: block;
+}
+
+.topRow,
+.bottomRow {
+  /*
+   * Two-row hardware layout from the mobile reference image.
+   */
+  display: grid;
+  gap: 4px;
+}
+
+.topRow {
+  grid-template-columns: 1.25fr 1fr 1fr;
+}
+
+.bottomRow {
+  grid-template-columns: 1fr 1.5fr 0.65fr;
+}
+
+.eisPanel,
+.jwwPanel,
+.ihmPanel,
+.accountPanel,
+.storePanel,
+.cartPanel {
+  /*
+   * Panels must be allowed to shrink when mobile fitting is added later.
+   */
+  min-width: 0;
+}
+
+.eisLogoButton,
+.navLink {
+  /*
+   * Buttons keep semantic behavior while CSS/artwork owns the visual hardware.
+   */
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.eisLinks,
+.sectionLinks {
+  /*
+   * Link stacks are shared by EIS and knob-style sections.
+   */
+  display: grid;
+  gap: 4px;
+}
+
+.panelTitle {
+  color: inherit;
+}
+
+.navLinkActive {
+  color: #22c55e;
+}

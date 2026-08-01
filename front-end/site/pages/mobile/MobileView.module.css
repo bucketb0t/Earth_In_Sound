@@ -1,0 +1,7 @@
+.mobileView {
+  min-height: 100vh;
+}
+
+.mobileContent {
+  min-width: 0;
+}

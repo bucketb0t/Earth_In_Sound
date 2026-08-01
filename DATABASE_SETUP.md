@@ -9,20 +9,20 @@ Earth In Sound is being migrated to Turso for portable SQL-style database work.
 Database-related files are split by role:
 
 ```text
-lib/server/database/turso-client.ts
+backend/database/turso-client.ts
   Server-only Turso client.
 
-lib/server/database/users
+backend/database/users
   User database code split by role:
   validation/validate-user-input.ts
   permissions/user-permissions.ts
   read/read-users.ts
   write/write-users.ts
 
-database/migrations
+backend/database/migrations
   SQL files that create or change database tables.
 
-database/scripts
+backend/database/scripts
   Terminal setup scripts and database test hubs.
 ```
 
@@ -260,7 +260,7 @@ npm run test:database
 The user database test can also be run by itself:
 
 ```powershell
-npx tsx database/scripts/users/test-users/test-user-database.ts
+npx tsx backend/database/scripts/users/test-users/test-user-database.ts
 ```
 
 ## 12. Run The Project

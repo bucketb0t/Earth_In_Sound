@@ -17,11 +17,24 @@ Every flow answers the same questions:
 Source comments explain local line-level details. This guide explains system
 ownership and communication.
 
+## Codebase Layout
+
+The project logic is split by runtime boundary:
+
+- **`front-end/`:** browser-facing React code, responsive site frame, navbar,
+  account UI, podcast UI, and the browser Better Auth client.
+- **`backend/`:** server-only authentication, database access, migrations,
+  setup scripts, external podcast feed parsing, and the reserved mailing area.
+- **`app/`:** Next.js routing glue. Route files stay here because the framework
+  discovers pages and API handlers from `app/`.
+- **`public/`:** static assets served directly by Next.js.
+
 ## Project Model
 
-Earth In Sound has four main systems:
+Earth In Sound has five main systems:
 
 - **Routes:** Next.js renders the active page under `app/layout.tsx`.
+- **Responsive shell:** one site-wide breakpoint decides desktop or mobile mode.
 - **Navbar:** custom controls send intent to shared navbar state.
 - **Auth/users:** Better Auth owns credentials and sessions; the project
   `users` table owns roles, status, and public identity.
@@ -31,16 +44,25 @@ Earth In Sound has four main systems:
 ```mermaid
 flowchart TD
   Browser["Browser URL"] --> Layout["app/layout.tsx"]
-  Layout --> Navbar["Navbar"]
-  Layout --> Page["Current route page"]
+  Layout --> SiteShell["front-end/site/SiteShell.tsx"]
+  SiteShell --> ResponsiveProvider["ResponsiveModeProvider"]
+  ResponsiveProvider --> ResponsiveSiteView["ResponsiveSiteView"]
+  ResponsiveSiteView --> DesktopView["DesktopView"]
+  ResponsiveSiteView --> MobileView["MobileView"]
+  DesktopView --> DesktopNavbar["desktop navbar"]
+  MobileView --> MobileNavbar["mobile navbar"]
+  DesktopView --> Page["Current route page"]
+  MobileView --> Page
 
-  Navbar --> NavbarState["components/navbar/state.ts"]
+  ResponsiveProvider --> ResponsiveView["ResponsiveView for lower-level variants"]
+  DesktopNavbar --> NavbarState["front-end/navbar/state.ts"]
+  MobileNavbar --> NavbarState
   NavbarState --> Router["Next router"]
   Router --> Page
 
   AccountUI["AccountAuthPanel"] --> AuthClient["authClient"]
   AuthClient --> AuthApi["app/api/auth/[...all]/route.ts"]
-  AuthApi --> AuthConfig["lib/server/auth/auth.ts"]
+  AuthApi --> AuthConfig["backend/authentication/auth.ts"]
   AuthConfig --> BetterAuthTables["Better Auth tables"]
   AuthConfig --> UserWrites["project user write hooks"]
   UserWrites --> UsersTable["users table"]
@@ -52,7 +74,7 @@ flowchart TD
   OwnerContext --> AuthConfig
   OwnerScript --> UsersTable
 
-  PodcastRoute["podcast route"] --> AcastParser["lib/podcast/acast.ts"]
+  PodcastRoute["podcast route"] --> AcastParser["backend/podcast/acast.ts"]
   AcastParser --> Feed["Acast RSS"]
   AcastParser --> PodcastShow["PodcastShow"]
   PodcastShow --> PodcastUI["podcast feature UI"]
@@ -62,20 +84,47 @@ flowchart TD
 
 - **Trigger:** browser opens `/`, `/account`, `/store`, `/cart`, a Jason Walton
   route, or an I Hate Music route.
-- **Path:** browser URL -> Next.js App Router -> `app/layout.tsx` -> `Navbar`
-  plus the matching `app/(site)/**/page.tsx`.
-- **Data:** URL path and React `children` for the active route.
-- **Owner:** `app/layout.tsx` owns the permanent shell; route `page.tsx` files
-  own page-specific content.
-- **Reason:** the navbar is the permanent interface object. Keeping it in the
-  root layout lets pages change without remounting the site frame.
-- **Read:** `app/layout.tsx`, `app/(site)/**/page.tsx`.
+- **Path:** browser URL -> Next.js App Router -> `app/layout.tsx` ->
+  `SiteShell` -> `ResponsiveModeProvider` -> `ResponsiveSiteView` ->
+  `DesktopView` or `MobileView` -> matching `app/(site)/**/page.tsx`.
+- **Data:** URL path, React `children`, global responsive mode.
+- **Owner:** `app/layout.tsx` owns the document shell; `SiteShell` owns the
+  responsive provider; `ResponsiveSiteView` owns the project-level
+  desktop/mobile choice; `DesktopView` and `MobileView` own their navbar plus
+  page frame; route `page.tsx` files own page-specific content.
+- **Reason:** routing, the permanent navbar, and desktop/mobile mode are shared
+  page boundaries. Keeping them above individual pages avoids scattered
+  breakpoint logic.
+- **Read:** `app/layout.tsx`, `front-end/site/SiteShell.tsx`,
+  `front-end/responsive/ResponsiveModeProvider.tsx`,
+  `front-end/site/ResponsiveSiteView.tsx`,
+  `front-end/site/pages/desktop/DesktopView.tsx`,
+  `front-end/site/pages/mobile/MobileView.tsx`,
+  `app/(site)/**/page.tsx`.
 
-## Flow 2: Navbar Navigation
+## Flow 2: Responsive Mode Selection
+
+- **Trigger:** first browser render or viewport crossing the mobile breakpoint.
+- **Path:** `ResponsiveModeProvider` -> `window.matchMedia(...)` -> context
+  value -> `ResponsiveSiteView` -> `DesktopView` or `MobileView`.
+- **Data:** media query result, `mode`, `isDesktop`, `isMobile`.
+- **Owner:** `ResponsiveModeProvider.tsx` owns the breakpoint and context;
+  `ResponsiveSiteView.tsx` owns the project-level view switch;
+  `ResponsiveView.tsx` remains available for lower-level variants later.
+- **Reason:** desktop/mobile choice should be made once for the whole website,
+  not separately inside every component.
+- **Read:** `front-end/responsive/ResponsiveModeProvider.tsx`,
+  `front-end/site/ResponsiveSiteView.tsx`,
+  `front-end/site/pages/desktop/DesktopView.tsx`,
+  `front-end/site/pages/mobile/MobileView.tsx`,
+  `front-end/responsive/ResponsiveView.tsx`,
+  `front-end/site/SiteShell.tsx`.
+
+## Flow 3: Navbar Navigation
 
 - **Trigger:** user clicks, drags, or keyboard-activates a navbar control.
 - **Path:** navbar cell -> `useNavbarContext()` -> action from
-  `components/navbar/state.ts` -> `setVisualState(...)` -> `router.push(...)`
+  `front-end/navbar/state.ts` -> `setVisualState(...)` -> `router.push(...)`
   -> pathname changes -> `getRouteVisualState(...)` syncs the active control.
 - **Data:** section id, link index, target route, current pathname,
   `activePage`, `eisSliderPos`, `isStorePressed`, `isCartPressed`.
@@ -83,30 +132,33 @@ flowchart TD
   own artwork, events, labels, and state classes.
 - **Reason:** cells should express user intent, not duplicate route rules.
   Example: `EISLogoCell` sends index `1`; `state.ts` translates it to `/about`.
-- **Read:** `components/navbar/state.ts`,
-  `components/navbar/cells/EISLogoCell/EISLogoCell.tsx`,
-  `components/navbar/shared/KnobJackCell/KnobJackCell.tsx`.
+- **Read:** `front-end/navbar/state.ts`,
+  `front-end/navbar/desktop/cells/EISLogoCell/EISLogoCell.tsx`,
+  `front-end/navbar/mobile/MobileNavbar.tsx`,
+  `front-end/navbar/desktop/shared/KnobJackCell/KnobJackCell.tsx`.
 
-## Flow 3: Navbar Scaling
+## Flow 4: Navbar Scaling
 
 - **Trigger:** viewport resize, browser zoom, font load, page restore, or navbar
   cell size change.
 - **Path:** `state.ts` measures full-scale row need -> calculates `scale` ->
-  `Navbar.tsx` measures rendered cells -> writes CSS variables -> navbar/cell
-  CSS paints the result.
+  `DesktopNavbar.tsx` measures rendered cells -> writes CSS variables ->
+  desktop navbar/cell CSS paints the result.
 - **Data:** viewport width, `devicePixelRatio`, full-scale row width, rendered
   row width, `scale`, CSS variables.
-- **Owner:** `state.ts` owns scale; `Navbar.tsx` owns DOM measurement and CSS
-  variable output; CSS modules own artwork layout.
+- **Owner:** `state.ts` owns shared scale values; `DesktopNavbar.tsx` owns
+  desktop DOM measurement and CSS variable output; CSS modules own artwork
+  layout.
 - **Reason:** React can measure real DOM size; CSS is better at painting layered
   artwork. The CSS-variable handoff keeps those roles separate.
-- **Current limitation:** desktop assets shrink for narrow screens; mobile
-  assets exist but no mobile navbar layout uses them yet.
-- **Read:** `components/navbar/state.ts`,
-  `components/navbar/shared/Navbar/Navbar.tsx`,
-  `components/navbar/shared/Navbar/NavbarStyle.module.css`.
+- **Current limitation:** desktop fitting is mature; mobile layout is mounted by
+  global responsive mode but mobile fitting/artwork is still being built.
+- **Read:** `front-end/navbar/state.ts`,
+  `front-end/navbar/desktop/DesktopNavbar.tsx`,
+  `front-end/navbar/desktop/DesktopNavbar.module.css`,
+  `front-end/navbar/mobile/MobileNavbar.tsx`.
 
-## Flow 4: Signup
+## Flow 5: Signup
 
 - **Trigger:** logged-out user submits the account form in sign-up mode.
 - **Path:** `AccountAuthPanel` -> `authClient.signUp.email(...)` ->
@@ -121,12 +173,12 @@ flowchart TD
   and the project profile. Hooks keep the browser from needing a second request.
 - **Current limitation:** email format is validated, but mailbox ownership is
   not verified yet.
-- **Read:** `features/account-auth/AccountAuthPanel.tsx`,
-  `lib/client/auth/auth-client.ts`, `app/api/auth/[...all]/route.ts`,
-  `lib/server/auth/auth.ts`,
-  `lib/server/database/users/write/write-users.ts`.
+- **Read:** `front-end/features/account-auth/AccountAuthPanel.tsx`,
+  `front-end/authentication/auth-client.ts`, `app/api/auth/[...all]/route.ts`,
+  `backend/authentication/auth.ts`,
+  `backend/database/users/write/write-users.ts`.
 
-## Flow 5: Sign-In, Session, And Navbar Login State
+## Flow 6: Sign-In, Session, And Navbar Login State
 
 - **Trigger:** user signs in, signs out, or UI checks the current session.
 - **Path:** `authClient.signIn.email(...)` -> auth API route -> Better Auth
@@ -139,11 +191,11 @@ flowchart TD
   session blocking; navbar state reads `authClient.useSession()` for display.
 - **Reason:** valid credentials are not enough. The project decides whether the
   linked user is active, disabled, deleted, or missing.
-- **Read:** `lib/server/auth/auth.ts`, `components/navbar/state.ts`,
-  `components/navbar/cells/AccountCell/AccountCell.tsx`,
-  `features/account-auth/AccountAuthPanel.tsx`.
+- **Read:** `backend/authentication/auth.ts`, `front-end/navbar/state.ts`,
+  `front-end/navbar/desktop/cells/AccountCell/AccountCell.tsx`,
+  `front-end/features/account-auth/AccountAuthPanel.tsx`.
 
-## Flow 6: Owner Creation
+## Flow 7: Owner Creation
 
 - **Trigger:** `npm run database:setup` runs with `LOCAL_OWNER_EMAIL`,
   `LOCAL_OWNER_USERNAME`, and `LOCAL_OWNER_PASSWORD`.
@@ -158,12 +210,12 @@ flowchart TD
   `createOrLinkOwnerAfterSignup(...)` owns the owner row.
 - **Reason:** owner is too powerful for public signup. Owner creation requires a
   server-only setup context that browser requests cannot enter.
-- **Read:** `database/scripts/run-database-setup.ts`,
-  `database/scripts/users/create-owner/create-owner.ts`,
-  `lib/server/auth/owner-setup-context.ts`,
-  `lib/server/database/users/write/write-users.ts`.
+- **Read:** `backend/database/scripts/run-database-setup.ts`,
+  `backend/database/scripts/users/create-owner/create-owner.ts`,
+  `backend/authentication/owner-setup-context.ts`,
+  `backend/database/users/write/write-users.ts`.
 
-## Flow 7: Project User Lifecycle
+## Flow 8: Project User Lifecycle
 
 - **Trigger:** future trusted server code calls `updateUsername`, `disableUser`,
   `deleteUser`, `reactivateUser`, `transferOwnership`, or `setUserRole`.
@@ -185,19 +237,19 @@ flowchart TD
 - **Current limitation:** Better Auth changes and project table changes are
   separate operations. Future production routes should add recovery for partial
   failure.
-- **Read:** `lib/server/database/users/write/write-users.ts`,
-  `lib/server/database/users/permissions/user-permissions.ts`,
-  `lib/server/auth/auth-user-lifecycle.ts`.
+- **Read:** `backend/database/users/write/write-users.ts`,
+  `backend/database/users/permissions/user-permissions.ts`,
+  `backend/authentication/auth-user-lifecycle.ts`.
 
-## Flow 8: Database Setup And Migrations
+## Flow 9: Database Setup And Migrations
 
 - **Trigger:** `npm run database:setup`.
 - **Path:** `run-database-setup.ts` -> `run-project-migrations.ts` ->
-  `database/migrations/*.sql` -> record in `project_migrations` -> Better Auth
+  `backend/database/migrations/*.sql` -> record in `project_migrations` -> Better Auth
   migration script -> owner creation script.
 - **Data:** `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `BETTER_AUTH_SECRET`,
   `BETTER_AUTH_URL`, optional `LOCAL_OWNER_*`, SQL migration ids.
-- **Owner:** `database/migrations/*.sql` owns project schema;
+- **Owner:** `backend/database/migrations/*.sql` owns project schema;
   `run-project-migrations.ts` owns ordering/history; Better Auth migration
   script owns auth tables.
 - **Reason:** project tables and Better Auth tables both need setup. The hub
@@ -205,12 +257,12 @@ flowchart TD
 - **Current caution:** the existing-users baseline assumes the table matches the
   known project schema. Unknown or manually edited schemas should be checked
   before trusting that baseline.
-- **Read:** `database/scripts/run-database-setup.ts`,
-  `database/scripts/run-project-migrations/run-project-migrations.ts`,
-  `database/migrations/*.sql`,
-  `database/scripts/auth/run-better-auth-migrations/run-better-auth-migrations.ts`.
+- **Read:** `backend/database/scripts/run-database-setup.ts`,
+  `backend/database/scripts/run-project-migrations/run-project-migrations.ts`,
+  `backend/database/migrations/*.sql`,
+  `backend/database/scripts/auth/run-better-auth-migrations/run-better-auth-migrations.ts`.
 
-## Flow 9: Database Tests
+## Flow 10: Database Tests
 
 - **Trigger:** `npm run test:database`.
 - **Path:** `test-database.ts` -> `test-user-database.ts` -> disposable local
@@ -225,11 +277,11 @@ flowchart TD
 - **Current coverage:** owner linking, signup mirroring, disabled session
   blocking, role changes, ownership transfer, single-owner enforcement, email
   reuse after deletion, permanent username reservation after deletion.
-- **Read:** `database/scripts/test-database.ts`,
-  `database/scripts/users/test-users/test-user-database.ts`,
-  `database/scripts/users/test-users/test-user-helpers.ts`.
+- **Read:** `backend/database/scripts/test-database.ts`,
+  `backend/database/scripts/users/test-users/test-user-database.ts`,
+  `backend/database/scripts/users/test-users/test-user-helpers.ts`.
 
-## Flow 10: Podcast Loading
+## Flow 11: Podcast Loading
 
 - **Trigger:** user opens `/i-hate-music/podcast`.
 - **Path:** podcast route -> `loadPodcastShowSafely()` ->
@@ -239,7 +291,7 @@ flowchart TD
 - **Data:** external RSS XML, `PodcastShow`, `PodcastEpisode[]`, audio URL,
   episode URL, cover image URL, manual YouTube URL entered by user, consent for
   background audio handoff.
-- **Owner:** `lib/podcast/acast.ts` owns feed parsing;
+- **Owner:** `backend/podcast/acast.ts` owns feed parsing;
   `IHateMusicPodcastPage.tsx` owns page layout; `EpisodeMediaTabs.tsx` renders
   per-episode controls; `useEpisodeMediaController.ts` owns tab/video state and
   YouTube setup; `useVideoAudioContinuity.ts` owns consent and provider handoff;
@@ -253,15 +305,15 @@ flowchart TD
 - **Current limitation:** the page renders the full RSS archive at once. For
   performance work, start with pagination or lazy media mounting.
 - **Read:** `app/(site)/i-hate-music/podcast/page.tsx`,
-  `lib/podcast/acast.ts`,
-  `features/ihate-music-podcast/IHateMusicPodcastPage.tsx`,
-  `features/ihate-music-podcast/EpisodeMediaTabs.tsx`,
-  `features/ihate-music-podcast/useEpisodeMediaController.ts`,
-  `features/ihate-music-podcast/useVideoAudioContinuity.ts`,
-  `features/ihate-music-podcast/youtubePlayer.ts`,
-  `features/ihate-music-podcast/mediaTiming.ts`.
+  `backend/podcast/acast.ts`,
+  `front-end/features/ihate-music-podcast/IHateMusicPodcastPage.tsx`,
+  `front-end/features/ihate-music-podcast/EpisodeMediaTabs.tsx`,
+  `front-end/features/ihate-music-podcast/useEpisodeMediaController.ts`,
+  `front-end/features/ihate-music-podcast/useVideoAudioContinuity.ts`,
+  `front-end/features/ihate-music-podcast/youtubePlayer.ts`,
+  `front-end/features/ihate-music-podcast/mediaTiming.ts`.
 
-## Flow 11: Navbar Assets
+## Flow 12: Navbar Assets
 
 - **Trigger:** navbar cell renders, hovers, focuses, presses, or becomes active.
 - **Path:** component state/class -> CSS module -> `/public/NavbarAssets/...`
@@ -271,37 +323,60 @@ flowchart TD
   `public/NavbarAssets` owns static files.
 - **Reason:** artwork changes should mostly stay in CSS/assets. TypeScript
   should decide behavior, not hardcode visual layers.
-- **Current limitation:** desktop assets are wired; `MobileAssets` is not used
-  by a dedicated mobile navbar layout yet.
-- **Read:** `components/navbar/cells/*.tsx`,
-  `components/navbar/cells/*.module.css`,
-  `components/navbar/shared/KnobJackCell/*`, `public/NavbarAssets/`.
+- **Current limitation:** desktop assets are wired; the mobile navbar is mounted
+  at mobile widths but still uses plain structure instead of the final mobile
+  artwork.
+- **Read:** `front-end/navbar/desktop/cells/*.tsx`,
+  `front-end/navbar/desktop/cells/*.module.css`,
+  `front-end/navbar/desktop/shared/KnobJackCell/*`,
+  `front-end/navbar/mobile/MobileNavbar.tsx`,
+  `front-end/navbar/mobile/MobileNavbar.module.css`,
+  `public/NavbarAssets/`.
 
 ## File Ownership Reference
 
-- `app/layout.tsx`: permanent shell.
-- `components/navbar/state.ts`: navbar behavior and route state.
-- `components/navbar/shared/Navbar/Navbar.tsx`: measurement and CSS variables.
-- `components/navbar/cells/*`: individual navbar controls.
-- `features/account-auth/AccountAuthPanel.tsx`: account form UI.
+- `app/layout.tsx`: document shell and App Router layout boundary.
+- `front-end/site/SiteShell.tsx`: permanent site shell and responsive provider
+  placement.
+- `front-end/site/ResponsiveSiteView.tsx`: chooses the active project view.
+- `front-end/site/pages/desktop/DesktopView.tsx`: desktop navbar plus desktop
+  page frame.
+- `front-end/site/pages/mobile/MobileView.tsx`: mobile navbar plus mobile page
+  frame.
+- `front-end/responsive/ResponsiveModeProvider.tsx`: global desktop/mobile
+  breakpoint state.
+- `front-end/responsive/ResponsiveView.tsx`: lower-level desktop/mobile helper
+  when a nested split is needed.
+- `front-end/navbar/Navbar.tsx`: navbar state provider and requested navbar
+  variant renderer.
+- `front-end/navbar/state.ts`: navbar behavior and route state.
+- `front-end/navbar/desktop/DesktopNavbar.tsx`: desktop measurement and CSS
+  variables.
+- `front-end/navbar/mobile/MobileNavbar.tsx`: mobile navbar structure.
+- `front-end/navbar/desktop/cells/*`: individual desktop navbar controls.
+- `front-end/features/account-auth/AccountAuthPanel.tsx`: account form UI.
 - `app/api/auth/[...all]/route.ts`: Better Auth HTTP entry.
-- `lib/server/auth/auth.ts`: auth config, signup hooks, session guard.
-- `lib/server/database/users/*`: project user validation, reads, permissions,
+- `backend/authentication/auth.ts`: auth config, signup hooks, session guard.
+- `backend/database/users/*`: project user validation, reads, permissions,
   writes.
-- `database/migrations/*`: project schema.
-- `database/scripts/*`: setup and database tests.
-- `lib/podcast/acast.ts`: Acast RSS boundary.
-- `features/ihate-music-podcast/*`: podcast page and media UI.
+- `backend/database/migrations/*`: project schema.
+- `backend/database/scripts/*`: setup and database tests.
+- `backend/podcast/acast.ts`: Acast RSS boundary.
+- `backend/mailing/*`: future transactional email/mailing boundary.
+- `front-end/features/ihate-music-podcast/*`: podcast page and media UI.
 
 ## Change Rules
 
 - **Navigation:** update navbar route maps and the affected cell.
+- **Responsive variants:** put broad project-frame differences in
+  `DesktopView` or `MobileView`; use `ResponsiveView` only for lower-level
+  splits when structure differs; use CSS when only styling differs.
 - **Account rules:** decide first whether the rule belongs to Better Auth or
   project users.
 - **Owner behavior:** keep owner creation server-only and keep database
   single-owner enforcement.
 - **Schema:** add a migration and a database test.
-- **Podcast data:** parse external feed data in `lib/podcast/acast.ts`, not in
+- **Podcast data:** parse external feed data in `backend/podcast/acast.ts`, not in
   React UI.
 - **Artwork:** prefer CSS/assets unless behavior changes.
 
@@ -314,8 +389,9 @@ flowchart TD
   deleted username stays reserved; project users never store passwords.
 - **Database:** schema changes are migrations; single-owner enforcement remains
   in the database; new behavior has tests.
-- **Frontend:** navbar visual state follows the URL; custom controls stay
-  keyboard-accessible; narrow viewports are checked manually.
+- **Frontend:** navbar visual state follows the URL; responsive mode is shared
+  through `ResponsiveModeProvider`; custom controls stay keyboard-accessible;
+  narrow viewports are checked manually.
 - **Commands:** `npm run type-check`, `npm run lint -- --max-warnings=0`,
   `npm run test:database`.
 
@@ -323,22 +399,29 @@ flowchart TD
 
 ```text
 1. app/layout.tsx
-2. components/navbar/state.ts
-3. components/navbar/shared/Navbar/Navbar.tsx
-4. one navbar cell
-5. features/account-auth/AccountAuthPanel.tsx
-6. app/api/auth/[...all]/route.ts
-7. lib/server/auth/auth.ts
-8. lib/server/database/users/write/write-users.ts
-9. database/scripts/run-database-setup.ts
-10. database/scripts/users/create-owner/create-owner.ts
-11. database/scripts/users/test-users/test-user-database.ts
-12. app/(site)/i-hate-music/podcast/page.tsx
-13. lib/podcast/acast.ts
-14. features/ihate-music-podcast/IHateMusicPodcastPage.tsx
-15. features/ihate-music-podcast/EpisodeMediaTabs.tsx
-16. features/ihate-music-podcast/useEpisodeMediaController.ts
-17. features/ihate-music-podcast/useVideoAudioContinuity.ts
+2. front-end/site/SiteShell.tsx
+3. front-end/responsive/ResponsiveModeProvider.tsx
+4. front-end/site/ResponsiveSiteView.tsx
+5. front-end/site/pages/desktop/DesktopView.tsx
+6. front-end/site/pages/mobile/MobileView.tsx
+7. front-end/navbar/Navbar.tsx
+8. front-end/navbar/state.ts
+9. front-end/navbar/desktop/DesktopNavbar.tsx
+10. front-end/navbar/mobile/MobileNavbar.tsx
+11. one navbar cell
+12. front-end/features/account-auth/AccountAuthPanel.tsx
+13. app/api/auth/[...all]/route.ts
+14. backend/authentication/auth.ts
+15. backend/database/users/write/write-users.ts
+16. backend/database/scripts/run-database-setup.ts
+17. backend/database/scripts/users/create-owner/create-owner.ts
+18. backend/database/scripts/users/test-users/test-user-database.ts
+19. app/(site)/i-hate-music/podcast/page.tsx
+20. backend/podcast/acast.ts
+21. front-end/features/ihate-music-podcast/IHateMusicPodcastPage.tsx
+22. front-end/features/ihate-music-podcast/EpisodeMediaTabs.tsx
+23. front-end/features/ihate-music-podcast/useEpisodeMediaController.ts
+24. front-end/features/ihate-music-podcast/useVideoAudioContinuity.ts
 ```
 
 ## Glossary
@@ -352,12 +435,15 @@ flowchart TD
 - **Owner setup context:** server-only trust marker for first-owner setup.
 - **Latched control:** navbar utility control that stays pressed for its route.
 - **RSS boundary:** server parser that converts external XML to project data.
+- **Responsive mode:** site-wide desktop/mobile state derived from one media
+  query.
 
 ## Short Version
 
-The layout mounts the permanent navbar and active page. Navbar cells send intent
-to shared navbar state, which translates that intent into routes. Better Auth
-owns authentication; the project users table owns roles, status, and identity
-rules. Setup prepares both database systems and creates the owner through a
-server-only path. The podcast route fetches RSS on the server and gives React
-clean project data.
+The layout mounts `SiteShell`, which provides one desktop/mobile mode for the
+whole website. `ResponsiveSiteView` chooses `DesktopView` or `MobileView`; each
+view owns its navbar and page frame. Navbar variants reuse shared navbar state,
+which translates user intent into routes. Better Auth owns authentication; the
+project users table owns roles, status, and identity rules. Setup prepares both
+database systems and creates the owner through a server-only path. The podcast
+route fetches RSS on the server and gives React clean project data.

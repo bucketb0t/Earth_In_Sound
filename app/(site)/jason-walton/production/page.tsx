@@ -1,4 +1,4 @@
-import SectionPlaceholderPage from "@/features/section-placeholder/SectionPlaceholderPage";
+import SectionPlaceholderPage from "@/front-end/features/section-placeholder/SectionPlaceholderPage";
 
 /**
  * Browser metadata for the Jason W. Walton Production route.

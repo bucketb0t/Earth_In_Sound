@@ -1,5 +1,5 @@
-import IHateMusicPodcastPage from "@/features/ihate-music-podcast/IHateMusicPodcastPage";
-import { getIHateMusicShow, type PodcastShow } from "@/lib/podcast/acast";
+import IHateMusicPodcastPage from "@/front-end/features/ihate-music-podcast/IHateMusicPodcastPage";
+import { getIHateMusicShow, type PodcastShow } from "@/backend/podcast/acast";
 
 /**
  * Next route cache setting.
@@ -27,9 +27,12 @@ export default async function PodcastPage() {
 async function loadPodcastShowSafely(): Promise<PodcastShow | null> {
   try {
     return await getIHateMusicShow();
-  } catch (error) {
-    /* Route fallback keeps the page renderable when Acast is unavailable. */
-    console.error(error);
+  } catch {
+    /*
+     * Route fallback keeps the page renderable when Acast is unavailable.
+     * Do not log here: build environments without outbound RSS access would
+     * print a scary stack trace even though the UI fallback is expected.
+     */
     return null;
   }
 }

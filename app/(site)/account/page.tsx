@@ -1,4 +1,4 @@
-import AccountAuthPanel from "@/features/account-auth/AccountAuthPanel";
+import AccountAuthPanel from "@/front-end/features/account-auth/AccountAuthPanel";
 
 /**
  * Browser metadata for the Account route.
