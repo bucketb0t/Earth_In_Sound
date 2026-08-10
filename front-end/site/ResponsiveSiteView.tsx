@@ -1,27 +1,27 @@
-"use client";
-
 import type { ReactNode } from "react";
 
-import { useResponsiveMode } from "@/front-end/responsive/ResponsiveModeProvider";
-import DesktopView from "./pages/desktop/DesktopView";
-import MobileView from "./pages/mobile/MobileView";
+import Navbar from "@/front-end/navbar/Navbar";
+
+import styles from "./ResponsiveSiteView.module.css";
 
 interface ResponsiveSiteViewProps {
   children: ReactNode;
 }
 
 /**
- * Global desktop/mobile project view switch.
- * This is the main visual boundary: each view owns its navbar and page frame.
+ * Stable site frame shared by every viewport.
+ *
+ * Navbar and route content stay mounted while their CSS adapts to available
+ * space. This prevents responsive changes from resetting focus, forms, cart
+ * controls, or stateful podcast media.
  */
 export default function ResponsiveSiteView({
   children,
 }: ResponsiveSiteViewProps) {
-  const { isMobile } = useResponsiveMode();
-
-  return isMobile ? (
-    <MobileView>{children}</MobileView>
-  ) : (
-    <DesktopView>{children}</DesktopView>
+  return (
+    <div className={styles.siteView}>
+      <Navbar />
+      <div className={styles.siteContent}>{children}</div>
+    </div>
   );
 }

@@ -16,10 +16,21 @@ import {
   ARTWORK_CELL_SCALE_BASE_HEIGHT,
   BASE_LINE_HEIGHT,
   DESIGN_HEIGHT,
+  NAVBAR_COMPACT_MAX_WIDTH_PX,
   SECTION_LINKS,
   type KnobSectionId,
   type SectionId,
 } from "./config";
+import {
+  getNavbarCellElements,
+  getInitialNavbarReferenceWidth,
+  getNavbarRowElements,
+  measureRenderedNavbarContentWidth,
+  navbarRowsAreStacked,
+  readNavbarWindowMetrics,
+  readNavbarLayoutHeightFactor,
+  resolveNavbarReferenceWidth,
+} from "./layoutGeometry";
 
 // Initial cart counter value used by the navbar state.
 const INITIAL_CART_COUNT = 1;
@@ -106,6 +117,7 @@ export interface NavbarState {
   contentRef: RefObject<HTMLDivElement | null>;
   scale: number;
   isScaleReady: boolean;
+  isCompactLayout: boolean;
   isCartPressed: boolean;
   eisNavTo: (linkIndex: number) => void;
   knobNavTo: (sectionId: KnobSectionId, linkIndex: number) => void;
@@ -155,53 +167,6 @@ function clampSectionLinkIndex(
   return Math.max(0, Math.min(maxLinkIndex, Math.round(requestedLinkIndex)));
 }
 
-function getElementOuterWidth(element: Element): number {
-  /*
-   * Row measurement needs margins because cell spacing is visual width too.
-   */
-  if (!(element instanceof HTMLElement)) {
-    return element.getBoundingClientRect().width;
-  }
-
-  const computedStyle = window.getComputedStyle(element);
-  const marginLeft = parseFloat(computedStyle.marginLeft) || 0;
-  const marginRight = parseFloat(computedStyle.marginRight) || 0;
-
-  return element.getBoundingClientRect().width + marginLeft + marginRight;
-}
-
-function getNavbarContentWidth(contentElement: HTMLDivElement): number {
-  /*
-   * Prefer children sum because scrollWidth differs across browsers with zoom.
-   */
-  const childWidth = Array.from(contentElement.children).reduce(
-    (totalWidth, childElement) =>
-      totalWidth + getElementOuterWidth(childElement),
-    0,
-  );
-
-  /*
-   * Cell-based row width measurement.
-   */
-  if (childWidth > 0) return childWidth;
-
-  return Math.max(
-    contentElement.getBoundingClientRect().width,
-    contentElement.scrollWidth,
-  );
-}
-
-function getLayoutViewportWidth(fallbackElement: HTMLElement): number {
-  /*
-   * Layout viewport width used for navbar fitting.
-   */
-  return (
-    document.documentElement.clientWidth ||
-    window.innerWidth ||
-    fallbackElement.getBoundingClientRect().width
-  );
-}
-
 function getRouteVisualState(
   pathname: string,
   cartCount: number,
@@ -231,10 +196,12 @@ export function useNavbar(): NavbarState {
   const session = authClient.useSession();
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const designContentWidthRef = useRef(0);
+  const designContentWidthsRef = useRef({ compact: 0, wide: 0 });
+  const layoutReferenceWidthRef = useRef(0);
 
   const [scale, setScale] = useState(1);
   const [isScaleReady, setIsScaleReady] = useState(false);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [cartCount] = useState(INITIAL_CART_COUNT);
   const [visualState, setVisualState] = useState<NavbarVisualState>(() =>
     getRouteVisualState(pathname, INITIAL_CART_COUNT),
@@ -254,6 +221,57 @@ export function useNavbar(): NavbarState {
   const accountDisplayName = session.data?.user.name ?? "Sign up";
 
   /*
+   * The browser-reported viewport width selects the arrangement at the exact
+   * 1024/1025 boundary. The scrollbar-free layout width fits that arrangement
+   * inside the page. Real resizing updates both references; page zoom keeps
+   * their previous values.
+   */
+  useLayoutEffect(() => {
+    let previousMetrics = readNavbarWindowMetrics();
+    let responsiveReferenceWidth =
+      getInitialNavbarReferenceWidth(previousMetrics);
+    let layoutReferenceWidth = getInitialNavbarReferenceWidth(
+      previousMetrics,
+      "layoutViewportWidth",
+    );
+
+    const publishLayoutReference = () => {
+      layoutReferenceWidthRef.current = layoutReferenceWidth;
+      setIsCompactLayout(
+        responsiveReferenceWidth <= NAVBAR_COMPACT_MAX_WIDTH_PX,
+      );
+    };
+
+    const syncLayoutReference = () => {
+      const currentMetrics = readNavbarWindowMetrics();
+      responsiveReferenceWidth = resolveNavbarReferenceWidth(
+        previousMetrics,
+        currentMetrics,
+        responsiveReferenceWidth,
+      );
+      layoutReferenceWidth = resolveNavbarReferenceWidth(
+        previousMetrics,
+        currentMetrics,
+        layoutReferenceWidth,
+        "layoutViewportWidth",
+      );
+      previousMetrics = currentMetrics;
+      publishLayoutReference();
+    };
+
+    publishLayoutReference();
+    window.addEventListener("resize", syncLayoutReference);
+    window.addEventListener("orientationchange", syncLayoutReference);
+    window.addEventListener("pageshow", syncLayoutReference);
+
+    return () => {
+      window.removeEventListener("resize", syncLayoutReference);
+      window.removeEventListener("orientationchange", syncLayoutReference);
+      window.removeEventListener("pageshow", syncLayoutReference);
+    };
+  }, []);
+
+  /*
    * Navbar scale measurement for real window resizing.
    */
   useLayoutEffect(() => {
@@ -265,6 +283,8 @@ export function useNavbar(): NavbarState {
     }
 
     const faceplateHeight = DESIGN_HEIGHT - BASE_LINE_HEIGHT;
+    const layoutHeightFactor = readNavbarLayoutHeightFactor(contentElement);
+    const layoutFaceplateHeight = faceplateHeight * layoutHeightFactor;
     const fullArtworkScale = faceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT;
 
     /*
@@ -272,26 +292,30 @@ export function useNavbar(): NavbarState {
      * These values establish the unshrunk navbar first. The real scale is then
      * computed from how much room the cell row actually needs.
      */
-    shellElement.style.setProperty("--navbar-shell-height", `${DESIGN_HEIGHT}px`);
+    shellElement.style.setProperty(
+      "--navbar-shell-height",
+      `${layoutFaceplateHeight + BASE_LINE_HEIGHT}px`,
+    );
     shellElement.style.setProperty(
       "--navbar-line-height",
       `${BASE_LINE_HEIGHT}px`,
     );
 
-    rootElement.style.setProperty("--navbar-root-height", `${faceplateHeight}px`);
     rootElement.style.setProperty(
-      "--artwork-cell-scale",
+      "--navbar-root-height",
+      `${layoutFaceplateHeight}px`,
+    );
+    rootElement.style.setProperty(
+      "--navbar-base-artwork-scale",
       String(fullArtworkScale),
     );
 
-    const baselineDevicePixelRatio = window.devicePixelRatio || 1;
-
     const getCurrentArtworkScale = (): number => {
       const currentArtworkScale = parseFloat(
-        rootElement.style.getPropertyValue("--artwork-cell-scale") ||
+        rootElement.style.getPropertyValue("--navbar-base-artwork-scale") ||
           window
             .getComputedStyle(rootElement)
-            .getPropertyValue("--artwork-cell-scale"),
+            .getPropertyValue("--navbar-base-artwork-scale"),
       );
 
       return Number.isFinite(currentArtworkScale) && currentArtworkScale > 0
@@ -302,46 +326,49 @@ export function useNavbar(): NavbarState {
     /*
      * Normalized full-scale row width measurement.
      */
-    const syncFullScaleNavbarRowWidth = (): number => {
-      const renderedNavbarRowWidth = getNavbarContentWidth(contentElement);
+    const syncFullScaleNavbarRowWidth = (rowsAreStacked: boolean): number => {
+      const renderedNavbarRowWidth =
+        measureRenderedNavbarContentWidth(contentElement);
       const currentArtworkScale = getCurrentArtworkScale();
       const normalizedNavbarRowWidth =
         renderedNavbarRowWidth * (fullArtworkScale / currentArtworkScale);
+      const layoutKey = rowsAreStacked ? "compact" : "wide";
 
       /*
-       * Store the last known full-scale width. This avoids losing the original
-       * design width after the row has already been scaled down.
+       * Wide and compact arrangements have different intrinsic widths. Keeping
+       * separate baselines prevents a breakpoint transition from scaling the
+       * wide row with the compact row's measurement, or vice versa.
        */
       if (normalizedNavbarRowWidth > 0) {
-        designContentWidthRef.current = normalizedNavbarRowWidth;
+        designContentWidthsRef.current[layoutKey] = normalizedNavbarRowWidth;
       }
 
-      return designContentWidthRef.current;
-    };
-
-    const getResizeOnlyViewportWidth = (): number => {
-      const currentDevicePixelRatio =
-        window.devicePixelRatio || baselineDevicePixelRatio;
-      const cssViewportWidth = getLayoutViewportWidth(shellElement);
-
-      /*
-       * Resize-only viewport width used by the scale calculation.
-       * Browser zoom changes CSS pixels and devicePixelRatio together. This
-       * normalization lets real window resize shrink the navbar, while browser
-       * zoom is allowed to overflow naturally.
-       */
-      return (
-        cssViewportWidth *
-        (currentDevicePixelRatio / baselineDevicePixelRatio)
-      );
+      return designContentWidthsRef.current[layoutKey];
     };
 
     const syncScaleFromCellEdges = () => {
-      const resizeOnlyViewportWidth = getResizeOnlyViewportWidth();
-      const fullScaleNavbarRowWidth = syncFullScaleNavbarRowWidth();
+      /*
+       * The shared reference width changes for a real resize and remains stable
+       * for page zoom. This keeps the selected layout and fitting scale stable
+       * across zoom, including when the page is refreshed while zoomed.
+       */
+      const rowsAreStacked = navbarRowsAreStacked(contentElement);
+      const zoomIndependentViewportWidth =
+        layoutReferenceWidthRef.current ||
+        getInitialNavbarReferenceWidth(
+          readNavbarWindowMetrics(shellElement),
+        );
+      const fullScaleNavbarRowWidth =
+        syncFullScaleNavbarRowWidth(rowsAreStacked);
+      const maximumScale = rowsAreStacked
+        ? Number.POSITIVE_INFINITY
+        : 1;
       const nextScale =
         fullScaleNavbarRowWidth > 0
-          ? Math.min(1, resizeOnlyViewportWidth / fullScaleNavbarRowWidth)
+          ? Math.min(
+              maximumScale,
+              zoomIndependentViewportWidth / fullScaleNavbarRowWidth,
+            )
           : 1;
 
       /*
@@ -389,7 +416,10 @@ export function useNavbar(): NavbarState {
 
     shellResizeObserver.observe(shellElement);
     contentResizeObserver.observe(contentElement);
-    Array.from(contentElement.children).forEach((cellElement) => {
+    getNavbarRowElements(contentElement).forEach((rowElement) => {
+      contentResizeObserver.observe(rowElement);
+    });
+    getNavbarCellElements(contentElement).forEach((cellElement) => {
       contentResizeObserver.observe(cellElement);
     });
 
@@ -416,7 +446,7 @@ export function useNavbar(): NavbarState {
         syncAfterVisibilityRestore,
       );
     };
-  }, []);
+  }, [isCompactLayout]);
 
   /*
    * Utility-cell action reset.
@@ -575,6 +605,7 @@ export function useNavbar(): NavbarState {
     contentRef,
     scale,
     isScaleReady,
+    isCompactLayout,
     isStorePressed,
     eisNavTo,
     knobNavTo,

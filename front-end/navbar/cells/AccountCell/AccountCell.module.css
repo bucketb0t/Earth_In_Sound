@@ -1,0 +1,322 @@
+/*
+ * Account cell styles.
+ * SVG assets live in CSS; TSX only chooses state classes and labels.
+ */
+
+@font-face {
+  font-family: "PixeargUsername";
+  src: url("/NavbarAssets/DesktopAssets/Fonts/PIXEARG_Username.ttf")
+    format("truetype");
+  font-display: swap;
+}
+
+.accountCell {
+  --cell-plaque-aspect: 165 / 141;
+  --account-log-panel-width: calc(95px * var(--artwork-cell-scale));
+  --account-row-gap: calc(2px * var(--artwork-cell-scale));
+  --account-button-size: calc(24px * var(--artwork-cell-scale));
+
+  flex: 0 0 auto;
+  min-width: 0;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountPlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
+}
+
+.loginRow {
+  /*
+   * Login switch and status panel grid.
+  */
+  display: grid;
+  grid-template-columns: var(--account-button-size) var(
+      --account-log-panel-width
+    );
+  align-items: center;
+  gap: var(--account-row-gap);
+  width: min(
+    100%,
+    calc(
+      var(--account-button-size) + var(--account-row-gap) +
+        var(--account-log-panel-width)
+    )
+  );
+  height: var(--account-button-size);
+
+  margin-left: calc(2px * var(--artwork-cell-scale));
+}
+
+.accountToggleButton {
+  /* Login switch hit target. */
+  appearance: none;
+  display: block;
+  width: var(--account-button-size);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-position: right center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+  align-self: center;
+}
+
+.accountToggleButtonOff {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountButtonOffNavbar.svg");
+}
+
+.accountToggleButtonOn {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountButtonOnNavbar.svg");
+}
+
+.accountToggleButton:focus-visible,
+.loginStatusPanel:focus-visible,
+.accountScreenButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: calc(2px * var(--artwork-cell-scale));
+}
+
+.loginStatusPanel {
+  /*
+   * Login status plate and text button.
+   */
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: calc(7px * var(--artwork-cell-scale));
+  width: var(--account-log-panel-width);
+  height: var(--account-button-size);
+  padding-inline: calc(8px * var(--artwork-cell-scale))
+    calc(8px * var(--artwork-cell-scale));
+  border: 0;
+  min-width: 0;
+  background-color: transparent;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLogNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  overflow: hidden;
+}
+
+.accountLed {
+  display: block;
+  flex: 0 0 auto;
+  width: calc(10px * var(--artwork-cell-scale));
+  aspect-ratio: 1;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.accountLedOff {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLightOffNavbar.svg");
+}
+
+.accountLedOn {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountLightOnNavbar.svg");
+}
+
+.loginText {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: #ffffff;
+  font-size: calc(10px * var(--artwork-cell-scale));
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.accountScreenButton {
+  /* Account screen button. */
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, calc(112px * var(--artwork-cell-scale)));
+  min-height: calc(30px * var(--artwork-cell-scale));
+  margin-top: calc(7px * var(--artwork-cell-scale));
+  padding: 0 calc(5px * var(--artwork-cell-scale));
+  border: 0;
+  background-color: transparent;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountScreenOffNavbar.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  color: #8ead8e;
+  cursor: pointer;
+  font: inherit;
+}
+
+.accountScreenButtonOn {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/AccountScreenOnNavbar.svg");
+  color: #000000;
+}
+
+.accountScreenText {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  max-width: 100%;
+  font-family: "PixeargUsername";
+  font-size: calc(10px * var(--artwork-cell-scale));
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/*
+ * Logged-out screen interference effect.
+ */
+.accountScreenButton:hover .accountScreenTextGlitch {
+  text-shadow:
+    calc(0.5px * var(--artwork-cell-scale)) 0 #314831,
+    calc(-0.5px * var(--artwork-cell-scale)) 0 #c6dac6;
+  animation: accountSignalDropout 1.35s steps(1, end) both;
+}
+
+.accountScreenTextGlitch::before,
+.accountScreenTextGlitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.accountScreenButton:hover .accountScreenTextGlitch::before {
+  clip-path: inset(16% 0 58% 0);
+  opacity: 0.4;
+  transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  animation: accountSignalUpperBand 1s steps(1, end) both;
+}
+
+.accountScreenButton:hover .accountScreenTextGlitch::after {
+  clip-path: inset(54% 0 18% 0);
+  opacity: 0.32;
+  transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  animation: accountSignalLowerBand 1.18s steps(1, end) both;
+}
+
+@keyframes accountSignalDropout {
+  0%,
+  8%,
+  28%,
+  52%,
+  70%,
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+    text-shadow:
+      calc(0.5px * var(--artwork-cell-scale)) 0 #314831,
+      calc(-0.5px * var(--artwork-cell-scale)) 0 #c6dac6;
+  }
+
+  9% {
+    opacity: 0.78;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  29% {
+    opacity: 0.88;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  53% {
+    opacity: 0.68;
+    transform: translateY(calc(1px * var(--artwork-cell-scale)));
+    text-shadow: none;
+  }
+
+  71% {
+    opacity: 0.92;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+}
+
+@keyframes accountSignalUpperBand {
+  0%,
+  18%,
+  48%,
+  76%,
+  100% {
+    clip-path: inset(16% 0 58% 0);
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  19% {
+    clip-path: inset(8% 0 68% 0);
+    opacity: 0.42;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  49% {
+    clip-path: inset(30% 0 48% 0);
+    opacity: 0.34;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  77% {
+    clip-path: inset(4% 0 74% 0);
+    opacity: 0.38;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+}
+
+@keyframes accountSignalLowerBand {
+  0%,
+  22%,
+  44%,
+  82%,
+  100% {
+    clip-path: inset(54% 0 18% 0);
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  23% {
+    clip-path: inset(58% 0 20% 0);
+    opacity: 0.38;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+
+  45% {
+    clip-path: inset(42% 0 32% 0);
+    opacity: 0.3;
+    transform: translateX(calc(1px * var(--artwork-cell-scale)));
+  }
+
+  83% {
+    clip-path: inset(70% 0 8% 0);
+    opacity: 0.36;
+    transform: translateX(calc(-1px * var(--artwork-cell-scale)));
+  }
+}
+
+:global([data-navbar-layout="compact"]) .accountCell {
+  --cell-plaque-aspect: 380.61 / 137.31;
+  --account-log-panel-width: calc(121px * var(--artwork-cell-scale));
+
+  background-image: url("/NavbarAssets/MobileAssets/SVG/AccountPlaqueMobileNavbar.svg");
+}
+
+:global([data-navbar-layout="compact"]) .loginStatusPanel {
+  background-image: url("/NavbarAssets/MobileAssets/SVG/AccountLogNavbar.svg");
+}
+
+:global([data-navbar-layout="compact"]) .accountScreenButton {
+  width: min(100%, calc(282.82px * var(--artwork-cell-scale)));
+  background-image: url("/NavbarAssets/MobileAssets/SVG/AccountScreenMobileNavbar.svg");
+}
+
+:global([data-navbar-layout="compact"]) .accountScreenButtonOn {
+  background-image: url("/NavbarAssets/MobileAssets/SVG/AccountScreenOnMobileNavbar.svg");
+}

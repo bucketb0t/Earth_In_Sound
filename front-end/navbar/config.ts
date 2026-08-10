@@ -40,6 +40,9 @@ export const BASE_LINE_HEIGHT = 8;
 // Reference faceplate height used by artwork scaling.
 export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
 
+/* Largest zoom-independent layout width that uses the compact arrangement. */
+export const NAVBAR_COMPACT_MAX_WIDTH_PX = 1024;
+
 /*
  * Shared knob/jack tuning.
  * These numbers drive the physical placement of the visible knob art, LEDs,

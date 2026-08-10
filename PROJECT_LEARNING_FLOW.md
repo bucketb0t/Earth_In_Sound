@@ -34,7 +34,7 @@ The project logic is split by runtime boundary:
 Earth In Sound has five main systems:
 
 - **Routes:** Next.js renders the active page under `app/layout.tsx`.
-- **Responsive shell:** one site-wide breakpoint decides desktop or mobile mode.
+- **Responsive shell:** one permanent React tree adapts through component CSS.
 - **Navbar:** custom controls send intent to shared navbar state.
 - **Auth/users:** Better Auth owns credentials and sessions; the project
   `users` table owns roles, status, and public identity.
@@ -45,18 +45,11 @@ Earth In Sound has five main systems:
 flowchart TD
   Browser["Browser URL"] --> Layout["app/layout.tsx"]
   Layout --> SiteShell["front-end/site/SiteShell.tsx"]
-  SiteShell --> ResponsiveProvider["ResponsiveModeProvider"]
-  ResponsiveProvider --> ResponsiveSiteView["ResponsiveSiteView"]
-  ResponsiveSiteView --> DesktopView["DesktopView"]
-  ResponsiveSiteView --> MobileView["MobileView"]
-  DesktopView --> DesktopNavbar["desktop navbar"]
-  MobileView --> MobileNavbar["mobile navbar"]
-  DesktopView --> Page["Current route page"]
-  MobileView --> Page
-
-  ResponsiveProvider --> ResponsiveView["ResponsiveView for lower-level variants"]
-  DesktopNavbar --> NavbarState["front-end/navbar/state.ts"]
-  MobileNavbar --> NavbarState
+  SiteShell --> ResponsiveSiteView["Stable ResponsiveSiteView"]
+  ResponsiveSiteView --> Navbar["Persistent Navbar"]
+  ResponsiveSiteView --> Page["Current route page"]
+  Navbar --> NavbarState["front-end/navbar/state.ts"]
+  Navbar --> ResponsiveCss["Wide or compact CSS arrangement"]
   NavbarState --> Router["Next router"]
   Router --> Page
 
@@ -85,40 +78,42 @@ flowchart TD
 - **Trigger:** browser opens `/`, `/account`, `/store`, `/cart`, a Jason Walton
   route, or an I Hate Music route.
 - **Path:** browser URL -> Next.js App Router -> `app/layout.tsx` ->
-  `SiteShell` -> `ResponsiveModeProvider` -> `ResponsiveSiteView` ->
-  `DesktopView` or `MobileView` -> matching `app/(site)/**/page.tsx`.
-- **Data:** URL path, React `children`, global responsive mode.
+  `SiteShell` -> stable `ResponsiveSiteView` -> persistent `Navbar` plus the
+  matching `app/(site)/**/page.tsx`.
+- **Data:** URL path and React `children`.
 - **Owner:** `app/layout.tsx` owns the document shell; `SiteShell` owns the
-  responsive provider; `ResponsiveSiteView` owns the project-level
-  desktop/mobile choice; `DesktopView` and `MobileView` own their navbar plus
-  page frame; route `page.tsx` files own page-specific content.
-- **Reason:** routing, the permanent navbar, and desktop/mobile mode are shared
-  page boundaries. Keeping them above individual pages avoids scattered
-  breakpoint logic.
+  permanent application boundary; `ResponsiveSiteView` owns the navbar/page
+  frame; route `page.tsx` files own page-specific content.
+- **Reason:** responsive presentation must not replace the route subtree.
+  Keeping one frame mounted preserves focus, forms, navbar state, and podcast
+  playback while CSS adapts the layout.
 - **Read:** `app/layout.tsx`, `front-end/site/SiteShell.tsx`,
-  `front-end/responsive/ResponsiveModeProvider.tsx`,
   `front-end/site/ResponsiveSiteView.tsx`,
-  `front-end/site/pages/desktop/DesktopView.tsx`,
-  `front-end/site/pages/mobile/MobileView.tsx`,
   `app/(site)/**/page.tsx`.
 
-## Flow 2: Responsive Mode Selection
+## Flow 2: Responsive Presentation
 
-- **Trigger:** first browser render or viewport crossing the mobile breakpoint.
-- **Path:** `ResponsiveModeProvider` -> `window.matchMedia(...)` -> context
-  value -> `ResponsiveSiteView` -> `DesktopView` or `MobileView`.
-- **Data:** media query result, `mode`, `isDesktop`, `isMobile`.
-- **Owner:** `ResponsiveModeProvider.tsx` owns the breakpoint and context;
-  `ResponsiveSiteView.tsx` owns the project-level view switch;
-  `ResponsiveView.tsx` remains available for lower-level variants later.
-- **Reason:** desktop/mobile choice should be made once for the whole website,
-  not separately inside every component.
-- **Read:** `front-end/responsive/ResponsiveModeProvider.tsx`,
-  `front-end/site/ResponsiveSiteView.tsx`,
-  `front-end/site/pages/desktop/DesktopView.tsx`,
-  `front-end/site/pages/mobile/MobileView.tsx`,
-  `front-end/responsive/ResponsiveView.tsx`,
-  `front-end/site/SiteShell.tsx`.
+- **Trigger:** available layout width changes.
+- **Path:** features use local media queries; the navbar measures browser-window
+  changes in `layoutGeometry.ts` -> `state.ts` publishes wide/compact state ->
+  `ResponsiveNavbar.tsx` exposes `data-navbar-layout` -> CSS rearranges the same
+  controls.
+- **Data:** browser-reported viewport width for the exact breakpoint,
+  scrollbar-free layout width for fitting, navbar reference widths, layout
+  attribute, and component-owned CSS variables.
+- **Owner:** each feature owns its responsive styles. The navbar wide layout is
+  owned by `ResponsiveNavbar.module.css`; its compact arrangement is owned by
+  `ResponsiveNavbar.compact.module.css`.
+- **Reason:** width changes affect presentation, not application identity. No
+  JavaScript device classification or desktop/mobile component swap is needed.
+- **Boundary:** zoom-independent `window.innerWidth <= 1024px` uses the compact
+  navbar; wider widths use the wide navbar. Page zoom preserves the prior
+  reference. Fitting uses `document.documentElement.clientWidth`, so scrollbar
+  space cannot push the centered navbar outside the page.
+- **Read:** `front-end/site/ResponsiveSiteView.tsx`,
+  `front-end/navbar/ResponsiveNavbar.module.css`,
+  `front-end/navbar/ResponsiveNavbar.compact.module.css`, and the affected feature's
+  CSS module.
 
 ## Flow 3: Navbar Navigation
 
@@ -133,30 +128,35 @@ flowchart TD
 - **Reason:** cells should express user intent, not duplicate route rules.
   Example: `EISLogoCell` sends index `1`; `state.ts` translates it to `/about`.
 - **Read:** `front-end/navbar/state.ts`,
-  `front-end/navbar/desktop/cells/EISLogoCell/EISLogoCell.tsx`,
-  `front-end/navbar/mobile/MobileNavbar.tsx`,
-  `front-end/navbar/desktop/shared/KnobJackCell/KnobJackCell.tsx`.
+  `front-end/navbar/cells/EISLogoCell/EISLogoCell.tsx`,
+  `front-end/navbar/shared/KnobJackCell/KnobJackCell.tsx`.
 
 ## Flow 4: Navbar Scaling
 
 - **Trigger:** viewport resize, browser zoom, font load, page restore, or navbar
   cell size change.
-- **Path:** `state.ts` measures full-scale row need -> calculates `scale` ->
-  `DesktopNavbar.tsx` measures rendered cells -> writes CSS variables ->
-  desktop navbar/cell CSS paints the result.
-- **Data:** viewport width, `devicePixelRatio`, full-scale row width, rendered
-  row width, `scale`, CSS variables.
-- **Owner:** `state.ts` owns shared scale values; `DesktopNavbar.tsx` owns
-  desktop DOM measurement and CSS variable output; CSS modules own artwork
-  layout.
-- **Reason:** React can measure real DOM size; CSS is better at painting layered
-  artwork. The CSS-variable handoff keeps those roles separate.
-- **Current limitation:** desktop fitting is mature; mobile layout is mounted by
-  global responsive mode but mobile fitting/artwork is still being built.
+- **Path:** `layoutGeometry.ts` separates real resize from page zoom ->
+  `state.ts` stores the zoom-independent reference and selects wide/compact ->
+  `ResponsiveNavbar.tsx` exposes that mode through
+  `data-navbar-layout` -> every navbar CSS module and `StoreCell.tsx` consumes
+  the same mode -> `layoutGeometry.ts` measures that arrangement -> `state.ts`
+  calculates `scale` -> `ResponsiveNavbar.tsx` writes geometry CSS variables.
+- **Data:** outer window width, live layout viewport width, device pixel ratio,
+  screen context, stable reference width, pointer position, compact/wide row widths,
+  rendered row width, layout mode, `scale`, CSS variables.
+- **Owner:** `layoutGeometry.ts` owns arrangement-aware DOM measurements;
+  `state.ts` owns shared scale values; `ResponsiveNavbar.tsx` owns the persistent
+  navbar DOM and CSS-variable output; CSS modules own artwork layout.
+- **Reason:** one shared mode prevents row structure, plaques, jacks, and Store
+  media from disagreeing. Real browser-window resizing and device orientation
+  can cross the 1024px breakpoint; browser page zoom cannot. Separate
+  compact/wide measurement baselines prevent stale geometry, flexbox centers
+  rows that fit, and zoom overflow follows the pointer.
 - **Read:** `front-end/navbar/state.ts`,
-  `front-end/navbar/desktop/DesktopNavbar.tsx`,
-  `front-end/navbar/desktop/DesktopNavbar.module.css`,
-  `front-end/navbar/mobile/MobileNavbar.tsx`.
+  `front-end/navbar/layoutGeometry.ts`,
+  `front-end/navbar/ResponsiveNavbar.tsx`,
+  `front-end/navbar/ResponsiveNavbar.module.css`,
+  `front-end/navbar/ResponsiveNavbar.compact.module.css`.
 
 ## Flow 5: Signup
 
@@ -192,7 +192,7 @@ flowchart TD
 - **Reason:** valid credentials are not enough. The project decides whether the
   linked user is active, disabled, deleted, or missing.
 - **Read:** `backend/authentication/auth.ts`, `front-end/navbar/state.ts`,
-  `front-end/navbar/desktop/cells/AccountCell/AccountCell.tsx`,
+  `front-end/navbar/cells/AccountCell/AccountCell.tsx`,
   `front-end/features/account-auth/AccountAuthPanel.tsx`.
 
 ## Flow 7: Owner Creation
@@ -323,37 +323,27 @@ flowchart TD
   `public/NavbarAssets` owns static files.
 - **Reason:** artwork changes should mostly stay in CSS/assets. TypeScript
   should decide behavior, not hardcode visual layers.
-- **Current limitation:** desktop assets are wired; the mobile navbar is mounted
-  at mobile widths but still uses plain structure instead of the final mobile
-  artwork.
-- **Read:** `front-end/navbar/desktop/cells/*.tsx`,
-  `front-end/navbar/desktop/cells/*.module.css`,
-  `front-end/navbar/desktop/shared/KnobJackCell/*`,
-  `front-end/navbar/mobile/MobileNavbar.tsx`,
-  `front-end/navbar/mobile/MobileNavbar.module.css`,
+- **Responsive rule:** the same controls remain mounted. The shared layout state
+  selects compact plaques and Store animation files. Store assigns video URLs
+  only after layout resolution, avoiding preload of the wrong asset family.
+- **Read:** `front-end/navbar/cells/*.tsx`,
+  `front-end/navbar/cells/*.module.css`,
+  `front-end/navbar/shared/KnobJackCell/*`,
+  `front-end/navbar/ResponsiveNavbar.compact.module.css`,
   `public/NavbarAssets/`.
 
 ## File Ownership Reference
 
 - `app/layout.tsx`: document shell and App Router layout boundary.
-- `front-end/site/SiteShell.tsx`: permanent site shell and responsive provider
-  placement.
-- `front-end/site/ResponsiveSiteView.tsx`: chooses the active project view.
-- `front-end/site/pages/desktop/DesktopView.tsx`: desktop navbar plus desktop
-  page frame.
-- `front-end/site/pages/mobile/MobileView.tsx`: mobile navbar plus mobile page
-  frame.
-- `front-end/responsive/ResponsiveModeProvider.tsx`: global desktop/mobile
-  breakpoint state.
-- `front-end/responsive/ResponsiveView.tsx`: lower-level desktop/mobile helper
-  when a nested split is needed.
-- `front-end/navbar/Navbar.tsx`: navbar state provider and requested navbar
-  variant renderer.
+- `front-end/site/SiteShell.tsx`: permanent site-shell boundary.
+- `front-end/site/ResponsiveSiteView.tsx`: stable navbar plus page frame.
+- `front-end/navbar/Navbar.tsx`: one persistent navbar state provider.
 - `front-end/navbar/state.ts`: navbar behavior and route state.
-- `front-end/navbar/desktop/DesktopNavbar.tsx`: desktop measurement and CSS
-  variables.
-- `front-end/navbar/mobile/MobileNavbar.tsx`: mobile navbar structure.
-- `front-end/navbar/desktop/cells/*`: individual desktop navbar controls.
+- `front-end/navbar/layoutGeometry.ts`: window classification and row measurement.
+- `front-end/navbar/ResponsiveNavbar.tsx`: persistent navbar DOM,
+  measurement synchronization, and CSS variables.
+- `front-end/navbar/cells/*`: individual shared navbar controls.
+- `front-end/navbar/ResponsiveNavbar.compact.module.css`: compact arrangement.
 - `front-end/features/account-auth/AccountAuthPanel.tsx`: account form UI.
 - `app/api/auth/[...all]/route.ts`: Better Auth HTTP entry.
 - `backend/authentication/auth.ts`: auth config, signup hooks, session guard.
@@ -368,9 +358,9 @@ flowchart TD
 ## Change Rules
 
 - **Navigation:** update navbar route maps and the affected cell.
-- **Responsive variants:** put broad project-frame differences in
-  `DesktopView` or `MobileView`; use `ResponsiveView` only for lower-level
-  splits when structure differs; use CSS when only styling differs.
+- **Responsive presentation:** keep one component tree. Features may use local
+  media queries; the navbar must use its shared zoom-independent layout state so
+  arrangement, artwork, measurement, and video sources cannot disagree.
 - **Account rules:** decide first whether the rule belongs to Better Auth or
   project users.
 - **Owner behavior:** keep owner creation server-only and keep database
@@ -389,9 +379,9 @@ flowchart TD
   deleted username stays reserved; project users never store passwords.
 - **Database:** schema changes are migrations; single-owner enforcement remains
   in the database; new behavior has tests.
-- **Frontend:** navbar visual state follows the URL; responsive mode is shared
-  through `ResponsiveModeProvider`; custom controls stay keyboard-accessible;
-  narrow viewports are checked manually.
+- **Frontend:** navbar visual state follows the URL; responsive changes do not
+  remount the site frame; custom controls stay keyboard-accessible; wide,
+  compact, and exact breakpoint widths are checked manually.
 - **Commands:** `npm run type-check`, `npm run lint -- --max-warnings=0`,
   `npm run test:database`.
 
@@ -400,28 +390,27 @@ flowchart TD
 ```text
 1. app/layout.tsx
 2. front-end/site/SiteShell.tsx
-3. front-end/responsive/ResponsiveModeProvider.tsx
-4. front-end/site/ResponsiveSiteView.tsx
-5. front-end/site/pages/desktop/DesktopView.tsx
-6. front-end/site/pages/mobile/MobileView.tsx
-7. front-end/navbar/Navbar.tsx
-8. front-end/navbar/state.ts
-9. front-end/navbar/desktop/DesktopNavbar.tsx
-10. front-end/navbar/mobile/MobileNavbar.tsx
-11. one navbar cell
-12. front-end/features/account-auth/AccountAuthPanel.tsx
-13. app/api/auth/[...all]/route.ts
-14. backend/authentication/auth.ts
-15. backend/database/users/write/write-users.ts
-16. backend/database/scripts/run-database-setup.ts
-17. backend/database/scripts/users/create-owner/create-owner.ts
-18. backend/database/scripts/users/test-users/test-user-database.ts
-19. app/(site)/i-hate-music/podcast/page.tsx
-20. backend/podcast/acast.ts
-21. front-end/features/ihate-music-podcast/IHateMusicPodcastPage.tsx
-22. front-end/features/ihate-music-podcast/EpisodeMediaTabs.tsx
-23. front-end/features/ihate-music-podcast/useEpisodeMediaController.ts
-24. front-end/features/ihate-music-podcast/useVideoAudioContinuity.ts
+3. front-end/site/ResponsiveSiteView.tsx
+4. front-end/navbar/Navbar.tsx
+5. front-end/navbar/state.ts
+6. front-end/navbar/layoutGeometry.ts
+7. front-end/navbar/ResponsiveNavbar.tsx
+8. front-end/navbar/ResponsiveNavbar.module.css
+9. front-end/navbar/ResponsiveNavbar.compact.module.css
+10. one navbar cell
+11. front-end/features/account-auth/AccountAuthPanel.tsx
+12. app/api/auth/[...all]/route.ts
+13. backend/authentication/auth.ts
+14. backend/database/users/write/write-users.ts
+15. backend/database/scripts/run-database-setup.ts
+16. backend/database/scripts/users/create-owner/create-owner.ts
+17. backend/database/scripts/users/test-users/test-user-database.ts
+18. app/(site)/i-hate-music/podcast/page.tsx
+19. backend/podcast/acast.ts
+20. front-end/features/ihate-music-podcast/IHateMusicPodcastPage.tsx
+21. front-end/features/ihate-music-podcast/EpisodeMediaTabs.tsx
+22. front-end/features/ihate-music-podcast/useEpisodeMediaController.ts
+23. front-end/features/ihate-music-podcast/useVideoAudioContinuity.ts
 ```
 
 ## Glossary
@@ -435,15 +424,15 @@ flowchart TD
 - **Owner setup context:** server-only trust marker for first-owner setup.
 - **Latched control:** navbar utility control that stays pressed for its route.
 - **RSS boundary:** server parser that converts external XML to project data.
-- **Responsive mode:** site-wide desktop/mobile state derived from one media
-  query.
+- **Responsive presentation:** CSS rearranges existing components without
+  replacing their React identity.
 
 ## Short Version
 
-The layout mounts `SiteShell`, which provides one desktop/mobile mode for the
-whole website. `ResponsiveSiteView` chooses `DesktopView` or `MobileView`; each
-view owns its navbar and page frame. Navbar variants reuse shared navbar state,
-which translates user intent into routes. Better Auth owns authentication; the
-project users table owns roles, status, and identity rules. Setup prepares both
-database systems and creates the owner through a server-only path. The podcast
-route fetches RSS on the server and gives React clean project data.
+The layout mounts one stable `SiteShell`. `ResponsiveSiteView` keeps the navbar
+and current route mounted while component CSS rearranges them for available
+width. The navbar's shared state translates user intent into routes. Better Auth
+owns authentication; the project users table owns roles, status, and identity
+rules. Setup prepares both database systems and creates the owner through a
+server-only path. The podcast route fetches RSS on the server and gives React
+clean project data.

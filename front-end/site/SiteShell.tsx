@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { ResponsiveModeProvider } from "@/front-end/responsive/ResponsiveModeProvider";
 import ResponsiveSiteView from "./ResponsiveSiteView";
 
 interface SiteShellProps {
@@ -9,13 +8,10 @@ interface SiteShellProps {
 
 /**
  * Global site shell.
- * Owns the responsive mode provider and delegates the visible project frame to
- * the desktop or mobile site view.
+ * Keeps one stable application frame mounted across routes, resizing, and
+ * orientation changes. Responsive presentation belongs to the components'
+ * CSS, so changing available width never replaces the page subtree.
  */
 export default function SiteShell({ children }: SiteShellProps) {
-  return (
-    <ResponsiveModeProvider>
-      <ResponsiveSiteView>{children}</ResponsiveSiteView>
-    </ResponsiveModeProvider>
-  );
+  return <ResponsiveSiteView>{children}</ResponsiveSiteView>;
 }

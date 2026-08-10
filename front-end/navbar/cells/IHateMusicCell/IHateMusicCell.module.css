@@ -1,0 +1,120 @@
+/*
+ * I Hate Music cell artwork.
+ * Keeps podcast-specific plaque, logo, and knob artwork out of the shared shell.
+ */
+
+.iHateMusicCell {
+  --cell-plaque-aspect: 280 / 142.28;
+  --knob-logo-band-height: calc(37.4px * var(--artwork-cell-scale));
+
+  flex: 0 0 auto;
+  overflow: visible;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/JWW-IHM-PlaqueNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: auto var(--cell-plaque-height);
+}
+
+.iHateMusicLogo {
+  /*
+   * IHM logo layout slot and artwork dimensions.
+   */
+  --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
+  --ihm-logo-slot-height: var(--knob-logo-band-height);
+  --ihm-logo-art-width: calc(104px * var(--artwork-cell-scale));
+  --ihm-logo-art-height: calc(14.65px * var(--artwork-cell-scale));
+  --ihm-logo-art-top: calc(12px * var(--artwork-cell-scale));
+  --ihm-logo-scale: 1;
+
+  position: relative;
+  appearance: none;
+  border: 0;
+  padding: 0;
+  width: var(--ihm-logo-slot-width);
+  height: var(--ihm-logo-slot-height);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transform: translate(
+    calc(16px * var(--artwork-cell-scale)),
+    calc(2px * var(--artwork-cell-scale))
+  );
+}
+
+.iHateMusicLogo:focus,
+.iHateMusicLogo:focus-visible,
+.iHateMusicLogo:active {
+  outline: none;
+}
+
+.iHateMusicLogoFrame {
+  /*
+   * Layered IHM logo art frame.
+   */
+  position: absolute;
+  left: 50%;
+  top: var(--ihm-logo-art-top);
+  width: var(--ihm-logo-art-width);
+  height: var(--ihm-logo-art-height);
+  transform: translate(-50%, -50%) scale(var(--ihm-logo-scale));
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.iHateMusicLogoImage {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.iHateMusicLogoImageOff {
+  opacity: 1;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMLogoOffNavbar.svg");
+}
+
+.iHateMusicLogoImageOn {
+  opacity: 0;
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMLogoHoverNavbar.svg");
+}
+
+.iHateMusicLogo:hover .iHateMusicLogoImageOff,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOff,
+.iHateMusicLogo:active .iHateMusicLogoImageOff {
+  opacity: 0;
+}
+
+.iHateMusicLogo:hover .iHateMusicLogoImageOn,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,
+.iHateMusicLogo:active .iHateMusicLogoImageOn {
+  opacity: 1;
+}
+
+/*
+ * IHM logo hover/focus/press glow.
+ */
+.iHateMusicLogo:hover .iHateMusicLogoImageOn,
+.iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,
+.iHateMusicLogo:active .iHateMusicLogoImageOn {
+  filter: drop-shadow(
+    0 0 calc(2px * var(--artwork-cell-scale)) rgba(255, 255, 255, 0.3)
+  );
+}
+
+.iHateMusicKnob {
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/IHMKnobNavbar.svg");
+}
+
+:global([data-navbar-layout="compact"]) .iHateMusicCell {
+  --cell-plaque-aspect: 414 / 263;
+
+  background-image: url("/NavbarAssets/MobileAssets/SVG/PlaqueMobileNavbar.svg");
+}

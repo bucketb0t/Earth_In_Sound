@@ -1,0 +1,144 @@
+/*
+ * Responsive navbar style module.
+ * Owns the full-width banner, baseline, sticky shell, and measured cell row.
+ */
+
+@font-face {
+  font-family: "FuturaHeavy";
+  src: url("/NavbarAssets/DesktopAssets/Fonts/FuturaHeavy_GeneralCaps.ttf")
+    format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Navbar shell styles.
+ * Shared banner, baseline, and cell row layers.
+ */
+
+.navbarShell {
+  --navbar-layout-width: 100%;
+
+  --navbar-paint-width: 100%;
+  --navbar-shell-height: 132px;
+  --navbar-line-height: 8px;
+  --navbar-layer-banner: 1000;
+  --navbar-layer-cells: 1001;
+  --navbar-layer-baseline: 1002;
+
+  position: sticky;
+  top: 0;
+  z-index: var(--navbar-layer-banner);
+  width: var(--navbar-layout-width);
+  max-width: none;
+  height: var(--navbar-shell-height);
+  padding: 0;
+  overflow: visible;
+  visibility: hidden;
+  background: transparent;
+}
+
+.navbarShellReady {
+  visibility: visible;
+}
+
+.navbarShell::before,
+.navbarShell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: var(--navbar-paint-width);
+  pointer-events: none;
+}
+
+.navbarShell::before {
+  /*
+   * Full navbar banner artwork layer.
+   */
+  top: 0;
+  height: var(--navbar-shell-height);
+  z-index: var(--navbar-layer-banner);
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/BaseBannerNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.navbarShell::after {
+  /*
+   * Full navbar baseline artwork layer.
+   */
+  top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
+  z-index: var(--navbar-layer-baseline);
+  height: var(--navbar-line-height);
+  background-image: url("/NavbarAssets/DesktopAssets/SVG/BaseLineNavbar.svg");
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 100% 100%;
+}
+
+.navbarRoot {
+  --navbar-base-artwork-scale: 1.1071428571;
+  --artwork-cell-scale: var(--navbar-base-artwork-scale);
+  --navbar-layout-width: 100%;
+  --navbar-root-height: 124px;
+
+  /*
+   * Interactive cell layer.
+   */
+  position: relative;
+  top: 0;
+  left: 0;
+  z-index: var(--navbar-layer-cells);
+  /*
+   * Measured layout width shared by the shell and cell row.
+   */
+  width: var(--navbar-layout-width);
+  min-width: var(--navbar-layout-width);
+  height: var(--navbar-root-height);
+  overflow: visible;
+  isolation: isolate;
+  background: transparent;
+  font-family: "FuturaHeavy", sans-serif;
+  text-transform: uppercase;
+}
+
+.navbarInner {
+  /*
+   * Full-width centering container. CSS owns centering continuously, including
+   * the exact frame where compact rows become one wide row.
+   */
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  margin-left: 0;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.rowPrimary {
+  --navbar-layout-height-factor: 1;
+
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.layoutRow {
+  /*
+   * Semantic groups stay in the DOM at every width. Wide layout flattens them
+   * so all six cells participate in the original single flex row.
+   */
+  display: contents;
+}
