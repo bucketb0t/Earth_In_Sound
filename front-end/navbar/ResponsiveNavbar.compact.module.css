@@ -7,7 +7,9 @@
  */
 
 :global([data-navbar-layout="compact"]) .responsiveRows {
-  --navbar-layout-height-factor: 1.5225;
+  --navbar-layout-height-factor: 1.53607;
+  --cell-plaque-height: 97%;
+  --compact-edge-margin: calc(5px * var(--navbar-base-artwork-scale));
 
   flex-basis: 100%;
   width: 100%;
@@ -26,18 +28,21 @@
 }
 
 :global([data-navbar-layout="compact"]) .responsiveRows .topRow {
-  height: 65.6814%;
+  height: 65.1012%;
 }
 
 :global([data-navbar-layout="compact"]) .responsiveRows .bottomRow {
-  --artwork-cell-scale: calc(
-    var(--navbar-base-artwork-scale) * 0.5225
-  );
+  --artwork-cell-scale: calc(var(--navbar-base-artwork-scale) * 0.53607);
 
-  height: 34.3186%;
+  height: 34.8988%;
 }
 
 :global([data-navbar-layout="compact"]) .topRow > :first-child,
+:global([data-navbar-layout="compact"]) .bottomRow > :first-child {
+  margin-inline-start: var(--compact-edge-margin);
+}
+
+:global([data-navbar-layout="compact"]) .topRow > :last-child,
 :global([data-navbar-layout="compact"]) .bottomRow > :last-child {
-  margin-inline: 0;
+  margin-inline-end: var(--compact-edge-margin);
 }

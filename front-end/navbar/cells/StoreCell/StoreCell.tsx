@@ -26,9 +26,19 @@ function resetVideo(video: HTMLVideoElement): void {
  */
 function playVideoFromStart(video: HTMLVideoElement): void {
   video.currentTime = 0;
-  void video.play();
-}
 
+  void video.play().catch((error: unknown) => {
+    /*
+     * Changing between compact and wide Store assets can cancel an unfinished
+     * play request. That AbortError is expected because a new source is loading.
+     */
+    if (error instanceof DOMException && error.name === "AbortError") return;
+
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Store media] Video playback failed.", error);
+    }
+  });
+}
 /**
  * Store cell.
  *
@@ -39,12 +49,8 @@ export default function StoreCell() {
   /*
    * isStorePressed is route/navbar state; isHovered is local pointer state.
    */
-  const {
-    isStorePressed,
-    storePress,
-    isCompactLayout,
-    isScaleReady,
-  } = useNavbarContext();
+  const { isStorePressed, storePress, isCompactLayout, isScaleReady } =
+    useNavbarContext();
   const [isHovered, setIsHovered] = useState(false);
   const hoverVideoUrl = isScaleReady
     ? isCompactLayout
@@ -122,8 +128,18 @@ export default function StoreCell() {
           className={`${styles.screenAsset} ${
             isHovered && !isStorePressed ? styles.screenAssetVisible : ""
           }`}
+          onCanPlay={(event) => {
+            /*
+             * A layout change can replace the video source while playback is starting.
+             * Retry once the replacement source is ready, but only if hover is active.
+             */
+            if (isHovered && !isStorePressed && event.currentTarget.paused) {
+              playVideoFromStart(event.currentTarget);
+            }
+          }}
           muted
           playsInline
+          loop
           preload={isScaleReady ? "auto" : "none"}
         />
 
