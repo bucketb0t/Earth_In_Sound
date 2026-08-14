@@ -22,7 +22,7 @@ export default function AccountCell() {
     openAccountPage,
     toggleLogin,
   } = useNavbarContext();
-  const toggleLabel = isLoggedIn ? "Log Out" : "Log In";
+  const toggleLabel = isLoggedIn ? "Log Out" : "LogIn";
   const screenLabel = isLoggedIn ? accountDisplayName : "Sign up";
 
   return (
