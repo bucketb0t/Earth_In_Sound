@@ -17,6 +17,7 @@
   position: relative;
   width: 100%;
   max-width: var(--knob-max-width);
+  touch-action: pinch-zoom;
   transform: translate(
     var(--knob-module-offset-x),
     var(--knob-module-offset-y)
@@ -211,4 +212,137 @@
 
 :global([data-navbar-layout="compact"]) .jackSocket {
   background-image: url("/NavbarAssets/MobileAssets/SVG/JackPortNavbar.svg");
+  width: calc(15px * var(--artwork-cell-scale));
+}
+
+:global([data-navbar-layout="compact"]) .jackAnchor {
+  top: calc(21px * var(--artwork-cell-scale));
+  right: calc(21px * var(--artwork-cell-scale));
+}
+
+:global([data-navbar-layout="compact"]) .knobArtwork {
+  left: 16%;
+  top: 52.5%;
+  width: calc(45px * var(--artwork-cell-scale));
+}
+
+:global([data-navbar-layout="compact"]) .knobFace {
+  cx: 16%;
+  cy: 52.5%;
+}
+
+/*!!! JWW and IHM LEDs positions and dimensions !!!*/
+
+:global([data-navbar-layout="compact"]) .choiceLightObject {
+  --compact-led-x: 0px;
+  --compact-led-y: 0px;
+
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: translate(var(--compact-led-x), var(--compact-led-y)) scale(0.9);
+}
+
+/* JWW: Biography */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="0"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: 3px;
+}
+
+/* JWW: Discography */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="1"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: 0px;
+}
+
+/* JWW: Production */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="2"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: -3px;
+}
+
+/* IHM: Podcast */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="0"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: 3px;
+}
+
+/* IHM: Community */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="1"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: 0px;
+}
+
+/* IHM: Patreon */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="2"]
+  .choiceLightObject {
+  --compact-led-x: -18px;
+  --compact-led-y: -3px;
+}
+
+/*!!! JWW and IHM LED TEXT positions and dimensions !!!*/
+
+:global([data-navbar-layout="compact"]) .choiceText {
+  --compact-label-x: 0px;
+  --compact-label-y: 0px;
+
+  transform: translate(var(--compact-label-x), var(--compact-label-y));
+}
+
+/* JWW: Biography */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="0"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: 3px;
+}
+
+/* JWW: Discography */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="1"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: 0px;
+}
+
+/* JWW: Production */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="2"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: -3px;
+}
+
+/* IHM: Podcast */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="0"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: 3px;
+}
+
+/* IHM: Community */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="1"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: 0px;
+}
+
+/* IHM: Patreon */
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="2"]
+  .choiceText {
+  --compact-label-x: -18px;
+  --compact-label-y: -3px;
 }

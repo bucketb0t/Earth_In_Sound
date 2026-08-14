@@ -32,8 +32,12 @@ function artworkScaledPixelValue(sourcePixelValue: number): string {
  */
 const knobJackLayoutVars = {
   "--knob-max-width": artworkScaledPixelValue(KNOB_LAYOUT.module.maxWidth),
-  "--knob-module-offset-x": artworkScaledPixelValue(KNOB_LAYOUT.module.offset.x),
-  "--knob-module-offset-y": artworkScaledPixelValue(KNOB_LAYOUT.module.offset.y),
+  "--knob-module-offset-x": artworkScaledPixelValue(
+    KNOB_LAYOUT.module.offset.x,
+  ),
+  "--knob-module-offset-y": artworkScaledPixelValue(
+    KNOB_LAYOUT.module.offset.y,
+  ),
   "--knob-artwork-size": artworkScaledPixelValue(KNOB_LAYOUT.artwork.size),
   "--knob-artwork-left": `${KNOB_LAYOUT.artwork.leftPercent}%`,
   "--knob-artwork-top": `${KNOB_LAYOUT.artwork.topPercent}%`,
@@ -139,9 +143,7 @@ export default function KnobJackCell({
     [knobNavTo, sectionId, sectionLinks.length],
   );
 
-  const onKnobPointerDown = (
-    event: PointerEvent<SVGCircleElement>,
-  ): void => {
+  const onKnobPointerDown = (event: PointerEvent<SVGCircleElement>): void => {
     /*
      * Start a drag session from the current selected link. Pointer capture keeps
      * receiving move/up events even if the pointer leaves the circle.
@@ -157,15 +159,16 @@ export default function KnobJackCell({
     event.preventDefault();
   };
 
-  const onKnobPointerMove = (
-    event: PointerEvent<SVGCircleElement>,
-  ): void => {
+  const onKnobPointerMove = (event: PointerEvent<SVGCircleElement>): void => {
     /*
      * Vertical movement is treated as turning the knob. Every dragStepPx moves
      * the selection by one menu stop.
      */
     const activeDragState = dragState.current;
-    if (!activeDragState.active || activeDragState.pointerId !== event.pointerId) {
+    if (
+      !activeDragState.active ||
+      activeDragState.pointerId !== event.pointerId
+    ) {
       return;
     }
 
@@ -180,7 +183,10 @@ export default function KnobJackCell({
 
   const finishKnobDrag = (event: PointerEvent<SVGCircleElement>): void => {
     const activeDragState = dragState.current;
-    if (!activeDragState.active || activeDragState.pointerId !== event.pointerId) {
+    if (
+      !activeDragState.active ||
+      activeDragState.pointerId !== event.pointerId
+    ) {
       return;
     }
 
@@ -257,6 +263,8 @@ export default function KnobJackCell({
               <g
                 className={styles.choiceGroup}
                 key={link}
+                data-section-id={sectionId}
+                data-choice-index={linkIndex}
                 onClick={() => knobNavTo(sectionId, linkIndex)}
                 onKeyDown={(event) =>
                   activateOnEnterOrSpace(event, () =>

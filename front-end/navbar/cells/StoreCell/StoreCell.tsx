@@ -139,7 +139,6 @@ export default function StoreCell() {
           }}
           muted
           playsInline
-          loop
           preload={isScaleReady ? "auto" : "none"}
         />
 

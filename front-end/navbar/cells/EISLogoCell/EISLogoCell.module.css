@@ -198,6 +198,8 @@
   transition:
     filter 0.2s,
     opacity 0.2s;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .eisThumb:active {
@@ -278,8 +280,15 @@
 
 :global([data-navbar-layout="compact"]) .eisLogoCell {
   --cell-plaque-aspect: 580 / 262.81;
+  --eis-logo-scale: 1;
+  --eis-logo-frame-width: calc(115px * var(--artwork-cell-scale));
 
   margin-left: 0;
+}
+
+:global([data-navbar-layout="compact"]) .eisLogoButton {
+  padding: 0;
+  transform: translateX(calc(-1px * var(--artwork-cell-scale)));
 }
 
 :global([data-navbar-layout="compact"]) .eisLogoCell::before {
