@@ -65,11 +65,11 @@
   --cell-plaque-aspect: 735.61 / 137.31;
 
   background-image: url("/NavbarAssets/MobileAssets/SVG/StorePlaqueMobileNavbar.svg");
+  background-size: 100% var(--cell-plaque-height);
 }
 
 :global([data-navbar-layout="compact"]) .screenButton {
-  width: calc(331px * var(--artwork-cell-scale));
-  aspect-ratio: 331 / 57;
+  width: calc(520px * var(--artwork-cell-scale));
 }
 
 :global([data-navbar-layout="compact"]) .screenAssetStatic {

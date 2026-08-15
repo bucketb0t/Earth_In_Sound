@@ -23,7 +23,7 @@
   --jww-logo-slot-height: var(--knob-logo-band-height);
   --jww-logo-art-width: calc(154px * var(--artwork-cell-scale));
   --jww-logo-art-height: calc(37.4px * var(--artwork-cell-scale));
-  --jww-logo-scale: 0.7;
+  --jww-logo-scale: 0.725;
 
   position: relative;
   appearance: none;
@@ -119,11 +119,8 @@
 }
 
 :global([data-navbar-layout="compact"]) .jasonWaltonLogo {
-  --jww-logo-slot-width: calc(104px * var(--artwork-cell-scale));
-  --jww-logo-scale: 0.6;
-
   transform: translate(
-    calc(3.5px * var(--artwork-cell-scale)),
-    calc(7px * var(--artwork-cell-scale))
+    calc(-12px * var(--artwork-cell-scale)),
+    calc(9px * var(--artwork-cell-scale))
   );
 }

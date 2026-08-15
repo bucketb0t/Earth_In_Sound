@@ -120,12 +120,8 @@
 }
 
 :global([data-navbar-layout="compact"]) .iHateMusicLogo {
-  --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
-  --ihm-logo-art-top: 50%;
-  --ihm-logo-scale: 0.8885;
-
   transform: translate(
-    calc(3.5px * var(--artwork-cell-scale)),
-    calc(7px * var(--artwork-cell-scale))
+    calc(10px * var(--artwork-cell-scale)),
+    calc(2px * var(--artwork-cell-scale))
   );
 }
