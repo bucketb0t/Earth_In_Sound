@@ -228,7 +228,8 @@ function getElementOuterWidth(element: HTMLElement): number {
 }
 
 function getNavbarRowWidth(rowElement: HTMLElement): number {
-  return Array.from(rowElement.children).reduce((rowWidth, childElement) => {
+  const childElements = Array.from(rowElement.children);
+  const childrenWidth = childElements.reduce((rowWidth, childElement) => {
     return (
       rowWidth +
       (childElement instanceof HTMLElement
@@ -236,6 +237,12 @@ function getNavbarRowWidth(rowElement: HTMLElement): number {
         : childElement.getBoundingClientRect().width)
     );
   }, 0);
+  const parsedColumnGap = parseFloat(
+    window.getComputedStyle(rowElement).columnGap,
+  );
+  const columnGap = Number.isFinite(parsedColumnGap) ? parsedColumnGap : 0;
+
+  return childrenWidth + columnGap * Math.max(0, childElements.length - 1);
 }
 
 export function measureRenderedNavbarContentWidth(

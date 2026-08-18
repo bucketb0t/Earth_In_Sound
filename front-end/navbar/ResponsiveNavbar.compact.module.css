@@ -9,12 +9,15 @@
 :global([data-navbar-layout="compact"]) .responsiveRows {
   --navbar-layout-height-factor: 1.53607;
   --cell-plaque-height: 97%;
-  --compact-edge-margin: calc(5px * var(--navbar-base-artwork-scale));
+  --compact-edge-margin: calc(2px * var(--navbar-base-artwork-scale));
+  --compact-cell-gap: calc(2px * var(--navbar-base-artwork-scale));
+  --compact-half-cell-gap: calc(1px * var(--navbar-base-artwork-scale));
 
   flex-basis: 100%;
   width: 100%;
   flex-direction: column;
   align-items: center;
+  row-gap: var(--compact-cell-gap);
 }
 
 :global([data-navbar-layout="compact"]) .responsiveRows .topRow,
@@ -25,16 +28,17 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
+  column-gap: var(--compact-cell-gap);
 }
 
 :global([data-navbar-layout="compact"]) .responsiveRows .topRow {
-  height: 65.1012%;
+  height: calc(65.1012% - var(--compact-half-cell-gap));
 }
 
 :global([data-navbar-layout="compact"]) .responsiveRows .bottomRow {
   --artwork-cell-scale: calc(var(--navbar-base-artwork-scale) * 0.53607);
 
-  height: 34.8988%;
+  height: calc(34.8988% - var(--compact-half-cell-gap));
 }
 
 :global([data-navbar-layout="compact"]) .topRow > :first-child,

@@ -79,3 +79,24 @@
   margin-right: 0;
   background-image: url("/NavbarAssets/MobileAssets/SVG/CartPlaqueMobileNavbar.svg");
 }
+
+:global([data-navbar-layout="compact"]) .cartButton {
+  position: absolute;
+  left: calc(13px * var(--artwork-cell-scale));
+  top: calc(50% - 0.5px * var(--artwork-cell-scale));
+
+  width: calc(90px * var(--artwork-cell-scale));
+  transform: translateY(-50%);
+}
+
+:global([data-navbar-layout="compact"]) .cartCounter {
+  position: absolute;
+  right: calc(15px * var(--artwork-cell-scale));
+  top: calc(13.2px * var(--artwork-cell-scale));
+
+  width: calc(81px * var(--artwork-cell-scale));
+  aspect-ratio: 57 / 40;
+  transform: none;
+
+  font-size: calc(32px * var(--artwork-cell-scale));
+}
