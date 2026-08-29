@@ -113,6 +113,11 @@
   outline: none;
 }
 
+.choiceHitArea {
+  fill: transparent;
+  pointer-events: all;
+}
+
 .choiceLightObject {
   overflow: visible;
   pointer-events: none;
@@ -345,4 +350,38 @@
   .choiceText {
   --compact-label-x: -18px;
   --compact-label-y: -3px;
+}
+
+/* The mobile hit surface follows the visible LED/text row as one control. */
+:global([data-navbar-layout="compact"]) .choiceGroup {
+  --compact-hit-x: 0px;
+  --compact-hit-y: 0px;
+}
+
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="0"],
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="0"] {
+  --compact-hit-x: -18px;
+  --compact-hit-y: 3px;
+}
+
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="1"],
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="1"] {
+  --compact-hit-x: -18px;
+  --compact-hit-y: 0px;
+}
+
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="jw"][data-choice-index="2"],
+:global([data-navbar-layout="compact"])
+  .choiceGroup[data-section-id="ihm"][data-choice-index="2"] {
+  --compact-hit-x: -18px;
+  --compact-hit-y: -3px;
+}
+
+:global([data-navbar-layout="compact"]) .choiceHitArea {
+  transform: translate(var(--compact-hit-x), var(--compact-hit-y));
 }

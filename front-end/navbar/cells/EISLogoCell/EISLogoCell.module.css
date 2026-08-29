@@ -291,6 +291,10 @@
   transform: translateX(calc(-1px * var(--artwork-cell-scale)));
 }
 
+:global([data-navbar-layout="compact"]) .eisLinkRow {
+  width: 100%;
+}
+
 :global([data-navbar-layout="compact"]) .eisLogoCell::before {
   background-image: url("/NavbarAssets/MobileAssets/SVG/EarthInSoundPlaqueMobileNavbar.svg");
 }

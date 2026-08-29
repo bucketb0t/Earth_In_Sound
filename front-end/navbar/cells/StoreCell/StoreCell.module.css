@@ -70,6 +70,7 @@
 
 :global([data-navbar-layout="compact"]) .screenButton {
   width: calc(520px * var(--artwork-cell-scale));
+  aspect-ratio: 331 / 57;
 }
 
 :global([data-navbar-layout="compact"]) .screenAssetStatic {

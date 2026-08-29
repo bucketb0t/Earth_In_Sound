@@ -55,6 +55,9 @@ const knobJackLayoutVars = {
   "--jack-plug-tip-y": KNOB_LAYOUT.jack.plugTipCorrection.y,
 } as CSSProperties;
 
+const CHOICE_HIT_AREA_HEIGHT = 18;
+const CHOICE_HIT_AREA_LEADING_PADDING = 4;
+
 interface KnobDragState {
   active: boolean;
   pointerId: number;
@@ -258,6 +261,15 @@ export default function KnobJackCell({
               y: 0,
             };
             const { dotPosition, labelPosition } = choiceGeometry[linkIndex]!;
+            const choiceLightLeft =
+              dotPosition.x +
+              choiceLightOffset.x -
+              KNOB_LAYOUT.choiceLightSize / 2;
+            const choiceLabelX = labelPosition.x + labelOffset.x;
+            const choiceLabelY = labelPosition.y + labelOffset.y;
+            const choiceHitAreaX =
+              Math.min(choiceLightLeft, choiceLabelX) -
+              CHOICE_HIT_AREA_LEADING_PADDING;
 
             return (
               <g
@@ -277,13 +289,18 @@ export default function KnobJackCell({
                 aria-pressed={linkIsSelected}
                 aria-current={linkIsSelected ? "page" : undefined}
               >
+                <rect
+                  className={styles.choiceHitArea}
+                  x={choiceHitAreaX}
+                  y={choiceLabelY - CHOICE_HIT_AREA_HEIGHT / 2}
+                  width={SVG_WIDTH - choiceHitAreaX}
+                  height={CHOICE_HIT_AREA_HEIGHT}
+                  rx="2"
+                />
+
                 <foreignObject
                   className={styles.choiceLightObject}
-                  x={
-                    dotPosition.x +
-                    choiceLightOffset.x -
-                    KNOB_LAYOUT.choiceLightSize / 2
-                  }
+                  x={choiceLightLeft}
                   y={
                     dotPosition.y +
                     choiceLightOffset.y -
@@ -304,8 +321,8 @@ export default function KnobJackCell({
                   className={`${styles.choiceText} ${
                     linkIsSelected ? styles.choiceTextActive : ""
                   }`}
-                  x={labelPosition.x + labelOffset.x}
-                  y={labelPosition.y + labelOffset.y}
+                  x={choiceLabelX}
+                  y={choiceLabelY}
                   dominantBaseline="middle"
                   textAnchor="start"
                 >
