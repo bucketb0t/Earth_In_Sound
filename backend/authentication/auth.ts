@@ -18,6 +18,7 @@ import {
 } from "@/backend/database/users/validation/validate-user-input";
 import { betterAuthDatabase } from "./better-auth-database";
 import { getOwnerSetupIdentity } from "./owner-setup-context";
+import { accountManagement } from "./account-management";
 
 const appBaseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 const shouldSilenceBetterAuthLogs =
@@ -39,6 +40,8 @@ function isOwnerSetupIdentity(email: string, username: string): boolean {
 export const auth = betterAuth({
   appName: "Earth In Sound",
   baseURL: appBaseUrl,
+  /* Project endpoints preserve linked profile/auth data during edits and closure. */
+  disabledPaths: ["/update-user", "/delete-user"],
   logger: {
     /* Silence expected auth failures in database tests only. */
     disabled: shouldSilenceBetterAuthLogs,
@@ -146,5 +149,5 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [accountManagement(), nextCookies()],
 });

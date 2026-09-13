@@ -20,6 +20,8 @@ site interface.
   store, and cart access.
 - Better Auth email/password sign-up, sign-in, sign-out, and project user
   profiles with owner/admin/user roles.
+- Account settings for usernames, passwords, active sessions, and confirmed
+  account closure, with atomic username/profile synchronization.
 - I Hate Music podcast page powered by the public Acast RSS feed.
 - A structure that supports future custom artwork per cell.
 
@@ -27,7 +29,7 @@ site interface.
 
 - Full page content for every navigation target.
 - Checkout and payment behavior.
-- Full account-management UI beyond the current auth surface.
+- Email verification, emailed password recovery, and administrative account UI.
 - Podcast hosting infrastructure.
 - Store inventory or payment integration.
 

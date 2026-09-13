@@ -14,6 +14,7 @@ import {
   testUnlinkedProfileDeletion,
 } from "./test-user-lifecycle";
 import { testOwnerSetup } from "./test-owner-setup";
+import { testAccountManagement } from "./test-account-management";
 import { testUserReads } from "./test-user-reads";
 import { testRolesAndOwnershipTransfer } from "./test-user-roles";
 import {
@@ -83,6 +84,7 @@ export async function runUserDatabaseTests(): Promise<void> {
     };
 
     const owner = await testOwnerSetup(context);
+    await testAccountManagement(context, owner);
     await testFailedSignupRecovery(context);
     const normalUser = await testNormalSignupAndProfile(context, owner);
     await testDisableFailureSafety(context, owner);

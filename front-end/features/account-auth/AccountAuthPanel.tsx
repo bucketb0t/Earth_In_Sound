@@ -3,6 +3,7 @@
 import { useState, type SubmitEvent } from "react";
 import { authClient } from "@/front-end/authentication/auth-client";
 import styles from "./AccountAuthPanel.module.css";
+import AccountSettingsPanel from "./AccountSettingsPanel";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -15,6 +16,7 @@ export default function AccountAuthPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [signOutError, setSignOutError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /** Send signup username as Better Auth's name; login uses email and password. */
@@ -57,6 +59,7 @@ export default function AccountAuthPanel() {
   const handleSignOut = async () => {
     setIsSubmitting(true);
     setMessage("");
+    setSignOutError("");
 
     try {
       const result = await authClient.signOut();
@@ -68,7 +71,7 @@ export default function AccountAuthPanel() {
       setMessage("Signed out.");
       await session.refetch();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sign out failed.");
+      setSignOutError(error instanceof Error ? error.message : "Sign out failed.");
     } finally {
       setIsSubmitting(false);
     }
@@ -87,24 +90,21 @@ export default function AccountAuthPanel() {
 
   if (session.data?.user) {
     return (
-      <main className={styles.page}>
-        <section className={styles.panel}>
-          <p className={styles.eyebrow}>Account</p>
-          <h1>{session.data.user.name}</h1>
-          <p className={styles.copy}>{session.data.user.email}</p>
-
-          <button
-            className={styles.primaryButton}
-            type="button"
-            onClick={handleSignOut}
-            disabled={isSubmitting}
-          >
-            Log Out
-          </button>
-
-          {message ? <p className={styles.message}>{message}</p> : null}
-        </section>
-      </main>
+      <AccountSettingsPanel
+        key={session.data.user.id}
+        user={session.data.user}
+        currentSessionToken={session.data.session.token}
+        isSigningOut={isSubmitting}
+        signOutError={signOutError}
+        onSignOut={handleSignOut}
+        refreshSession={session.refetch}
+        onAccountClosed={async () => {
+          setMode("sign-in");
+          setPassword("");
+          setMessage("Account closed.");
+          await session.refetch();
+        }}
+      />
     );
   }
 

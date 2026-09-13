@@ -271,24 +271,54 @@ export async function updateUsername(
   const cleanedUsername = requireValidUsername(input.username);
   const usernameLookup = toLookupValue(cleanedUsername);
   const now = Date.now();
+  const transaction = await turso.transaction("write");
 
-  const existingUsername = await turso.execute({
-    sql: "SELECT id FROM users WHERE username_lookup = ? AND id != ? LIMIT 1",
-    args: [usernameLookup, currentUser.id],
-  });
+  try {
+    const existingUsername = await transaction.execute({
+      sql: "SELECT id FROM users WHERE username_lookup = ? AND id != ? LIMIT 1",
+      args: [usernameLookup, currentUser.id],
+    });
 
-  if (existingUsername.rows.length > 0) {
-    throw new Error("Username is already registered.");
+    if (existingUsername.rows.length > 0) {
+      throw new Error("Username is already registered.");
+    }
+
+    const updatedProfile = await transaction.execute({
+      sql: `
+        UPDATE users
+        SET username = ?, username_lookup = ?, updated_at = ?
+        WHERE id = ? AND status = 'active'
+      `,
+      args: [cleanedUsername, usernameLookup, now, currentUser.id],
+    });
+
+    if (updatedProfile.rowsAffected !== 1) {
+      throw new Error("User account is not active.");
+    }
+
+    /* Keep the auth display name and project username in the same transaction. */
+    if (currentUser.auth_provider_user_id) {
+      const updatedAuthUser = await transaction.execute({
+        sql: 'UPDATE "user" SET name = ?, "updatedAt" = ? WHERE id = ?',
+        args: [
+          cleanedUsername,
+          new Date(now).toISOString(),
+          currentUser.auth_provider_user_id,
+        ],
+      });
+
+      if (updatedAuthUser.rowsAffected !== 1) {
+        throw new Error("Linked authentication user was not found.");
+      }
+    }
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  } finally {
+    transaction.close();
   }
-
-  await turso.execute({
-    sql: `
-      UPDATE users
-      SET username = ?, username_lookup = ?, updated_at = ?
-      WHERE id = ?
-    `,
-    args: [cleanedUsername, usernameLookup, now, currentUser.id],
-  });
 
   const updatedUser = await getUserById(currentUser.id);
 

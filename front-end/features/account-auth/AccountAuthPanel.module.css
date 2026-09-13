@@ -103,3 +103,177 @@
   color: #22c55e;
   margin-top: 18px;
 }
+
+.settingsPanel {
+  max-width: 860px;
+  margin-inline: auto;
+  padding: 24px;
+  min-width: 0;
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.settingsHeader > div {
+  min-width: 0;
+}
+
+.settingsHeader h1 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+
+.settingsPanel p {
+  overflow-wrap: anywhere;
+}
+
+.settingsPanel .eyebrow,
+.settingsPanel .field span {
+  letter-spacing: 0;
+}
+
+.settingsPanel .modeButton,
+.settingsPanel .primaryButton {
+  margin-top: 0;
+  letter-spacing: 0;
+}
+
+.settingsPanel .form {
+  max-width: 480px;
+}
+
+.settingsPanel input {
+  min-width: 0;
+  width: 100%;
+}
+
+.settingsSection {
+  padding-block: 28px;
+  border-top: 1px solid #414141;
+  margin-top: 24px;
+}
+
+.settingsSection h2,
+.deleteDialog h2 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  margin: 0 0 20px;
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.checkboxField input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  accent-color: #22c55e;
+}
+
+.sessionList {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.sessionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 16px;
+  border-bottom: 1px solid #363636;
+}
+
+.sessionRow > div {
+  min-width: 0;
+}
+
+.sessionRow p {
+  color: #a8a8a8;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin-block: 6px 0;
+}
+
+.dangerButton {
+  background: #291013;
+  border: 1px solid #d96b76;
+  color: #ffadb5;
+  min-height: 44px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.settingsPanel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.settingsPanel button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+
+.settingsPanel .error {
+  color: #ffadb5;
+}
+
+.deleteDialog {
+  color: #f5f5f5;
+  background: #171717;
+  border: 1px solid #d96b76;
+  border-radius: 8px;
+  width: min(480px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.deleteDialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.deleteDialog > p {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .settingsPanel {
+    padding: 16px 12px;
+  }
+
+  .settingsHeader,
+  .sessionRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settingsPanel .settingsHeader .modeButton {
+    align-self: flex-start;
+  }
+}
