@@ -4,7 +4,10 @@
  * Throws a normal Error so these scripts can run with plain tsx instead of a
  * full test runner.
  */
-export function assert(condition: boolean, message: string): void {
+export function assert(
+  condition: boolean,
+  message: string,
+): asserts condition {
   if (!condition) {
     throw new Error(`Test failed: ${message}`);
   }
@@ -40,6 +43,44 @@ export async function assertRejectsWithMessage(
 ): Promise<void> {
   try {
     await action();
+  } catch (error) {
+    assert(
+      error instanceof Error && error.message === expectedMessage,
+      failureMessage,
+    );
+    return;
+  }
+
+  throw new Error(`Test failed: ${failureMessage}`);
+}
+
+/**
+ * Runs a synchronous action that is expected to throw.
+ */
+
+export function assertThrows(
+  action: () => unknown,
+  failureMessage: string,
+): void {
+  try {
+    action();
+  } catch {
+    return;
+  }
+
+  throw new Error(`Test failed: ${failureMessage}`);
+}
+
+/**
+ * Runs a synchronous action that should fail for one specific reason.
+ */
+export function assertThrowsWithMessage(
+  action: () => unknown,
+  expectedMessage: string,
+  failureMessage: string,
+): void {
+  try {
+    action();
   } catch (error) {
     assert(
       error instanceof Error && error.message === expectedMessage,

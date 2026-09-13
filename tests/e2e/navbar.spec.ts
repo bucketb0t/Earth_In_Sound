@@ -173,6 +173,52 @@ async function dragControlVertically(
   await page.mouse.up();
 }
 
+/*
+ * Send trusted browser touch events so compact controls are tested with the
+ * same pointer path used by a phone, including pointer capture while held.
+ */
+async function dragControlWithTouch(
+  page: Page,
+  control: Locator,
+  verticalDistance: number,
+): Promise<void> {
+  const controlBox = await control.boundingBox();
+  if (!controlBox) {
+    throw new Error("Navbar touch control geometry could not be measured.");
+  }
+
+  const client = await page.context().newCDPSession(page);
+  const startX = controlBox.x + controlBox.width / 2;
+  const startY = controlBox.y + controlBox.height / 2;
+
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: startX, y: startY, id: 1 }],
+    });
+
+    for (let step = 1; step <= 5; step += 1) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [
+          {
+            x: startX,
+            y: startY + (verticalDistance * step) / 5,
+            id: 1,
+          },
+        ],
+      });
+    }
+
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await client.detach();
+  }
+}
+
 /* Desktop-only rendering and interaction behavior. */
 test.describe("desktop navbar", () => {
   test.use({ viewport: DESKTOP_VIEWPORT });
@@ -256,7 +302,7 @@ test.describe("desktop navbar", () => {
 
 /* Phone-sized rendering, hit targets, navigation, and visual state. */
 test.describe("compact navbar", () => {
-  test.use({ viewport: COMPACT_VIEWPORT });
+  test.use({ viewport: COMPACT_VIEWPORT, hasTouch: true });
 
   /* Scope: compact layout selection and visibility of its main destinations. */
   test("renders the compact layout on a phone-sized viewport", async ({
@@ -298,7 +344,7 @@ test.describe("compact navbar", () => {
         });
 
         await expect(control).toBeVisible();
-        await control.click();
+        await control.tap();
         await expectPathname(page, navigationCase.expectedPathname);
       });
     }
@@ -313,7 +359,7 @@ test.describe("compact navbar", () => {
     await test.step("account switch", async () => {
       const accountSwitch = navigation.getByRole("switch", { name: "LogIn" });
       await expect(accountSwitch).toBeEnabled();
-      await accountSwitch.click();
+      await accountSwitch.tap();
       await expectPathname(page, "/account");
     });
 
@@ -324,27 +370,72 @@ test.describe("compact navbar", () => {
         exact: true,
       });
       await expect(loginPanel).toBeEnabled();
-      await loginPanel.click();
+      await loginPanel.tap();
       await expectPathname(page, "/account");
     });
 
     await test.step("sign-up display", async () => {
       await page.goto("/");
-      await navigation.getByRole("button", { name: "Sign up" }).click();
+      await navigation.getByRole("button", { name: "Sign up" }).tap();
       await expectPathname(page, "/account");
     });
 
     await test.step("Store", async () => {
       await page.goto("/");
-      await navigation.getByRole("button", { name: "Store" }).click();
+      await navigation.getByRole("button", { name: "Store" }).tap();
       await expectPathname(page, "/store");
     });
 
     await test.step("Cart", async () => {
       await page.goto("/");
-      await navigation.getByRole("button", { name: "Shopping cart" }).click();
+      await navigation.getByRole("button", { name: "Shopping cart" }).tap();
       await expectPathname(page, "/cart");
     });
+  });
+
+  /* Scope: trusted touch dragging and pointer capture on all physical inputs. */
+  test("keeps compact slider and knobs pressed during touch drags", async ({
+    page,
+  }) => {
+    const { navigation } = await openNavbar(page, "compact");
+    const eisSlider = navigation.getByRole("slider", {
+      name: "Earth In Sound section slider",
+    });
+
+    await dragControlWithTouch(page, eisSlider, 200);
+    await expectPathname(page, "/contact");
+    await expect(eisSlider).toHaveAttribute("aria-valuenow", "2");
+
+    await page.goto("/");
+    const jasonKnob = navigation.getByRole("button", {
+      name: "Jason Walton knob",
+    });
+    await dragControlWithTouch(page, jasonKnob, 40);
+    await expectPathname(page, "/jason-walton/production");
+
+    await page.goto("/");
+    const ihmKnob = navigation.getByRole("button", {
+      name: "I Hate Music knob",
+    });
+    await dragControlWithTouch(page, ihmKnob, 40);
+    await expectPathname(page, "/i-hate-music/patreon");
+  });
+
+  /* Scope: fitting and overflow at narrow, ordinary, and large phone widths. */
+  test("fits representative phone viewports without horizontal overflow", async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 320, height: 568 },
+      COMPACT_VIEWPORT,
+      { width: 430, height: 932 },
+    ]) {
+      await test.step(`${viewport.width}x${viewport.height}`, async () => {
+        await page.setViewportSize(viewport);
+        await openNavbar(page, "compact");
+        await expectNavbarGeometry(page, "compact");
+      });
+    }
   });
 
   /* Scope: accessible selected states derived from the currently active route. */

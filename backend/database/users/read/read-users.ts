@@ -3,28 +3,17 @@ import {
   requireValidEmail,
   toLookupValue,
 } from "../validation/validate-user-input";
+import {
+  parseStoredUser,
+  parseStoredUsers,
+  type StoredUser,
+} from "../validation/validate-stored-user";
 
-/*
- * Role and status values allowed by the users table.
- */
-export type UserRole = "owner" | "admin" | "user";
-export type UserStatus = "active" | "disabled" | "deleted";
-
-/*
- * Database row shape returned by the project users table.
- */
-export interface StoredUser {
-  id: string;
-  auth_provider_user_id: string | null;
-  email: string;
-  email_lookup: string;
-  username: string;
-  username_lookup: string;
-  role: UserRole;
-  status: UserStatus;
-  created_at: number;
-  updated_at: number;
-}
+export type {
+  StoredUser,
+  UserRole,
+  UserStatus,
+} from "../validation/validate-stored-user";
 
 export interface SearchUsersInput {
   searchText: string;
@@ -33,6 +22,22 @@ export interface SearchUsersInput {
 
 export interface GetCurrentUserInput {
   authProviderUserId: string | null | undefined;
+}
+
+/*
+ * Convert an optional first query row into either a validated user or null.
+ */
+function parseOptionalStoredUser(row: unknown): StoredUser | null {
+  if (row === undefined) {
+    return null;
+  }
+
+  return parseStoredUser(row);
+}
+
+/* Treat SQL LIKE wildcard characters as ordinary search text. */
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
 }
 
 /**
@@ -56,7 +61,7 @@ export async function getUserById(userId: string): Promise<StoredUser | null> {
     args: [cleanedUserId],
   });
 
-  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+  return parseOptionalStoredUser(result.rows[0]);
 }
 
 /**
@@ -82,7 +87,7 @@ export async function getUserByAuthProviderId(
     args: [cleanedAuthProviderUserId],
   });
 
-  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+  return parseOptionalStoredUser(result.rows[0]);
 }
 
 /**
@@ -95,7 +100,7 @@ export async function getOwner(): Promise<StoredUser | null> {
     "SELECT * FROM users WHERE role = 'owner' LIMIT 1",
   );
 
-  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+  return parseOptionalStoredUser(result.rows[0]);
 }
 
 /**
@@ -132,7 +137,7 @@ export async function getUserByEmail(
     args: [toLookupValue(cleanedEmail)],
   });
 
-  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+  return parseOptionalStoredUser(result.rows[0]);
 }
 
 /**
@@ -155,7 +160,7 @@ export async function getUserByUsername(
     args: [toLookupValue(cleanedUsername)],
   });
 
-  return (result.rows[0] as unknown as StoredUser | undefined) ?? null;
+  return parseOptionalStoredUser(result.rows[0]);
 }
 
 /**
@@ -177,7 +182,9 @@ export async function searchUsers(
     return [];
   }
 
-  const searchLookup = `%${toLookupValue(cleanedSearchText)}%`;
+  const searchLookup = `%${escapeLikePattern(
+    toLookupValue(cleanedSearchText),
+  )}%`;
   /*
    * Clamp limits so a caller cannot request an unbounded user list.
    */
@@ -187,13 +194,13 @@ export async function searchUsers(
     sql: `
       SELECT *
       FROM users
-      WHERE email_lookup LIKE ?
-         OR username_lookup LIKE ?
+      WHERE email_lookup LIKE ? ESCAPE '\\'
+         OR username_lookup LIKE ? ESCAPE '\\'
       ORDER BY email_lookup ASC
       LIMIT ?
     `,
     args: [searchLookup, searchLookup, resultLimit],
   });
 
-  return result.rows as unknown as StoredUser[];
+  return parseStoredUsers(result.rows);
 }

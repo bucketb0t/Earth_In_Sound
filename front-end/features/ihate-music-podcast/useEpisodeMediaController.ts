@@ -133,6 +133,7 @@ export function useEpisodeMediaController({
 
     let componentIsMounted = true;
     let playerInitTimer: number | null = null;
+    const playerInitAbortController = new AbortController();
 
     playerInitTimer = window.setTimeout(() => {
       const currentVideoHost = videoHostRef.current;
@@ -147,6 +148,7 @@ export function useEpisodeMediaController({
         mountElement: currentVideoHost,
         videoId: youtubeVideoId,
         onStateChange: handleYouTubeStateChange,
+        signal: playerInitAbortController.signal,
       })
         .then((youTubePlayer) => {
           if (!componentIsMounted || !videoHostRef.current) {
@@ -157,7 +159,11 @@ export function useEpisodeMediaController({
           youtubePlayerRef.current?.destroy();
           youtubePlayerRef.current = youTubePlayer;
         })
-        .catch(() => setVideoError("The YouTube player could not be loaded."));
+        .catch(() => {
+          if (componentIsMounted) {
+            setVideoError("The YouTube player could not be loaded.");
+          }
+        });
     }, 0);
 
     return () => {
@@ -165,6 +171,7 @@ export function useEpisodeMediaController({
       if (playerInitTimer !== null) {
         window.clearTimeout(playerInitTimer);
       }
+      playerInitAbortController.abort();
       youtubePlayerRef.current?.destroy();
       youtubePlayerRef.current = null;
       videoHost.replaceChildren();

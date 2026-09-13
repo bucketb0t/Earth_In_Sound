@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
-  deleteAuthUser,
-  revokeAuthUserSessions,
+  deleteLinkedUserRecords,
+  disableLinkedUserRecords,
 } from "@/backend/authentication/auth-user-lifecycle";
 import { turso } from "../../turso-client";
 import {
@@ -113,7 +113,9 @@ export async function createOrLinkOwnerAfterSignup(
       existingOwner.email_lookup !== emailLookup ||
       existingOwner.username_lookup !== usernameLookup
     ) {
-      throw new Error("Owner setup identity does not match the existing owner.");
+      throw new Error(
+        "Owner setup identity does not match the existing owner.",
+      );
     }
 
     if (
@@ -365,17 +367,21 @@ export async function disableUser(
   const now = Date.now();
 
   if (targetUser.auth_provider_user_id) {
-    await revokeAuthUserSessions(targetUser.auth_provider_user_id);
+    await disableLinkedUserRecords({
+      authProviderUserId: targetUser.auth_provider_user_id,
+      projectUserId: targetUser.id,
+      disabledAt: now,
+    });
+  } else {
+    await turso.execute({
+      sql: `
+        UPDATE users
+        SET status = 'disabled', updated_at = ?
+        WHERE id = ?
+      `,
+      args: [now, targetUser.id],
+    });
   }
-
-  await turso.execute({
-    sql: `
-      UPDATE users
-      SET status = 'disabled', updated_at = ?
-      WHERE id = ?
-    `,
-    args: [now, targetUser.id],
-  });
 
   const disabledUser = await getUserById(targetUser.id);
 
@@ -417,32 +423,36 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
   requireCanManageUser(currentUser, targetUser);
 
   const now = Date.now();
+  const deletedEmailLookup = getDeletedEmailLookup(targetUser.id, now);
 
   /*
-   * Better Auth must release the email and revoke every session before the
-   * project profile releases its auth link. These are separate systems, so a
-   * future production route should add recovery/compensation around failures.
+   * Linked authentication and project records are deleted atomically. If any
+   * statement fails, the database rolls back the complete operation.
+   *
+   * An unlinked legacy profile has no Better Auth records, so only its project
+   * row needs to be updated.
    */
   if (targetUser.auth_provider_user_id) {
-    await deleteAuthUser(targetUser.auth_provider_user_id);
+    await deleteLinkedUserRecords({
+      authProviderUserId: targetUser.auth_provider_user_id,
+      projectUserId: targetUser.id,
+      deletedEmailLookup,
+      deletedAt: now,
+    });
+  } else {
+    await turso.execute({
+      sql: `
+        UPDATE users
+        SET
+          auth_provider_user_id = NULL,
+          email_lookup = ?,
+          status = 'deleted',
+          updated_at = ?
+        WHERE id = ?
+      `,
+      args: [deletedEmailLookup, now, targetUser.id],
+    });
   }
-
-  await turso.execute({
-    sql: `
-      UPDATE users
-      SET
-        auth_provider_user_id = NULL,
-        email_lookup = ?,
-        status = 'deleted',
-        updated_at = ?
-      WHERE id = ?
-    `,
-    args: [
-      getDeletedEmailLookup(targetUser.id, now),
-      now,
-      targetUser.id,
-    ],
-  });
 
   const deletedUser = await getUserById(targetUser.id);
 
@@ -494,8 +504,6 @@ export async function reactivateUser(
 
   return requireStoredUser(reactivatedUser, "Reactivated user was not found.");
 }
-
-export { getUserByEmail };
 
 /**
  * Transfers the single owner role to another active account.

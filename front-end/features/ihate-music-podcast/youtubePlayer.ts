@@ -40,6 +40,7 @@ interface YouTubeMessage {
 interface CreateYouTubePlayerParams {
   mountElement: HTMLElement;
   onStateChange: (event: YouTubePlayerEvent) => void;
+  signal?: AbortSignal;
   videoId: string;
 }
 
@@ -57,6 +58,7 @@ let nextYouTubePlayerId = 0;
 export function createYouTubePlayer({
   mountElement,
   onStateChange,
+  signal,
   videoId,
 }: CreateYouTubePlayerParams): Promise<YouTubePlayer> {
   const playerId = `earth-in-sound-youtube-${nextYouTubePlayerId++}`;
@@ -86,6 +88,7 @@ export function createYouTubePlayer({
         readyTimeoutId = null;
       }
       clearListeningHandshakeInterval();
+      signal?.removeEventListener("abort", abortPlayerInitialization);
       window.removeEventListener("message", handleYouTubeMessage);
       iframe.removeEventListener("load", startListeningHandshake);
       iframe.remove();
@@ -111,6 +114,7 @@ export function createYouTubePlayer({
       readyTimeoutId = null;
     }
     clearListeningHandshakeInterval();
+    signal?.removeEventListener("abort", abortPlayerInitialization);
     resolveReady(player);
   }
 
@@ -120,6 +124,15 @@ export function createYouTubePlayer({
     promiseIsSettled = true;
     player.destroy();
     rejectReady(error);
+  }
+
+  function abortPlayerInitialization(): void {
+    failReady(
+      new DOMException(
+        "YouTube player initialization was cancelled.",
+        "AbortError",
+      ),
+    );
   }
 
   function getEstimatedCurrentTime(): number {
@@ -240,6 +253,12 @@ export function createYouTubePlayer({
     onStateChange({ data: playerState });
   }
 
+  if (signal?.aborted) {
+    abortPlayerInitialization();
+    return readyPromise;
+  }
+
+  signal?.addEventListener("abort", abortPlayerInitialization, { once: true });
   window.addEventListener("message", handleYouTubeMessage);
   iframe.addEventListener("load", startListeningHandshake);
   iframe.addEventListener(
@@ -275,7 +294,9 @@ export function parseYouTubeVideoId(value: string): string | null {
       return normalizeYouTubeVideoId(url.pathname.split("/")[1]);
     }
 
-    if (!hostname.endsWith("youtube.com")) return null;
+    const isYouTubeHostname =
+      hostname === "youtube.com" || hostname.endsWith(".youtube.com");
+    if (!isYouTubeHostname) return null;
 
     const watchVideoId = normalizeYouTubeVideoId(url.searchParams.get("v"));
     if (watchVideoId) return watchVideoId;

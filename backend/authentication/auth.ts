@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
+import { deleteAuthUser } from "./auth-user-lifecycle";
 
 import {
   createNormalUserAfterSignup,
@@ -55,8 +56,9 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   database: {
     /*
-     * Better Auth stores auth data in Turso through Kysely.
-     * Snake casing keeps generated auth columns consistent with SQL style.
+     * Better Auth stores auth data in Turso through Kysely and owns the exact
+     * schema of those tables. Shared transaction helpers match that generated
+     * schema explicitly, and the database tests guard the contract.
      */
     db: betterAuthDatabase,
     type: "sqlite",
@@ -139,11 +141,24 @@ export const auth = betterAuth({
             ? createOrLinkOwnerAfterSignup
             : createNormalUserAfterSignup;
 
-          await createProjectUser({
-            authProviderUserId: user.id,
-            email: user.email,
-            username,
-          });
+          try {
+            await createProjectUser({
+              authProviderUserId: user.id,
+              email: user.email,
+              username,
+            });
+          } catch (profileError) {
+            try {
+              await deleteAuthUser(user.id);
+            } catch (cleanupError) {
+              throw new AggregateError(
+                [profileError, cleanupError],
+                "Signup failed and the incomplete authentication account could not be removed.",
+              );
+            }
+
+            throw profileError;
+          }
         },
       },
     },

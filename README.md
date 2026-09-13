@@ -30,3 +30,13 @@ site interface.
 - Full account-management UI beyond the current auth surface.
 - Podcast hosting infrastructure.
 - Store inventory or payment integration.
+
+## Verification
+
+Run `npm run verify` before merging or deploying a completed change. It checks
+TypeScript, lint rules, unit behavior, database and authentication behavior,
+browser interactions, responsive layouts, and the production build.
+
+The browser authentication tests use a disposable local database under
+`test-results`, so they never create accounts in the configured development or
+production database.

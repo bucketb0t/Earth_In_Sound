@@ -27,13 +27,10 @@ const databaseScripts = [
 
 async function main(): Promise<void> {
   /*
-   * Runs scripts in order because owner creation needs both schemas.
+   * Setup scripts run sequentially because later scripts may depend on tables
+   * created by earlier scripts.
    */
   for (const script of databaseScripts) {
-    /*
-     * Setup scripts run sequentially because later scripts may depend on tables
-     * created by earlier scripts.
-     */
     console.log(`Running database script: ${script.name}`);
     await script.run();
   }
