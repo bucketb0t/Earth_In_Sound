@@ -6,10 +6,7 @@ interface SectionPlaceholderPageProps {
   description: string;
 }
 
-/**
- * Shared content shell for undeveloped route pages.
- * Individual routes provide the text; this component provides structure.
- */
+/** Shared structure for routes awaiting final content. */
 export default function SectionPlaceholderPage({
   eyebrow,
   title,

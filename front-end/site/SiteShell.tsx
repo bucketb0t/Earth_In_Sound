@@ -6,12 +6,7 @@ interface SiteShellProps {
   children: ReactNode;
 }
 
-/**
- * Global site shell.
- * Keeps one stable application frame mounted across routes, resizing, and
- * orientation changes. Responsive presentation belongs to the components'
- * CSS, so changing available width never replaces the page subtree.
- */
+/** Persistent site frame; responsive CSS adapts the layout without replacing the page subtree. */
 export default function SiteShell({ children }: SiteShellProps) {
   return <ResponsiveSiteView>{children}</ResponsiveSiteView>;
 }

@@ -6,9 +6,6 @@ const YOUTUBE_UNSTARTED_STATE = -1;
 const YOUTUBE_ORIGIN = "https://www.youtube.com";
 const YOUTUBE_HANDSHAKE_INTERVAL_MS = 250;
 
-/*
- * YouTube video ids are always 11 characters.
- */
 const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
 
 export interface YouTubePlayerEvent {
@@ -47,13 +44,8 @@ interface CreateYouTubePlayerParams {
 let nextYouTubePlayerId = 0;
 
 /**
- * Creates a commandable YouTube iframe from a plain DOM mount node.
- * React owns the outer shell; this helper owns the iframe and message bridge.
- *
- * The project intentionally avoids YouTube's www-widgetapi.js wrapper here.
- * The wrapper currently throws a localhost postMessage warning in development,
- * while the iframe's own enablejsapi message channel supports the same small
- * command set this feature needs.
+ * Own the iframe and its enablejsapi message bridge inside React's mount.
+ * Direct messaging avoids the widget wrapper's localhost postMessage warning.
  */
 export function createYouTubePlayer({
   mountElement,
@@ -190,11 +182,7 @@ export function createYouTubePlayer({
     try {
       iframe.contentWindow.postMessage(JSON.stringify(message), YOUTUBE_ORIGIN);
     } catch {
-      /*
-       * Before the embed document is ready, the iframe can still be the
-       * browser-created local about:blank page. The next load-driven handshake
-       * will retry once the recipient is actually YouTube.
-       */
+      /* An about:blank recipient is not ready; retry the handshake after iframe load. */
     }
   }
 
@@ -276,12 +264,7 @@ export function createYouTubePlayer({
   return readyPromise;
 }
 
-/**
- * Accepts raw ids, youtube.com URLs, youtu.be URLs, shorts, live, and embeds.
- *
- * Returning null is not an error by itself; it tells the UI to show a friendly
- * "Paste a valid YouTube video link" message.
- */
+/** Accept supported YouTube URLs or raw IDs; invalid input returns null. */
 export function parseYouTubeVideoId(value: string): string | null {
   const trimmedValue = value.trim();
   if (YOUTUBE_ID_PATTERN.test(trimmedValue)) return trimmedValue;
@@ -312,9 +295,6 @@ export function parseYouTubeVideoId(value: string): string | null {
   return null;
 }
 
-/**
- * Removes query/hash noise and verifies the final 11-character id.
- */
 function normalizeYouTubeVideoId(value: string | null | undefined): string | null {
   if (!value) return null;
 

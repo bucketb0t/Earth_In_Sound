@@ -1,10 +1,4 @@
-/*
- * Account auth page.
- * Keeps the first Better Auth interface separate from navbar account artwork.
- */
-
 .page {
-  /* Full account route stage. */
   min-height: 100vh;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.72)), #171717;
@@ -14,14 +8,12 @@
 }
 
 .panel {
-  /* Main readable account panel. */
   border-left: 4px solid #22c55e;
   max-width: 620px;
   padding: clamp(22px, 4vw, 48px);
 }
 
 .eyebrow {
-  /* Small section label above the title. */
   color: #22c55e;
   font-size: 0.78rem;
   font-weight: 700;
@@ -31,7 +23,6 @@
 }
 
 .panel h1 {
-  /* Large account state heading. */
   color: #fff;
   font-size: clamp(2.5rem, 8vw, 6rem);
   line-height: 0.9;
@@ -47,13 +38,11 @@
 }
 
 .form {
-  /* Vertical form layout. */
   display: grid;
   gap: 16px;
 }
 
 .field {
-  /* One label/input pair. */
   display: grid;
   gap: 6px;
 }
@@ -67,7 +56,6 @@
 }
 
 .field input {
-  /* Plain dark input surface. */
   background: #0a0a0a;
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
@@ -83,7 +71,6 @@
 
 .primaryButton,
 .modeButton {
-  /* Shared account action button typography. */
   border: 1px solid rgba(34, 197, 94, 0.7);
   cursor: pointer;
   font: inherit;
@@ -94,7 +81,6 @@
 }
 
 .primaryButton {
-  /* Main submit/logout button. */
   background: #06220f;
   color: #22c55e;
   margin-top: 6px;
@@ -107,7 +93,6 @@
 }
 
 .modeButton {
-  /* Secondary button for switching between login and signup. */
   background: transparent;
   color: #d5d5d5;
   margin-top: 18px;

@@ -1,7 +1,4 @@
-/*
- * Store cell styles.
- * The plaque is decorative; only the screen artwork is clickable.
- */
+/* Only the Store screen is clickable; the plaque is decorative. */
 
 .storeCell {
   --cell-plaque-aspect: 339 / 141;
@@ -16,10 +13,7 @@
 }
 
 .screenButton {
-  /*
-   * Stable screen box and real hit target. Keeping this as the only button
-   * clickable Store screen area.
-   */
+  /* Keep the artwork layers and hit target in one stable box. */
   position: relative;
   appearance: none;
   width: calc(220px * var(--artwork-cell-scale));
@@ -39,7 +33,6 @@
 }
 
 .screenAsset {
-  /* Each layer shares one box; visibility is controlled with opacity. */
   position: absolute;
   inset: 0;
   width: 100%;

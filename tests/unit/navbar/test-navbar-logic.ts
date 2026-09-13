@@ -26,10 +26,7 @@ function createMetrics(
   };
 }
 
-/**
- * Verifies the pure geometry rules behind knob placement and responsive mode
- * selection, especially the distinction between page zoom and real resizing.
- */
+/** Test knob geometry and responsive sizing, including page zoom versus real resizing. */
 export function runNavbarLogicTests(): void {
   assert.deepEqual(
     SECTION_LINKS.eis,

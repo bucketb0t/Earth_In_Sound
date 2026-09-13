@@ -1,19 +1,12 @@
-/*
- * Shared knob/jack styles.
- * Section wrappers provide plaque, logo/title, and active text color.
- */
+/* Shared knob interactions; section wrappers supply artwork and active styling. */
 
 .knobJackModule {
-  /*
-   * Knob/jack placement values come from config.ts through CSS variables.
-   * This file owns rendering, assets, and interaction visuals.
-   */
+  /* Placement comes from config.ts through CSS variables. */
   width: 100%;
   overflow: visible;
 }
 
 .knobWrap {
-  /* Limits the SVG to its designed coordinate width. */
   position: relative;
   width: 100%;
   max-width: var(--knob-max-width);
@@ -25,10 +18,7 @@
 }
 
 .knobArtwork {
-  /*
-   * Visible knob art sits on the SVG hit circle center.
-   * Change KNOB_LAYOUT.artwork in config.ts when tuning size/position.
-   */
+  /* Align visible knob artwork with its hit circle; tune KNOB_LAYOUT.artwork. */
   --knob-rotation: 0deg;
   --knob-press-scale: 1;
 
@@ -67,10 +57,7 @@
 }
 
 .knobWrap:has(.knobFace:active) .knobArtwork {
-  /*
-   * Pressing the invisible hit circle scales the visible SVG inward without
-   * disturbing the current rotation stop.
-   */
+  /* Scale the pressed artwork without changing its rotation. */
   --knob-press-scale: var(--knob-press-scale-active);
 
   filter: brightness(0.92);
@@ -124,10 +111,7 @@
 }
 
 .choiceLight {
-  /*
-   * Knob LEDs use the plaque selection artwork while the SVG group keeps
-   * ownership of click/keyboard behavior and exact polar positioning.
-   */
+  /* Keep LED artwork separate from SVG hit targets and positioning. */
   width: 100%;
   height: 100%;
   background-image: url("/NavbarAssets/DesktopAssets/SVG/PlaquesSelectionLightOffNavbar.svg");
@@ -142,11 +126,7 @@
 }
 
 .choiceText {
-  /*
-   * SVG viewBox scaling already follows --artwork-cell-scale through the
-   * rendered SVG width. Keep this value in viewBox units so labels scale once;
-   * multiplying it again makes long labels overflow at high browser zoom.
-   */
+  /* Keep label sizes in viewBox units; the SVG already applies artwork scaling. */
   font-family: inherit;
   font-size: 8px;
   letter-spacing: 0.05em;
@@ -157,12 +137,11 @@
 }
 
 .choiceTextActive {
-  /* Active section text stays white; the LED artwork carries selection state. */
+  /* LED artwork indicates selection; active labels remain white. */
   fill: #ffffff;
 }
 
 .jackPort {
-  /* Full-cell overlay; only the top-right socket is visible. */
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -171,10 +150,7 @@
 }
 
 .jackAnchor {
-  /*
-   * The anchor itself has no size. Its top/right point is the shared socket
-   * center, so moving this one point moves the port and cable together.
-   */
+  /* The zero-size socket anchor moves the port and cable together. */
   position: absolute;
   top: var(--jack-anchor-top);
   right: var(--jack-anchor-right);
@@ -236,7 +212,7 @@
   cy: 52.5%;
 }
 
-/*!!! JWW and IHM LEDs positions and dimensions !!!*/
+/* Compact LED offsets. */
 
 :global([data-navbar-layout="compact"]) .choiceLightObject {
   --compact-led-x: 0px;
@@ -295,7 +271,7 @@
   --compact-led-y: -3px;
 }
 
-/*!!! JWW and IHM LED TEXT positions and dimensions !!!*/
+/* Compact label offsets. */
 
 :global([data-navbar-layout="compact"]) .choiceText {
   --compact-label-x: 0px;
@@ -352,7 +328,7 @@
   --compact-label-y: -3px;
 }
 
-/* The mobile hit surface follows the visible LED/text row as one control. */
+/* Move compact hit targets with their visible LED/label rows. */
 :global([data-navbar-layout="compact"]) .choiceGroup {
   --compact-hit-x: 0px;
   --compact-hit-y: 0px;

@@ -3,18 +3,8 @@
 import { useNavbarContext } from "../../state";
 import styles from "./AccountCell.module.css";
 
-/**
- * Account cell.
- *
- * This is the small navbar hardware control, not the full account form. It
- * follows the Better Auth session and opens the /account page when the screen
- * button is pressed.
- */
+/** Navbar account controls reflect the auth session and open /account. */
 export default function AccountCell() {
-  /*
-   * The full auth UI lives on the /account route; session state comes from the
-   * shared navbar hook.
-   */
   const {
     accountDisplayName,
     isAuthPending,
@@ -28,7 +18,6 @@ export default function AccountCell() {
   return (
     <div className={`navbar-cell navbar-cell--center ${styles.accountCell}`}>
       <div className={styles.loginRow}>
-        {/* Login switch artwork button. */}
         <button
           type="button"
           className={`${styles.accountToggleButton} ${
@@ -43,7 +32,6 @@ export default function AccountCell() {
           aria-label={toggleLabel}
         />
 
-        {/* Login status panel button. */}
         <button
           type="button"
           className={styles.loginStatusPanel}
@@ -62,7 +50,6 @@ export default function AccountCell() {
         </button>
       </div>
 
-      {/* Account screen route button. */}
       <button
         type="button"
         className={`${styles.accountScreenButton} ${

@@ -4,10 +4,7 @@ import { parseYouTubeVideoId } from "../../../front-end/features/ihate-music-pod
 
 const VIDEO_ID = "dQw4w9WgXcQ";
 
-/**
- * Verifies every supported YouTube URL form and rejects malformed or lookalike
- * hosts before an iframe is created.
- */
+/** Test supported YouTube IDs/URLs and reject malformed or lookalike hosts. */
 export function runYouTubeParserTests(): void {
   const validValues = [
     VIDEO_ID,

@@ -1,19 +1,9 @@
-/**
- * Converts values into search/uniqueness keys.
- *
- * The app keeps the original visible value for display, but lookup fields use
- * lowercase so "Andrew" and "andrew" cannot become two different accounts.
- */
+/** Normalize lookup keys for case-insensitive search and uniqueness. */
 export function toLookupValue(value: string): string {
   return value.toLowerCase();
 }
 
-/**
- * Unique replacement email lookup for deleted user rows.
- *
- * Deleted rows stay in the database, but their original email_lookup must be
- * released so the same real email can sign up again later.
- */
+/** Release a deleted user's email while retaining its profile row. */
 export function getDeletedEmailLookup(
   userId: string,
   deletedAt: number,
@@ -21,18 +11,8 @@ export function getDeletedEmailLookup(
   return `deleted-email:${userId}:${deletedAt}`;
 }
 
-/**
- * Validates the visible email value.
- * The original casing is kept for display, while email_lookup handles searches.
- *
- * This is basic format validation, not proof that the mailbox exists. Real
- * mailbox ownership should be proven later with email verification from the
- * auth provider.
- */
+/** Validate email format only; mailbox ownership requires email verification. */
 export function requireValidEmail(email: string): string {
-  /*
-   * Trim accidental edge spaces but reject spaces inside the address.
-   */
   const cleanedEmail = email.trim();
 
   if (!cleanedEmail) {
@@ -50,17 +30,8 @@ export function requireValidEmail(email: string): string {
   return cleanedEmail;
 }
 
-/**
- * Usernames may contain letters, numbers, "-", "_" and ".".
- * A separator cannot appear first, last, or directly next to another separator.
- *
- * This avoids usernames made only from punctuation or hard-to-read sequences
- * like "john..doe", while still allowing common handle styles.
- */
+/** Allow letters, numbers, and ._- separators; separators cannot touch or appear at either end. */
 export function requireValidUsername(username: string): string {
-  /*
-   * Visible username is preserved exactly except for accidental edge spaces.
-   */
   const cleanedUsername = username.trim();
 
   if (!cleanedUsername) {

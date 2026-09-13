@@ -7,10 +7,7 @@ import {
   assertRejectsWithMessage,
 } from "./test-user-helpers";
 
-/**
- * Verifies every public user-read path, including normalization, absent rows,
- * current-session lookup behavior, bounded search, and invalid identifiers.
- */
+/** Test normalized reads, missing rows, session lookup, search limits, and invalid IDs. */
 export async function testUserReads(
   context: UserDatabaseTestContext,
   normalUser: NormalUserTestResult,

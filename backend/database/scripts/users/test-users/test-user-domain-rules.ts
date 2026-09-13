@@ -47,10 +47,7 @@ function createUser(
   };
 }
 
-/**
- * Verifies input normalization and the complete account permission hierarchy.
- * These rules are pure, so failures are reported before database setup begins.
- */
+/** Test input normalization and permissions before database setup. */
 export function runUserDomainRuleTests(): void {
   testLookupValues();
   testEmailValidation();

@@ -2,14 +2,7 @@ import { runBetterAuthMigrationsScript } from "./auth/run-better-auth-migrations
 import { runProjectMigrationsScript } from "./run-project-migrations/run-project-migrations";
 import { runCreateOwnerScript } from "./users/create-owner/create-owner";
 
-/**
- * Database setup script hub.
- * Add future setup scripts to this list so one command can run all setup.
- *
- * This file is intentionally small: it is the "run everything needed to prepare
- * the database" entry point. Each script stays in its own folder, and this hub
- * decides the order.
- */
+/** Run database setup scripts in dependency order. */
 const databaseScripts = [
   {
     name: "run-project-migrations",
@@ -26,10 +19,6 @@ const databaseScripts = [
 ];
 
 async function main(): Promise<void> {
-  /*
-   * Setup scripts run sequentially because later scripts may depend on tables
-   * created by earlier scripts.
-   */
   for (const script of databaseScripts) {
     console.log(`Running database script: ${script.name}`);
     await script.run();
@@ -39,7 +28,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  /* Terminal-friendly failure reporting. */
   console.error(error);
   process.exit(1);
 });

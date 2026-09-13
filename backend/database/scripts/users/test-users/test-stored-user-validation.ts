@@ -5,9 +5,7 @@ import {
 } from "../../../users/validation/validate-stored-user";
 import { assert, assertThrows } from "./test-user-helpers";
 
-/*
- * A complete valid row used as the starting point for each validation test.
- */
+/* Valid row fixture for runtime validation tests. */
 const validUserRow: StoredUser = {
   id: "test-user-id",
   auth_provider_user_id: "test-auth-id",
@@ -21,13 +19,9 @@ const validUserRow: StoredUser = {
   updated_at: 1_700_000_000_100,
 };
 
-/**
- * Tests the runtime boundary between database rows and application user data.
- */
+/** Test row validation, schema strictness, and complete-list validation. */
 export function runStoredUserValidationTests(): void {
-  /*
-   * A correctly shaped row should pass without being changed.
-   */
+  /* Accept a valid row unchanged. */
   const parsedUser = parseStoredUser(validUserRow);
 
   assert(
@@ -35,9 +29,7 @@ export function runStoredUserValidationTests(): void {
     "a valid user row should be accepted",
   );
 
-  /*
-   * The auth provider id may legitimately be null.
-   */
+  /* Accept null auth links. */
   const userWithoutAuthLink = parseStoredUser({
     ...validUserRow,
     auth_provider_user_id: null,
@@ -48,9 +40,7 @@ export function runStoredUserValidationTests(): void {
     "a null auth provider id should be accepted",
   );
 
-  /*
-   * Unknown roles must not enter the application.
-   */
+  /* Reject unknown roles. */
   assertThrows(
     () =>
       parseStoredUser({
@@ -60,9 +50,7 @@ export function runStoredUserValidationTests(): void {
     "an unknown user role should be rejected",
   );
 
-  /*
-   * updated_at cannot describe a time before the user was created.
-   */
+  /* Reject update timestamps before creation. */
   assertThrows(
     () =>
       parseStoredUser({
@@ -72,9 +60,7 @@ export function runStoredUserValidationTests(): void {
     "an invalid timestamp order should be rejected",
   );
 
-  /*
-   * Strict validation should reveal unexpected database columns.
-   */
+  /* Reject unexpected columns. */
   assertThrows(
     () =>
       parseStoredUser({
@@ -84,9 +70,7 @@ export function runStoredUserValidationTests(): void {
     "an unexpected user column should be rejected",
   );
 
-  /*
-   * A list is valid only when every row inside it is valid.
-   */
+  /* Reject a list containing any invalid row. */
   const parsedUsers = parseStoredUsers([
     validUserRow,
     {
@@ -114,9 +98,7 @@ export function runStoredUserValidationTests(): void {
     "a list containing an invalid user should be rejected",
   );
 
-  /*
-   * One user object must not be mistaken for an array of users.
-   */
+  /* Reject a user object supplied as a list. */
   assertThrows(
     () => parseStoredUsers(validUserRow),
     "a non-array user result should be rejected",

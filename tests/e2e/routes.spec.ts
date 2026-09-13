@@ -6,7 +6,7 @@ interface RouteCase {
   title: string;
 }
 
-/* Every route whose content contract exists in the current development scope. */
+/* Routes with implemented content contracts. */
 const ROUTE_CASES: readonly RouteCase[] = [
   { path: "/about", heading: "About", title: "About | Earth In Sound" },
   {
@@ -43,10 +43,7 @@ const ROUTE_CASES: readonly RouteCase[] = [
   { path: "/cart", heading: "Cart", title: "Cart | Earth In Sound" },
 ] as const;
 
-/*
- * Confirms that intentional placeholder pages remain valid routes with their
- * own content and metadata while their final designs are still pending.
- */
+/* Test placeholder content and metadata pending final designs. */
 test("renders every current section route without a server error", async ({
   page,
 }) => {
@@ -63,7 +60,7 @@ test("renders every current section route without a server error", async ({
   }
 });
 
-/* The live RSS route has the same heading whether Acast loads or falls back. */
+/* Test podcast headings with live RSS or the fallback. */
 test("keeps the podcast route renderable when its feed is available or down", async ({
   page,
 }) => {

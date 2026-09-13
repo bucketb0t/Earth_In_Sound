@@ -1,9 +1,3 @@
-/*
- * Home page styles.
- * Kept separate from page.tsx so markup stays focused on structure.
- */
-
 .main {
-  /* Empty home stage below the persistent navbar. */
   padding: 40px 24px;
 }

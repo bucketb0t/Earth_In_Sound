@@ -35,63 +35,32 @@ function isOwnerSetupIdentity(email: string, username: string): boolean {
   );
 }
 
-/**
- * Better Auth server configuration.
- * Passwords and sessions live in Better Auth tables; site roles live in users.
- *
- * This file is the center of the auth system. Requests arrive from
- * app/api/auth/[...all]/route.ts, Better Auth processes them here, then the
- * database hooks mirror successful signups into the project's users table.
- */
+/** Better Auth owns passwords and sessions; project users own roles and status. */
 export const auth = betterAuth({
   appName: "Earth In Sound",
   baseURL: appBaseUrl,
   logger: {
-    /*
-     * Database tests intentionally exercise rejected signups. This flag lets
-     * those tests stay readable without muting production auth errors.
-     */
+    /* Silence expected auth failures in database tests only. */
     disabled: shouldSilenceBetterAuthLogs,
   },
   secret: process.env.BETTER_AUTH_SECRET,
   database: {
-    /*
-     * Better Auth stores auth data in Turso through Kysely and owns the exact
-     * schema of those tables. Shared transaction helpers match that generated
-     * schema explicitly, and the database tests guard the contract.
-     */
+    /* Shared transactions must match Better Auth's generated schema. */
     db: betterAuthDatabase,
     type: "sqlite",
     casing: "snake",
   },
   emailAndPassword: {
-    /*
-     * Email/password auth owns password hashing and session creation. The
-     * project never manually stores or compares raw passwords. This block does
-     * not yet prove mailbox ownership; email verification belongs here when
-     * that production hardening step is implemented.
-     */
+    /* Better Auth handles passwords and sessions; mailbox ownership is not yet verified. */
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
     autoSignIn: true,
   },
   databaseHooks: {
-    /*
-     * Hooks keep Better Auth's auth user table and the project's users table
-     * synchronized without allowing signup to choose roles.
-     */
     user: {
       create: {
-        /**
-         * Validates signups before Better Auth writes its auth user.
-         * Signup can only create normal accounts; roles are handled elsewhere.
-         *
-         * This hook is the "front gate" for new accounts:
-         * 1. clean and validate the submitted email/username;
-         * 2. check project profile reservations, including deleted usernames;
-         * 3. return cleaned data to Better Auth if everything is allowed.
-         */
+        /** Validate and normalize signup input; enforce reserved identities before auth writes. */
         before: async (user) => {
           const email = requireValidEmail(user.email);
           const username = requireValidUsername(String(user.name ?? ""));
@@ -127,14 +96,7 @@ export const auth = betterAuth({
           };
         },
 
-        /**
-         * Mirrors a successful auth signup into the project users table.
-         * The inserted role is always "user".
-         *
-         * At this point Better Auth has already created its own auth user. The
-         * app now creates the Earth In Sound profile row and stores the Better
-         * Auth user.id in auth_provider_user_id so both systems stay linked.
-         */
+        /** Link the auth user to a normal project profile; remove the auth user if linking fails. */
         after: async (user) => {
           const username = String(user.name ?? "");
           const createProjectUser = isOwnerSetupIdentity(user.email, username)
@@ -164,12 +126,7 @@ export const auth = betterAuth({
     },
     session: {
       create: {
-        /**
-         * Disabled, deleted, or unmirrored accounts cannot create sessions.
-         *
-         * Signup and owner setup briefly pass through before the project row
-         * exists, then the user.create.after hook links the project profile.
-         */
+        /** Reject sessions for inactive or missing profiles, except during signup and trusted owner setup. */
         before: async (session, context) => {
           const projectUser = await getUserByAuthProviderId(session.userId);
 

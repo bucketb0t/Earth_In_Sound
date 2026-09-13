@@ -15,9 +15,7 @@ const unitTestSuites: readonly UnitTestSuite[] = [
   { name: "podcast/acast", run: runAcastTests },
 ];
 
-/**
- * Runs fast tests that do not need a browser or database.
- */
+/** Run unit suites without a browser or database. */
 async function main(): Promise<void> {
   for (const testSuite of unitTestSuites) {
     console.log(`Running unit test suite: ${testSuite.name}`);

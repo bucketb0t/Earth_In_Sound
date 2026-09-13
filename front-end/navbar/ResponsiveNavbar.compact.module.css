@@ -1,10 +1,4 @@
-/*
- * Compact arrangement for the persistent navbar cells.
- *
- * ResponsiveNavbar.tsx imports these classes because the navbar keeps
- * one React tree. This folder still owns the compact/mobile presentation while
- * shared state and controls remain in their existing components.
- */
+/* Compact styling for the persistent navbar cells. */
 
 :global([data-navbar-layout="compact"]) .responsiveRows {
   --navbar-layout-height-factor: 1.53607;

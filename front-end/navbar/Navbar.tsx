@@ -3,11 +3,7 @@
 import ResponsiveNavbar from "./ResponsiveNavbar";
 import { NavbarContext, useNavbar } from "./state";
 
-/**
- * Site navbar entry point.
- * Owns one shared state instance and one persistent set of controls. The
- * layout adapts through CSS without replacing the interactive components.
- */
+/** Provide shared navbar state to one persistent set of responsive controls. */
 export default function Navbar() {
   const navbarState = useNavbar();
 

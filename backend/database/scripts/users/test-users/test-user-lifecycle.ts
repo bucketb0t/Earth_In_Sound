@@ -9,10 +9,7 @@ import {
   assertRejectsWithMessage,
 } from "./test-user-helpers";
 
-/**
- * Verifies that a failed profile-status update does not revoke the active
- * Better Auth sessions belonging to that still-active user.
- */
+/** Test disable rollback: failed profile updates preserve active sessions. */
 export async function testDisableFailureSafety(
   context: UserDatabaseTestContext,
   owner: StoredUser,
@@ -86,10 +83,7 @@ export async function testDisableFailureSafety(
   });
 }
 
-/**
- * Verifies disabling, session revocation, blocked account behavior, identity
- * reservation, and reactivation for a normal user.
- */
+/** Test disabling, session revocation, identity reservation, and reactivation. */
 export async function testDisableAndReactivate(
   context: UserDatabaseTestContext,
   owner: StoredUser,
@@ -153,10 +147,7 @@ export async function testDisableAndReactivate(
   );
 }
 
-/**
- * Verifies that a failed project-profile deletion does not remove the user's
- * Better Auth login or leave the two user records inconsistent.
- */
+/** Test deletion rollback: failed profile updates preserve auth records. */
 export async function testProjectDeletionFailureSafety(
   context: UserDatabaseTestContext,
   currentOwner: StoredUser,
@@ -190,10 +181,7 @@ export async function testProjectDeletionFailureSafety(
     "failed-deletion test signup should begin with login credentials",
   );
 
-  /*
-   * This trigger deliberately prevents the project profile from being marked
-   * as deleted. It simulates a database failure during account deletion.
-   */
+  /* Force the profile deletion update to fail. */
   await turso.execute({
     sql: `
       CREATE TRIGGER reject_project_profile_delete_for_test
@@ -247,19 +235,13 @@ export async function testProjectDeletionFailureSafety(
     "failed deletion should restore existing sessions",
   );
 
-  /*
-   * Remove the temporary test account after its failure behavior is verified.
-   */
   await userWrites.deleteUser({
     currentUserId: currentOwner.id,
     targetUserId: deleteTarget.id,
   });
 }
 
-/**
- * Verifies soft deletion, Better Auth cleanup, permanent username reservation,
- * blocked reactivation, and reuse of a released email address.
- */
+/** Test soft deletion, auth cleanup, reserved usernames, and released emails. */
 export async function testAccountDeletion(
   context: UserDatabaseTestContext,
   currentOwner: StoredUser,
@@ -365,10 +347,7 @@ export async function testAccountDeletion(
   );
 }
 
-/**
- * Verifies the legacy branch for project profiles created before a Better Auth
- * account was linked to them.
- */
+/** Test deletion of legacy profiles without linked auth records. */
 export async function testUnlinkedProfileDeletion(
   context: UserDatabaseTestContext,
   currentOwner: StoredUser,

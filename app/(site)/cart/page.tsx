@@ -1,16 +1,10 @@
 import SectionPlaceholderPage from "@/front-end/features/section-placeholder/SectionPlaceholderPage";
 
-/**
- * Browser metadata for the Cart route.
- */
 export const metadata = {
   title: "Cart | Earth In Sound",
 };
 
-/**
- * Temporary Cart page content.
- * Uses the shared placeholder until cart data and checkout are implemented.
- */
+/** Placeholder pending cart and checkout. */
 export default function CartPage() {
   return (
     <SectionPlaceholderPage

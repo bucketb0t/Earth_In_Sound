@@ -24,9 +24,8 @@ import {
 loadEnvConfig(process.cwd());
 
 /**
- * Runs user/auth integration scenarios in one disposable local database.
- * Runtime database modules are loaded only after the test environment points
- * them at that database, preventing accidental access to configured data.
+ * Run integration scenarios against a disposable database.
+ * Configure the environment before importing runtime database clients.
  */
 export async function runUserDatabaseTests(): Promise<void> {
   const testDirectory = await mkdtemp(join(tmpdir(), "earth-in-sound-"));

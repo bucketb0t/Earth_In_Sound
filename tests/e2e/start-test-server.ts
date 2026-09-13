@@ -8,11 +8,7 @@ const databaseDirectory = join(testResultsRoot, "e2e-database");
 const databasePath = join(databaseDirectory, "test.db").replaceAll("\\", "/");
 const serverPort = "3100";
 
-/**
- * Starts Next.js against a disposable database for Playwright.
- * Browser auth tests can therefore create users without touching local or
- * production data, and an existing development server is never reused.
- */
+/** Start an isolated Next.js server with a disposable database for browser auth tests. */
 async function main(): Promise<void> {
   const relativeDatabaseDirectory = relative(
     testResultsRoot,

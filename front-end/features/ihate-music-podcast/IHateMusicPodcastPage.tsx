@@ -2,30 +2,16 @@ import type { PodcastEpisode, PodcastShow } from "@/backend/podcast/acast";
 import EpisodeMediaTabs from "./EpisodeMediaTabs";
 import styles from "./IHateMusicPodcastPage.module.css";
 
-/**
- * Page-level podcast feature.
- * Receives normalized Acast RSS data and renders the public podcast route.
- */
 interface IHateMusicPodcastPageProps {
   show: PodcastShow | null;
 }
 
-/*
- * Episode cards use the same component for latest and archive entries.
- */
 interface EpisodeCardProps {
   episode: PodcastEpisode;
   featured?: boolean;
 }
 
-/**
- * Page-level renderer for the I Hate Music podcast route.
- * The route fetches data; this component owns the visual page structure.
- *
- * show is either a normalized PodcastShow object or null. null means the route
- * could not load Acast data, so the component renders a fallback instead of
- * crashing the page.
- */
+/** Render normalized show data or a fallback when Acast is unavailable. */
 export default function IHateMusicPodcastPage({
   show,
 }: IHateMusicPodcastPageProps) {
@@ -37,11 +23,7 @@ export default function IHateMusicPodcastPage({
 }
 
 function PodcastContent({ show }: { show: PodcastShow }) {
-  /*
-   * The first RSS item is treated as the latest episode.
-   * Acast returns newest-first, so array destructuring gives one featured item
-   * and leaves the rest for the archive grid.
-   */
+  /* Acast orders episodes newest-first; feature the first and archive the rest. */
   const [latestEpisode, ...archiveEpisodes] = show.episodes;
   const hostLabel = show.author ? `Hosted by ${show.author}` : "Podcast";
   const languageLabel = show.language ? show.language.toUpperCase() : "N/A";
@@ -77,7 +59,6 @@ function PodcastContent({ show }: { show: PodcastShow }) {
 
         {show.imageUrl && (
           <div className={styles.coverFrame}>
-            {/* Public RSS artwork image. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={show.imageUrl} alt={`${show.title} cover art`} />
           </div>
@@ -116,11 +97,6 @@ function PodcastContent({ show }: { show: PodcastShow }) {
 }
 
 function EpisodeCard({ episode, featured = false }: EpisodeCardProps) {
-  /*
-   * Dates are prepared here so the JSX stays focused on structure.
-   * EpisodeCard receives already-normalized data and does not know how RSS was
-   * fetched or parsed.
-   */
   const publishedDateLabel = formatEpisodeDate(episode.publishedAt);
   const publishedDateTime = getEpisodeDateTime(episode.publishedAt);
 
@@ -176,17 +152,11 @@ function PodcastUnavailable() {
   );
 }
 
-/**
- * Returns machine-readable date text for the <time> element.
- */
 function getEpisodeDateTime(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toISOString();
 }
 
-/**
- * Returns the visible short date label used by episode cards.
- */
 function formatEpisodeDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;

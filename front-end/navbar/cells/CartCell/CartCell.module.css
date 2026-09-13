@@ -1,8 +1,3 @@
-/*
- * Cart cell styles.
- * Owns the SVG counter and cart button artwork states.
- */
-
 @font-face {
   font-family: "DS-DIGIB Cart";
   src: url("/NavbarAssets/DesktopAssets/Fonts/DS-DIGIB_Cart.TTF")
@@ -15,7 +10,6 @@
 
   flex: 0 0 auto;
   min-width: 0;
-  /* Right edge navbar spacing. */
   margin-right: calc(16px * var(--artwork-cell-scale));
   background-image: url("/NavbarAssets/DesktopAssets/SVG/CartPlaqueNavbar.svg");
   background-repeat: no-repeat;
@@ -24,7 +18,6 @@
 }
 
 .cartCounter {
-  /* Cart counter display artwork and count text. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,7 +44,6 @@
 }
 
 .cartButton {
-  /* Cart button hit target. */
   width: calc(54px * var(--artwork-cell-scale));
   aspect-ratio: 1;
   transform: translate(0, calc(6px * var(--artwork-cell-scale)));

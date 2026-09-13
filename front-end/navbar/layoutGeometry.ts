@@ -1,23 +1,16 @@
-/**
- * DOM geometry shared by navbar scaling and paint synchronization.
- *
- * The navbar always renders two semantic row groups. Wide CSS flattens those
- * groups into one visual row; compact CSS stacks them. These helpers measure
- * whichever arrangement CSS currently exposes without deciding the mode in
- * JavaScript.
- */
+/** Measure the CSS-selected arrangement: stacked compact rows or one flattened wide row. */
 
 const DEFAULT_LAYOUT_HEIGHT_FACTOR = 1;
-/* Ignore only fractional rendering jitter; every whole CSS pixel is meaningful. */
+/* Ignore subpixel rendering jitter. */
 const DIMENSION_EPSILON_PX = 0.1;
 const DEVICE_PIXEL_RATIO_EPSILON = 0.001;
 const NORMAL_BROWSER_FRAME_MAX_PX = 64;
 const SCREEN_VIEWPORT_TOLERANCE_RATIO = 0.02;
 
 export interface NavbarWindowMetrics {
-  /** Width reported by browser/device tools; includes the scrollbar gutter. */
+  /** Reported viewport width, including the scrollbar gutter. */
   viewportWidth: number;
-  /** Width available to content; excludes the scrollbar gutter. */
+  /** Content width, excluding the scrollbar gutter. */
   layoutViewportWidth: number;
   outerWidth: number;
   devicePixelRatio: number;
@@ -36,10 +29,7 @@ export function getNavbarLayoutViewportWidth(
   );
 }
 
-/**
- * Captures the browser measurements needed to separate page zoom from a real
- * window, orientation, or emulated-viewport resize.
- */
+/** Capture metrics that distinguish page zoom from window or device resizing. */
 export function readNavbarWindowMetrics(
   fallbackElement?: HTMLElement,
 ): NavbarWindowMetrics {
@@ -89,13 +79,8 @@ function viewportMatchesReportedScreen(
 }
 
 /**
- * Establishes the zoom-independent width when the navbar first mounts.
- *
- * At normal browser zoom, outerWidth and the content viewport differ only by
- * the browser frame, so the exact content width is used. A much larger gap is
- * normally page zoom, where outerWidth remains stable. Device emulation is the
- * exception: its viewport commonly matches the reported screen while
- * outerWidth still describes the host window, so the emulated width wins.
+ * Use the initial viewport at normal zoom or in device emulation.
+ * Otherwise use outerWidth to establish a zoom-independent reference.
  */
 export function getInitialNavbarReferenceWidth(
   metrics: NavbarWindowMetrics,
@@ -125,10 +110,7 @@ export function getInitialNavbarReferenceWidth(
   return metrics.outerWidth;
 }
 
-/**
- * Updates the width reference without allowing browser page zoom to change the
- * wide/compact mode or the navbar's fitting scale.
- */
+/** Update width references on real resizing while preserving them across page zoom. */
 export function resolveNavbarReferenceWidth(
   previousMetrics: NavbarWindowMetrics,
   currentMetrics: NavbarWindowMetrics,
@@ -170,8 +152,7 @@ export function resolveNavbarReferenceWidth(
   if (pageZoomChanged) return previousReferenceWidth;
 
   if (!outerWidthChanged) {
-    // DevTools emulation, orientation, and embedded viewports resize the
-    // content area while their host window can remain unchanged.
+    // Emulation and orientation can resize content without resizing the host window.
     return currentViewportWidth;
   }
 
@@ -185,7 +166,7 @@ export function resolveNavbarReferenceWidth(
       ? previousReferenceWidth / previousOuterWidth
       : 1;
 
-  // Preserve the browser-frame correction while the real window is resized.
+  // Preserve the browser-frame correction during window resizing.
   return Math.max(0, currentMetrics.outerWidth * referenceToOuterRatio);
 }
 

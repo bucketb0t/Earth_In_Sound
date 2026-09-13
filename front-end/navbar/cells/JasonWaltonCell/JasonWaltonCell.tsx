@@ -5,13 +5,7 @@ import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
 import { useNavbarContext } from "../../state";
 import styles from "./JasonWaltonCell.module.css";
 
-/**
- * Jason Walton section.
- * Owns Jason-specific plaque/logo artwork and feeds behavior into the knob.
- *
- * The cell wrapper is responsible for artwork and page identity. The shared
- * KnobJackCell is responsible for actual knob/LED interaction.
- */
+/** Jason Walton artwork and routes use the shared knob interaction. */
 export default function JasonWaltonCell() {
   const { knobNavTo } = useNavbarContext();
 

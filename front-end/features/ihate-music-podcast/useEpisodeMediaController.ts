@@ -18,10 +18,7 @@ interface UseEpisodeMediaControllerOptions {
   episodeId: string;
 }
 
-/**
- * Owns one episode's media state and connects the rendered controls to the
- * YouTube player and audio-continuity hook.
- */
+/** Manage episode playback state, YouTube initialization, and audio continuity. */
 export function useEpisodeMediaController({
   audioUrl,
   episodeId,
@@ -195,7 +192,7 @@ export function useEpisodeMediaController({
   };
 }
 
-/** Guards against initializing YouTube inside a collapsed hidden element. */
+/** Defer YouTube initialization until the mount element is visible. */
 function elementHasRenderableSize(element: HTMLElement): boolean {
   return element.offsetWidth > 0 && element.offsetHeight > 0;
 }

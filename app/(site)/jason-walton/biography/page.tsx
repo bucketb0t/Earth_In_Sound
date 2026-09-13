@@ -1,16 +1,10 @@
 import SectionPlaceholderPage from "@/front-end/features/section-placeholder/SectionPlaceholderPage";
 
-/**
- * Browser metadata for the Jason W. Walton Biography route.
- */
 export const metadata = {
   title: "Jason W. Walton Biography | Earth In Sound",
 };
 
-/**
- * Temporary Biography page content.
- * Uses the shared placeholder until artist biography content is built.
- */
+/** Placeholder pending biography content. */
 export default function JasonWaltonBiographyPage() {
   return (
     <SectionPlaceholderPage

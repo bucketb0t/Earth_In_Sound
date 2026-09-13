@@ -9,10 +9,7 @@ import {
   assertRejectsWithMessage,
 } from "./test-user-helpers";
 
-/**
- * Verifies that a failed project-profile write removes the incomplete auth
- * account and releases the identity for a later signup attempt.
- */
+/** Test signup rollback: failed profile creation removes auth records and releases the identity. */
 export async function testFailedSignupRecovery(
   context: UserDatabaseTestContext,
 ): Promise<void> {
@@ -21,10 +18,7 @@ export async function testFailedSignupRecovery(
   const failedMirrorUsername = `${testRunId}-failed-mirror`;
   const failedMirrorPassword = "Failed-mirror-password-123";
 
-  /*
-   * This temporary trigger affects only the disposable test database and
-   * forces the project profile insert to fail after Better Auth commits.
-   */
+  /* Force profile creation to fail after the auth record is committed. */
   await turso.execute({
     sql: `
       CREATE TRIGGER reject_project_profile_insert_for_test
@@ -77,10 +71,7 @@ export async function testFailedSignupRecovery(
   );
 }
 
-/**
- * Verifies ordinary signup, default role/status, username updates, uniqueness,
- * and search. The returned user is exercised by later lifecycle scenarios.
- */
+/** Test signup defaults, identity uniqueness, username changes, and search. */
 export async function testNormalSignupAndProfile(
   context: UserDatabaseTestContext,
   owner: StoredUser,

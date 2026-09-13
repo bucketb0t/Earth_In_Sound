@@ -24,9 +24,6 @@ export interface GetCurrentUserInput {
   authProviderUserId: string | null | undefined;
 }
 
-/*
- * Convert an optional first query row into either a validated user or null.
- */
 function parseOptionalStoredUser(row: unknown): StoredUser | null {
   if (row === undefined) {
     return null;
@@ -35,21 +32,13 @@ function parseOptionalStoredUser(row: unknown): StoredUser | null {
   return parseStoredUser(row);
 }
 
-/* Treat SQL LIKE wildcard characters as ordinary search text. */
+/* Treat LIKE wildcards as literal search text. */
 function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-/**
- * Fetches one user by internal database id.
- *
- * Use this when code already knows the Earth In Sound users.id value. This id
- * is different from Better Auth's user.id.
- */
+/** Look up the project user ID, distinct from Better Auth's user ID. */
 export async function getUserById(userId: string): Promise<StoredUser | null> {
-  /*
-   * Trim ids from route/session input before querying.
-   */
   const cleanedUserId = userId.trim();
 
   if (!cleanedUserId) {
@@ -64,18 +53,10 @@ export async function getUserById(userId: string): Promise<StoredUser | null> {
   return parseOptionalStoredUser(result.rows[0]);
 }
 
-/**
- * Fetches one user by the external auth provider id.
- *
- * This is the bridge from Better Auth into the project table. Better Auth owns
- * its user.id; the project stores that same value in auth_provider_user_id.
- */
+/** Resolve Better Auth's user ID through auth_provider_user_id. */
 export async function getUserByAuthProviderId(
   authProviderUserId: string,
 ): Promise<StoredUser | null> {
-  /*
-   * auth_provider_user_id links Better Auth's user.id to the project user row.
-   */
   const cleanedAuthProviderUserId = authProviderUserId.trim();
 
   if (!cleanedAuthProviderUserId) {
@@ -90,11 +71,7 @@ export async function getUserByAuthProviderId(
   return parseOptionalStoredUser(result.rows[0]);
 }
 
-/**
- * Fetches the single project owner.
- *
- * The database prevents multiple owner rows with a partial unique index.
- */
+/** The partial unique index guarantees at most one owner. */
 export async function getOwner(): Promise<StoredUser | null> {
   const result = await turso.execute(
     "SELECT * FROM users WHERE role = 'owner' LIMIT 1",
@@ -103,12 +80,7 @@ export async function getOwner(): Promise<StoredUser | null> {
   return parseOptionalStoredUser(result.rows[0]);
 }
 
-/**
- * Resolves the currently logged-in auth provider user to a stored user row.
- *
- * Future server-side pages/actions can call this after reading the Better Auth
- * session. If there is no logged-in auth id, there is no project user to load.
- */
+/** Resolve a session's auth ID to a project profile; missing sessions return null. */
 export async function getCurrentUser(
   input: GetCurrentUserInput,
 ): Promise<StoredUser | null> {
@@ -121,12 +93,7 @@ export async function getCurrentUser(
   return getUserByAuthProviderId(authProviderUserId);
 }
 
-/**
- * Fetches one user by email using the lookup value.
- *
- * The visible email keeps the user's original casing, but email_lookup is
- * lowercase so searches and duplicate checks behave consistently.
- */
+/** Use the normalized email key while preserving display casing. */
 export async function getUserByEmail(
   email: string,
 ): Promise<StoredUser | null> {
@@ -140,12 +107,7 @@ export async function getUserByEmail(
   return parseOptionalStoredUser(result.rows[0]);
 }
 
-/**
- * Fetches one user by username using the lookup value.
- *
- * Usernames are preserved for display, but username_lookup lets the database
- * reject case-insensitive duplicates.
- */
+/** Use the normalized username key while preserving display casing. */
 export async function getUserByUsername(
   username: string,
 ): Promise<StoredUser | null> {
@@ -163,19 +125,11 @@ export async function getUserByUsername(
   return parseOptionalStoredUser(result.rows[0]);
 }
 
-/**
- * Searches users by partial email or username.
- *
- * This is intended for owner/admin panels later. It searches lookup fields, not
- * visible fields, so "and" can find "Andrew" and "andreea" without caring about
- * original letter casing.
- */
+/** Search normalized email and username keys with a bounded result limit. */
 export async function searchUsers(
   input: SearchUsersInput,
 ): Promise<StoredUser[]> {
-  /*
-   * Empty search returns no rows instead of dumping the user table.
-   */
+  /* Empty searches return no users. */
   const cleanedSearchText = input.searchText.trim();
 
   if (!cleanedSearchText) {
@@ -185,9 +139,7 @@ export async function searchUsers(
   const searchLookup = `%${escapeLikePattern(
     toLookupValue(cleanedSearchText),
   )}%`;
-  /*
-   * Clamp limits so a caller cannot request an unbounded user list.
-   */
+  /* Bound search results to prevent unbounded queries. */
   const resultLimit = Math.min(Math.max(input.limit ?? 20, 1), 50);
 
   const result = await turso.execute({

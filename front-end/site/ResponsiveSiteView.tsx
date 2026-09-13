@@ -8,13 +8,7 @@ interface ResponsiveSiteViewProps {
   children: ReactNode;
 }
 
-/**
- * Stable site frame shared by every viewport.
- *
- * Navbar and route content stay mounted while their CSS adapts to available
- * space. This prevents responsive changes from resetting focus, forms, cart
- * controls, or stateful podcast media.
- */
+/** Keep navbar and content mounted across viewport changes to preserve focus and media state. */
 export default function ResponsiveSiteView({
   children,
 }: ResponsiveSiteViewProps) {

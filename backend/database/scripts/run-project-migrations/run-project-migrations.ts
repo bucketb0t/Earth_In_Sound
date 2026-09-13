@@ -13,9 +13,7 @@ const legacyMigrationIds = [
   "002_allow_deleted_user_status.sql",
 ];
 
-/**
- * Applies committed project migrations once, in filename order.
- */
+/** Apply committed migrations once, in filename order. */
 export async function runProjectMigrationsScript(): Promise<void> {
   const { turso } = await import("../../turso-client");
 
@@ -38,10 +36,8 @@ export async function runProjectMigrationsScript(): Promise<void> {
   const hasExistingUsersTable = usersTable.rows.length > 0;
 
   /*
-   * Compatibility baseline for known project databases created before
-   * project_migrations existed. This assumes the existing users table already
-   * matches migrations 001/002. Unknown or hand-edited schemas should be
-   * inspected before this script is used.
+   * Legacy databases without migration history must already match 001/002.
+   * Inspect unknown or manually modified schemas before baselining.
    */
   if (!hasMigrationHistory && hasExistingUsersTable) {
     const now = Date.now();
@@ -78,9 +74,8 @@ export async function runProjectMigrationsScript(): Promise<void> {
     );
 
     /*
-     * Each SQL file is applied first, then recorded. Keep new migrations
-     * idempotent or transaction-wrapped so reruns are safe if this process is
-     * interrupted between the SQL and history insert.
+     * SQL runs before history is recorded; migrations must be idempotent or transactional
+     * so interrupted runs can safely retry.
      */
     await turso.executeMultiple(migrationSql);
     await turso.execute({

@@ -1,9 +1,3 @@
-/**
- * Tiny assertion helper for script-based tests.
- *
- * Throws a normal Error so these scripts can run with plain tsx instead of a
- * full test runner.
- */
 export function assert(
   condition: boolean,
   message: string,
@@ -17,10 +11,7 @@ export async function assertRejects(
   action: () => Promise<unknown>,
   failureMessage: string,
 ): Promise<void> {
-  /*
-   * Generic failure check. Prefer assertRejectsWithMessage when the reason for
-   * rejection matters, such as permissions or lifecycle rules.
-   */
+  /* Use message-specific assertions when the rejection reason matters. */
   try {
     await action();
   } catch {
@@ -30,12 +21,7 @@ export async function assertRejects(
   throw new Error(`Test failed: ${failureMessage}`);
 }
 
-/**
- * Runs an action that should fail and verifies the exact error message.
- *
- * This is useful for permission/validation tests, where success means "the
- * dangerous action was rejected for the reason we expected."
- */
+/** Assert that an async action fails with the expected message. */
 export async function assertRejectsWithMessage(
   action: () => Promise<unknown>,
   expectedMessage: string,
@@ -54,10 +40,7 @@ export async function assertRejectsWithMessage(
   throw new Error(`Test failed: ${failureMessage}`);
 }
 
-/**
- * Runs a synchronous action that is expected to throw.
- */
-
+/** Assert that a synchronous action throws. */
 export function assertThrows(
   action: () => unknown,
   failureMessage: string,
@@ -71,9 +54,7 @@ export function assertThrows(
   throw new Error(`Test failed: ${failureMessage}`);
 }
 
-/**
- * Runs a synchronous action that should fail for one specific reason.
- */
+/** Assert that a synchronous action throws the expected message. */
 export function assertThrowsWithMessage(
   action: () => unknown,
   expectedMessage: string,

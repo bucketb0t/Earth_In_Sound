@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-/*
- * Browser coverage for the currently implemented account surface. The test
- * server uses a disposable database, so these checks can safely exercise both
- * form behavior and the complete authentication path.
- */
+/* Test account forms and authentication against the disposable browser-test database. */
 test.describe("account page", () => {
   test("switches cleanly between login and signup modes", async ({ page }) => {
     await page.goto("/account");
@@ -54,10 +50,7 @@ test.describe("account page", () => {
     await expect(page.getByLabel("Username")).toHaveAttribute("required", "");
   });
 
-  /*
-   * Scope: complete browser-to-database authentication flow. The Playwright
-   * server uses a disposable database, so this never creates a real account.
-   */
+  /* Test signup, logout, rejected login, and successful login without creating real accounts. */
   test("creates an account, signs out, and signs back in", async ({ page }) => {
     const uniqueSuffix = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
     const username = `e2e-${uniqueSuffix}`;

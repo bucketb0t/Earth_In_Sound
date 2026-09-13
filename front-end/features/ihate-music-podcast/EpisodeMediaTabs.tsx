@@ -10,11 +10,7 @@ interface EpisodeMediaTabsProps {
   audioUrl: string | null;
 }
 
-/**
- * Renders one episode's media controls.
- * Playback state and provider handoffs belong to the feature-local controller;
- * this component owns only form input, accessible tabs, and status rendering.
- */
+/** Render media controls; the controller owns playback and provider handoffs. */
 export default function EpisodeMediaTabs({
   episodeId,
   audioMimeType,

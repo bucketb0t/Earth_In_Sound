@@ -25,12 +25,7 @@ import {
   toLookupValue,
 } from "../validation/validate-user-input";
 
-/*
- * Write input types keep function calls explicit and readable.
- * Route handlers/server actions must derive currentUserId/currentOwnerId from
- * the authenticated session before calling these functions; browser input
- * should never be trusted to identify the acting user.
- */
+/* Derive acting user IDs from the authenticated server session, never from browser input. */
 
 export interface UpdateUsernameInput {
   currentUserId: string;
@@ -77,12 +72,7 @@ export interface SetUserRoleInput {
   targetRole: AssignableUserRole;
 }
 
-/**
- * Creates the first owner profile or links a legacy unlinked owner profile.
- *
- * This function is called only from the server-only owner setup context after
- * Better Auth has created or found the corresponding auth record.
- */
+/** Create or link the first owner profile within the trusted owner setup context. */
 export async function createOrLinkOwnerAfterSignup(
   input: CreateOrLinkOwnerAfterSignupInput,
 ): Promise<StoredUser> {
@@ -193,20 +183,10 @@ export async function createOrLinkOwnerAfterSignup(
   return requireStoredUser(createdOwner, "Created owner was not found.");
 }
 
-/**
- * Creates a normal user row after signup authentication succeeds.
- *
- * Better Auth creates the secure auth record first. This function then creates
- * the Earth In Sound profile row and links it to Better Auth through
- * auth_provider_user_id. The role is hardcoded to "user" so public signup
- * cannot promote itself.
- */
+/** Link successful auth signups to active project profiles with the fixed user role. */
 export async function createNormalUserAfterSignup(
   input: CreateNormalUserAfterSignupInput,
 ): Promise<StoredUser> {
-  /*
-   * Better Auth passes its generated user id after password signup succeeds.
-   */
   const authProviderUserId = input.authProviderUserId.trim();
 
   if (!authProviderUserId) {
@@ -215,9 +195,7 @@ export async function createNormalUserAfterSignup(
 
   const existingAuthUser = await getUserByAuthProviderId(authProviderUserId);
 
-  /*
-   * Idempotency guard for repeated hooks or retry attempts.
-   */
+  /* Repeated signup hooks must not create duplicate profiles. */
   if (existingAuthUser) {
     return existingAuthUser;
   }
@@ -246,9 +224,6 @@ export async function createNormalUserAfterSignup(
 
   const userId = randomUUID();
 
-  /*
-   * Signup always creates a normal active user.
-   */
   await turso.execute({
     sql: `
       INSERT INTO users (
@@ -282,19 +257,10 @@ export async function createNormalUserAfterSignup(
   return requireStoredUser(createdUser, "Created user was not found.");
 }
 
-/**
- * Updates the current user's own visible username.
- *
- * No owner/admin override is accepted here. The caller can only pass the
- * current user's id, and the function updates that same row after validating
- * the new username and checking that it is not already taken.
- */
+/** Self-service username update; enforce validation and uniqueness. */
 export async function updateUsername(
   input: UpdateUsernameInput,
 ): Promise<StoredUser> {
-  /*
-   * Username changes are self-service only.
-   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -329,19 +295,10 @@ export async function updateUsername(
   return requireStoredUser(updatedUser, "Updated user was not found.");
 }
 
-/**
- * Disables a user account without removing the database row.
- *
- * Disabled means "temporarily blocked or inactive." The row keeps its original
- * email_lookup and username_lookup, so nobody else can reuse that identity
- * while the account is disabled. A disabled user can later be reactivated.
- */
+/** Disable without releasing email or username reservations; reactivation remains possible. */
 export async function disableUser(
   input: DisableUserInput,
 ): Promise<StoredUser> {
-  /*
-   * Disabled accounts keep email/username reservations.
-   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -389,17 +346,10 @@ export async function disableUser(
 }
 
 /**
- * Soft-deletes a user account.
- *
- * Deleted means "closed account." The row remains for audit/history, but the
- * auth link is removed and email_lookup is replaced so a future signup may
- * reuse the email. username_lookup remains reserved to prevent impersonation.
- * Deleted users are not reactivated through the normal reactivateUser path.
+ * Soft-delete and remove auth access. Release the email, reserve the username,
+ * and prevent normal reactivation.
  */
 export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
-  /*
-   * Deleted accounts are soft-deleted so history can remain auditable.
-   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -425,13 +375,7 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
   const now = Date.now();
   const deletedEmailLookup = getDeletedEmailLookup(targetUser.id, now);
 
-  /*
-   * Linked authentication and project records are deleted atomically. If any
-   * statement fails, the database rolls back the complete operation.
-   *
-   * An unlinked legacy profile has no Better Auth records, so only its project
-   * row needs to be updated.
-   */
+  /* Delete linked auth and profile records atomically; legacy unlinked profiles need only a profile update. */
   if (targetUser.auth_provider_user_id) {
     await deleteLinkedUserRecords({
       authProviderUserId: targetUser.auth_provider_user_id,
@@ -459,18 +403,10 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
   return requireStoredUser(deletedUser, "Deleted user was not found.");
 }
 
-/**
- * Reactivates a disabled account.
- *
- * This only accepts status = "disabled". Deleted accounts are intentionally
- * excluded because their lookup fields/auth link were released.
- */
+/** Reactivate disabled accounts only; deleted identities have released their auth links. */
 export async function reactivateUser(
   input: ReactivateUserInput,
 ): Promise<StoredUser> {
-  /*
-   * Only disabled accounts can come back through normal reactivation.
-   */
   const currentUser = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentUserId),
@@ -505,18 +441,10 @@ export async function reactivateUser(
   return requireStoredUser(reactivatedUser, "Reactivated user was not found.");
 }
 
-/**
- * Transfers the single owner role to another active account.
- *
- * This is the only way ownership should move. The old owner becomes an admin,
- * and the target active user becomes owner in one batch write.
- */
+/** Transfer ownership atomically: demote the current owner to admin and promote the active target. */
 export async function transferOwnership(
   input: TransferOwnershipInput,
 ): Promise<StoredUser> {
-  /*
-   * The project allows exactly one owner.
-   */
   const currentOwner = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentOwnerId),
@@ -541,9 +469,7 @@ export async function transferOwnership(
 
   const now = Date.now();
 
-  /*
-   * Batch keeps the old owner demotion and new owner promotion together.
-   */
+  /* Batch both role changes so a failure preserves the current owner. */
   await turso.batch(
     [
       {
@@ -571,18 +497,10 @@ export async function transferOwnership(
   return requireStoredUser(newOwner, "New owner was not found.");
 }
 
-/**
- * Lets the owner promote or demote active non-owner accounts.
- *
- * The owner role is excluded from targetRole. To change who owns the site, use
- * transferOwnership so the single-owner rule remains intact.
- */
+/** Owner-only role changes for active non-owner accounts; ownership uses transferOwnership. */
 export async function setUserRole(
   input: SetUserRoleInput,
 ): Promise<StoredUser> {
-  /*
-   * Role assignment intentionally excludes the owner role.
-   */
   const currentOwner = requireActiveUser(
     requireStoredUser(
       await getUserById(input.currentOwnerId),

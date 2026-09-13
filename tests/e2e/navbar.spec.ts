@@ -1,15 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /*
- * End-to-end coverage for the persistent responsive navbar.
- *
- * Scope: layout selection, navigation, input methods, route-derived state,
- * animation state, cell alignment, overflow, and breakpoint persistence.
- * Exact artwork pixels are intentionally outside this file's scope because
- * the artwork is still being tuned independently from navbar behavior.
+ * Test responsive layout, navigation, input, visual state, and DOM persistence.
+ * Exact artwork pixels are outside this behavior suite.
  */
 
-/* Representative viewport sizes for each navbar layout. */
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const COMPACT_VIEWPORT = { width: 390, height: 844 };
 const NAVBAR_ACCESSIBLE_NAME = "Earth In Sound site navigation";
@@ -21,10 +16,7 @@ interface NavigationCase {
   expectedPathname: string;
 }
 
-/*
- * Every primary-section control that should navigate when pressed. Keeping
- * this matrix in one place makes it difficult to accidentally omit a link.
- */
+/* Cover every primary-section destination. */
 const SECTION_NAVIGATION_CASES: readonly NavigationCase[] = [
   { controlName: "Earth In Sound, go to home", expectedPathname: "/" },
   { controlName: "Navigate to Home", expectedPathname: "/" },
@@ -64,17 +56,13 @@ const SECTION_NAVIGATION_CASES: readonly NavigationCase[] = [
   },
 ] as const;
 
-/* Wait for Next.js client navigation and verify the resulting route. */
 async function expectPathname(page: Page, expectedPathname: string) {
   await expect
     .poll(() => new URL(page.url()).pathname)
     .toBe(expectedPathname);
 }
 
-/*
- * Open the starting page and return the two navbar locators shared by most
- * tests. This also confirms that the expected responsive layout is ready.
- */
+/* Open the page and wait for the expected navbar layout. */
 async function openNavbar(page: Page, expectedLayout: NavbarLayout) {
   await page.goto("/");
 
@@ -92,7 +80,7 @@ async function openNavbar(page: Page, expectedLayout: NavbarLayout) {
   return { navigation, navbarShell };
 }
 
-/* Confirm that a row's outside left and right spaces are visually balanced. */
+/* Check balanced outer row spacing. */
 async function expectCellSpanCentered(
   page: Page,
   firstCell: Locator,
@@ -114,7 +102,7 @@ async function expectCellSpanCentered(
   expect(Math.abs(leftMargin - rightMargin)).toBeLessThanOrEqual(1.5);
 }
 
-/* Guard against any navbar rule making the complete page wider than its viewport. */
+/* Check navbar rules do not cause horizontal page overflow. */
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   const pageWidth = await page.evaluate(() => ({
     visibleWidth: document.documentElement.clientWidth,
@@ -126,10 +114,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   );
 }
 
-/*
- * Check the shared geometry contract. Wide mode uses one six-cell row, while
- * compact mode checks its three-cell primary and utility rows separately.
- */
+/* Check all six wide cells or each three-cell compact row. */
 async function expectNavbarGeometry(
   page: Page,
   layout: NavbarLayout,
@@ -150,10 +135,7 @@ async function expectNavbarGeometry(
   await expectNoHorizontalOverflow(page);
 }
 
-/*
- * Reproduce a held pointer moving vertically across a slider or knob. This
- * covers mouse dragging and the pointer-capture behavior also used by touch.
- */
+/* Drag controls using held mouse input and pointer capture. */
 async function dragControlVertically(
   page: Page,
   control: Locator,
@@ -173,10 +155,7 @@ async function dragControlVertically(
   await page.mouse.up();
 }
 
-/*
- * Send trusted browser touch events so compact controls are tested with the
- * same pointer path used by a phone, including pointer capture while held.
- */
+/* Send browser touch events to exercise phone input and pointer capture. */
 async function dragControlWithTouch(
   page: Page,
   control: Locator,
@@ -219,11 +198,11 @@ async function dragControlWithTouch(
   }
 }
 
-/* Desktop-only rendering and interaction behavior. */
+/* Desktop rendering and interactions. */
 test.describe("desktop navbar", () => {
   test.use({ viewport: DESKTOP_VIEWPORT });
 
-  /* Scope: wide layout selection and visibility of its main destinations. */
+  /* Test wide layout and primary controls. */
   test("renders the wide layout and its primary controls", async ({ page }) => {
     const { navigation } = await openNavbar(page, "wide");
 
@@ -240,13 +219,13 @@ test.describe("desktop navbar", () => {
     ).toBeVisible();
   });
 
-  /* Scope: six-cell desktop alignment and horizontal page overflow. */
+  /* Test desktop alignment and overflow. */
   test("keeps the wide cell row centered without overflow", async ({ page }) => {
     await openNavbar(page, "wide");
     await expectNavbarGeometry(page, "wide");
   });
 
-  /* Scope: accessible keyboard operation for the slider and rotary knob. */
+  /* Test keyboard slider and knob navigation. */
   test("supports slider and knob keyboard controls", async ({ page }) => {
     const { navigation } = await openNavbar(page, "wide");
     const eisSlider = navigation.getByRole("slider", {
@@ -274,7 +253,7 @@ test.describe("desktop navbar", () => {
     await expectPathname(page, "/jason-walton/discography");
   });
 
-  /* Scope: held-pointer dragging and the route selected by each control. */
+  /* Test mouse dragging and selected routes. */
   test("supports pointer dragging on the slider and shared knob", async ({
     page,
   }) => {
@@ -300,11 +279,11 @@ test.describe("desktop navbar", () => {
   });
 });
 
-/* Phone-sized rendering, hit targets, navigation, and visual state. */
+/* Compact rendering and interactions. */
 test.describe("compact navbar", () => {
   test.use({ viewport: COMPACT_VIEWPORT, hasTouch: true });
 
-  /* Scope: compact layout selection and visibility of its main destinations. */
+  /* Test compact layout and primary controls. */
   test("renders the compact layout on a phone-sized viewport", async ({
     page,
   }) => {
@@ -323,13 +302,13 @@ test.describe("compact navbar", () => {
     ).toBeVisible();
   });
 
-  /* Scope: independent alignment of both compact rows and page overflow. */
+  /* Test compact row alignment and overflow. */
   test("keeps both compact rows centered without overflow", async ({ page }) => {
     await openNavbar(page, "compact");
     await expectNavbarGeometry(page, "compact");
   });
 
-  /* Scope: every logo, text choice, LED row, and mobile section hit target. */
+  /* Test all logos, choice rows, LEDs, and mobile hit targets. */
   test("navigates from every section control and mobile hit target", async ({
     page,
   }) => {
@@ -350,7 +329,7 @@ test.describe("compact navbar", () => {
     }
   });
 
-  /* Scope: all logged-out controls in the Account, Store, and Cart cells. */
+  /* Test logged-out account, Store, and Cart controls. */
   test("navigates from all logged-out Account, Store, and Cart controls", async ({
     page,
   }) => {
@@ -393,7 +372,7 @@ test.describe("compact navbar", () => {
     });
   });
 
-  /* Scope: trusted touch dragging and pointer capture on all physical inputs. */
+  /* Test touch dragging and capture on the slider and both knobs. */
   test("keeps compact slider and knobs pressed during touch drags", async ({
     page,
   }) => {
@@ -421,7 +400,7 @@ test.describe("compact navbar", () => {
     await expectPathname(page, "/i-hate-music/patreon");
   });
 
-  /* Scope: fitting and overflow at narrow, ordinary, and large phone widths. */
+  /* Test fitting and overflow across phone widths. */
   test("fits representative phone viewports without horizontal overflow", async ({
     page,
   }) => {
@@ -438,7 +417,7 @@ test.describe("compact navbar", () => {
     }
   });
 
-  /* Scope: accessible selected states derived from the currently active route. */
+  /* Test selected states derived from the current route. */
   test("reports route-derived slider, knob, and utility states", async ({
     page,
   }) => {
@@ -484,7 +463,7 @@ test.describe("compact navbar", () => {
     ).toBeVisible();
   });
 
-  /* Scope: Store artwork visibility while hovered and while selected. */
+  /* Test Store hover and selected artwork. */
   test("runs the Store hover and pressed visual states", async ({ page }) => {
     const { navigation } = await openNavbar(page, "compact");
     const store = navigation.getByRole("button", { name: "Store" });
@@ -507,14 +486,11 @@ test.describe("compact navbar", () => {
   });
 });
 
-/* Behavior at the single boundary between compact and wide layouts. */
+/* Breakpoint behavior. */
 test.describe("navbar breakpoint", () => {
   test.use({ viewport: { width: 1025, height: 800 } });
 
-  /*
-   * Scope: exact 1024/1025 switching, recentering, and preservation of the
-   * existing navbar DOM tree instead of remounting controls during resizing.
-   */
+  /* Test exact 1024/1025 switching, centering, and persistent control nodes. */
   test("switches and recenters exactly between 1024px and 1025px", async ({
     page,
   }) => {

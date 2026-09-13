@@ -1,16 +1,10 @@
 import SectionPlaceholderPage from "@/front-end/features/section-placeholder/SectionPlaceholderPage";
 
-/**
- * Browser metadata for the I Hate Music Patreon route.
- */
 export const metadata = {
   title: "I Hate Music Patreon | Earth In Sound",
 };
 
-/**
- * Temporary Patreon page content.
- * Uses the shared placeholder until external support links are implemented.
- */
+/** Placeholder pending support links. */
 export default function IHateMusicPatreonPage() {
   return (
     <SectionPlaceholderPage

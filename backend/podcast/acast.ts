@@ -1,9 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
 
-/*
- * Public Acast endpoints for the I Hate Music podcast.
- * The feed URL gives structured RSS; the episodes URL is for outbound links.
- */
 const I_HATE_MUSIC_ACAST_EPISODES_URL =
   "https://shows.acast.com/i-hate-music/episodes";
 
@@ -12,15 +8,9 @@ const I_HATE_MUSIC_ACAST_FEED_URL =
 
 export const PODCAST_FEED_REVALIDATE_SECONDS = 3600;
 
-/*
- * RSS values can arrive as one object, many objects, or no object.
- * This helper type lets the parser model all three forms safely.
- */
 type OptionalArray<T> = T | T[] | undefined;
 
-/*
- * Minimal RSS channel fields the page currently needs.
- */
+/* RSS channel fields required by the podcast page. */
 interface AcastRssChannel {
   title?: string;
   link?: OptionalArray<string>;
@@ -60,9 +50,6 @@ interface AcastRssFeed {
   };
 }
 
-/*
- * Episode shape consumed by the React podcast page.
- */
 export interface PodcastEpisode {
   id: string;
   title: string;
@@ -75,9 +62,6 @@ export interface PodcastEpisode {
   audioMimeType: string | null;
 }
 
-/*
- * Show shape consumed by the React podcast page.
- */
 export interface PodcastShow {
   title: string;
   subtitle: string;
@@ -92,13 +76,7 @@ export interface PodcastShow {
   episodes: PodcastEpisode[];
 }
 
-/**
- * Fetches the public Acast RSS feed and converts it into page-ready objects.
- * This stays server-side so the browser never has to parse XML.
- *
- * The React page should receive clean data, not raw RSS. This function is the
- * boundary where external Acast XML becomes your own PodcastShow shape.
- */
+/** Fetch and normalize Acast RSS server-side into PodcastShow data. */
 export async function getIHateMusicShow(): Promise<PodcastShow> {
   const response = await fetch(I_HATE_MUSIC_ACAST_FEED_URL, {
     next: { revalidate: PODCAST_FEED_REVALIDATE_SECONDS },
@@ -110,12 +88,7 @@ export async function getIHateMusicShow(): Promise<PodcastShow> {
 
   const xml = await response.text();
 
-  /*
-   * The parser keeps XML attributes because episode audio URLs live on the
-   * enclosure attribute, not inside a child text node.
-   * Example: <enclosure url="..." type="audio/mpeg" /> becomes an object with
-   * @_url and @_type fields.
-   */
+  /* Preserve XML attributes to read enclosure audio URLs. */
   const parser = new XMLParser({
     attributeNamePrefix: "@_",
     ignoreAttributes: false,
@@ -151,12 +124,7 @@ function mapEpisode(
   episode: AcastRssEpisode,
   fallbackEpisodeIndex: number,
 ): PodcastEpisode {
-  /*
-   * Acast episode fields are cleaned once here so UI code can render text
-   * without knowing about RSS HTML quirks.
-   * fallbackEpisodeIndex gives every item a stable fallback title/id when RSS
-   * data is missing.
-   */
+  /* Normalize RSS text and supply fallback episode IDs and titles. */
   const title = cleanAcastText(
     episode.title ?? `Episode ${fallbackEpisodeIndex + 1}`,
   );
@@ -180,23 +148,12 @@ function mapEpisode(
   };
 }
 
-/**
- * Normalizes single RSS items into arrays.
- *
- * RSS parsers often return one object when a tag appears once, but an array
- * when it appears many times. React rendering is easier when it always gets an
- * array.
- */
+/** Normalize single and repeated RSS items to arrays. */
 function asArray<T>(maybeArrayValue: OptionalArray<T>): T[] {
   if (maybeArrayValue === undefined) return [];
   return Array.isArray(maybeArrayValue) ? maybeArrayValue : [maybeArrayValue];
 }
 
-/**
- * Splits Acast's comma-separated keyword string into renderable labels.
- *
- * The page can map this returned array directly into keyword badges.
- */
 function splitKeywords(rawKeywords: string | undefined): string[] {
   if (!rawKeywords) return [];
   return rawKeywords
@@ -205,23 +162,13 @@ function splitKeywords(rawKeywords: string | undefined): string[] {
     .filter(Boolean);
 }
 
-/**
- * Converts blank RSS text into null so components can branch clearly.
- *
- * null means "do not render this optional field"; an empty string would be
- * easier to accidentally render as blank layout.
- */
+/** Use null for missing optional RSS text. */
 function cleanTextOrNull(rawText: string | undefined): string | null {
   const cleanedValue = cleanAcastText(rawText ?? "");
   return cleanedValue.length > 0 ? cleanedValue : null;
 }
 
-/**
- * RSS descriptions arrive as HTML with Acast's hosted footer attached.
- * The page currently renders safe text previews, not raw external HTML.
- *
- * This strips tags and feed footer content so episode cards render plain text.
- */
+/** Strip HTML and Acast's footer for plain-text previews. */
 function cleanAcastText(rawAcastHtmlText: string): string {
   return decodeHtmlEntities(rawAcastHtmlText)
     .replace(/<hr\s*\/?>[\s\S]*?Hosted on Acast[\s\S]*$/i, "")
@@ -234,9 +181,6 @@ function cleanAcastText(rawAcastHtmlText: string): string {
     .trim();
 }
 
-/**
- * Decodes the small set of HTML entities commonly found in this RSS feed.
- */
 function decodeHtmlEntities(rawTextWithEntities: string): string {
   return rawTextWithEntities
     .replace(/&nbsp;/g, " ")

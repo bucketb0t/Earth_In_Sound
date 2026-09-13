@@ -7,11 +7,7 @@ type TursoModule = typeof import("../../../turso-client");
 type UserReadsModule = typeof import("../../../users/read/read-users");
 type UserWritesModule = typeof import("../../../users/write/write-users");
 
-/**
- * Runtime dependencies shared by the user/auth integration scenarios.
- * Type-only module references keep database clients from loading before the
- * runner points them at its disposable test database.
- */
+/** Shared integration dependencies. Type-only imports defer clients until the test database is configured. */
 export interface UserDatabaseTestContext {
   readonly auth: AuthModule["auth"];
   readonly authContext: Awaited<AuthModule["auth"]["$context"]>;
@@ -22,9 +18,7 @@ export interface UserDatabaseTestContext {
   readonly testRunId: string;
 }
 
-/**
- * Normal-user data reused by lifecycle and role-management scenarios.
- */
+/** User fixture shared by lifecycle and role tests. */
 export interface NormalUserTestResult {
   readonly user: StoredUser;
   readonly authUserId: string;

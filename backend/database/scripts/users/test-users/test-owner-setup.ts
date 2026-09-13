@@ -6,10 +6,7 @@ import {
   assertRejectsWithMessage,
 } from "./test-user-helpers";
 
-/**
- * Verifies protected owner setup, linking, authentication, and self-management
- * restrictions. The returned owner is used by later management scenarios.
- */
+/** Test protected owner setup, auth linking, and self-management restrictions. */
 export async function testOwnerSetup(
   context: UserDatabaseTestContext,
 ): Promise<StoredUser> {
@@ -27,10 +24,7 @@ export async function testOwnerSetup(
   const ownerPassword = "Owner-test-password-123";
   const now = Date.now();
 
-  /*
-   * Reproduce the original broken state: a project owner with no Better Auth
-   * account. Public signup must not be able to claim it.
-   */
+  /* Public signup must not claim a legacy owner profile with no auth link. */
   await turso.execute({
     sql: `
       INSERT INTO users (

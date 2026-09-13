@@ -1,7 +1,4 @@
-/*
- * Responsive navbar style module.
- * Owns the full-width banner, baseline, sticky shell, and measured cell row.
- */
+/* Navbar banner, baseline, sticky shell, and measured cell layout. */
 
 @font-face {
   font-family: "FuturaHeavy";
@@ -12,10 +9,6 @@
   font-display: swap;
 }
 
-/*
- * Navbar shell styles.
- * Shared banner, baseline, and cell row layers.
- */
 
 .navbarShell {
   --navbar-layout-width: 100%;
@@ -53,9 +46,6 @@
 }
 
 .navbarShell::before {
-  /*
-   * Full navbar banner artwork layer.
-   */
   top: 0;
   height: var(--navbar-shell-height);
   z-index: var(--navbar-layer-banner);
@@ -66,9 +56,6 @@
 }
 
 .navbarShell::after {
-  /*
-   * Full navbar baseline artwork layer.
-   */
   top: calc(var(--navbar-shell-height) - var(--navbar-line-height));
   z-index: var(--navbar-layer-baseline);
   height: var(--navbar-line-height);
@@ -84,16 +71,10 @@
   --navbar-layout-width: 100%;
   --navbar-root-height: 124px;
 
-  /*
-   * Interactive cell layer.
-   */
   position: relative;
   top: 0;
   left: 0;
   z-index: var(--navbar-layer-cells);
-  /*
-   * Measured layout width shared by the shell and cell row.
-   */
   width: var(--navbar-layout-width);
   min-width: var(--navbar-layout-width);
   height: var(--navbar-root-height);
@@ -105,10 +86,7 @@
 }
 
 .navbarInner {
-  /*
-   * Full-width centering container. CSS owns centering continuously, including
-   * the exact frame where compact rows become one wide row.
-   */
+  /* CSS centering stays current across breakpoint transitions. */
   position: relative;
   z-index: 2;
   display: flex;
@@ -136,9 +114,6 @@
 }
 
 .layoutRow {
-  /*
-   * Semantic groups stay in the DOM at every width. Wide layout flattens them
-   * so all six cells participate in the original single flex row.
-   */
+  /* Keep row groups mounted; flatten them into one flex row in wide layout. */
   display: contents;
 }

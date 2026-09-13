@@ -51,11 +51,7 @@ interface VideoAudioContinuity {
   stopHiddenHandoffIfUserPausedAudio: () => void;
 }
 
-/**
- * Coordinates playback continuity between the YouTube video and Acast audio.
- * The hook owns consent, standby playback, lifecycle events, and handoff timers;
- * it does not own tabs, URL input, or rendered controls.
- */
+/** Coordinate consent, background audio handoff, and playback restoration. */
 export function useVideoAudioContinuity({
   audioRef,
   audioUrl,
@@ -106,7 +102,7 @@ export function useVideoAudioContinuity({
   }, []);
 
   const cancelAudioToVideoResume = useCallback((): void => {
-    /* Leave Acast audible if YouTube never confirms resumed playback. */
+    /* Keep Acast audible until YouTube confirms playback. */
     audioToVideoResumeIsPendingRef.current = false;
     clearAudioToVideoResumeTimers();
   }, [clearAudioToVideoResumeTimers]);
@@ -347,7 +343,7 @@ export function useVideoAudioContinuity({
       const youtubePlayer = youtubePlayerRef.current;
       if (!audioElement || !youtubePlayer) return;
 
-      /* visibilitychange and pagehide may report the same transition. */
+      /* Deduplicate visibilitychange and pagehide transitions. */
       if (shouldResumeVideoFromAudioRef.current && !audioElement.paused) return;
 
       const videoWasPlaying =

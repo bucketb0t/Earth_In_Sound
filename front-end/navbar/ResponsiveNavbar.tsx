@@ -30,12 +30,7 @@ interface PointerZoomAnchor {
   viewportWidth: number;
 }
 
-/**
- * Converts measured numbers into safe CSS pixel strings.
- *
- * Fractional values are retained so viewport-width CSS variables match the
- * browser's live layout dimensions without introducing cumulative drift.
- */
+/** Preserve fractional pixels to avoid cumulative layout drift. */
 function toNonNegativePixelValue(rawPixelValue: number): string {
   const safePixelValue = Number.isFinite(rawPixelValue)
     ? Math.max(0, rawPixelValue)
@@ -44,11 +39,7 @@ function toNonNegativePixelValue(rawPixelValue: number): string {
   return `${Math.round(safePixelValue * 1000) / 1000}px`;
 }
 
-/**
- * Writes CSS variables only when their value actually changes.
- *
- * This avoids unnecessary style writes during ResizeObserver cycles.
- */
+/** Skip unchanged CSS values to avoid redundant observer-driven writes. */
 function setCssVariable(
   element: HTMLElement,
   variableName: string,
@@ -59,13 +50,8 @@ function setCssVariable(
 }
 
 /**
- * Responsive navbar shell.
- * Paints the shared banner/baseline and positions the independent cells.
- *
- * The same cells are always mounted. Wide CSS flattens the two semantic groups
- * into one row; compact CSS stacks them. Runtime measurement only synchronizes
- * artwork scale and shell geometry with the active CSS layout. Flexbox owns
- * centering so a breakpoint transition cannot latch a stale JavaScript offset.
+ * Keep controls mounted while CSS switches row arrangements and owns centering.
+ * Measurements synchronize artwork scale and shell geometry.
  */
 export default function ResponsiveNavbar() {
   const {
@@ -78,11 +64,7 @@ export default function ResponsiveNavbar() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const pointerZoomAnchorRef = useRef<PointerZoomAnchor | null>(null);
 
-  /*
-   * Runtime CSS variable sync.
-   * This keeps JSX free of inline style attributes while preserving the
-   * measured scaling behavior that depends on the live shell width.
-   */
+  /* Sync measured geometry through CSS variables. */
   useLayoutEffect(() => {
     const shellElement = shellRef.current;
     const rootElement = rootRef.current;
@@ -131,10 +113,7 @@ export default function ResponsiveNavbar() {
       const scaledFaceplateHeight =
         (DESIGN_HEIGHT - BASE_LINE_HEIGHT) * scale;
 
-      /*
-       * Only control geometry is written here. The banner/baseline are pure
-       * viewport paint in CSS, so they cannot feed back into measurements.
-       */
+      /* Measure control geometry only; decorative paint must not affect sizing. */
       setCssVariable(
         shellElement,
         "--navbar-shell-height",
@@ -159,12 +138,7 @@ export default function ResponsiveNavbar() {
         ),
       );
 
-      /*
-       * Measure the live layout viewport for the shell and paint layers.
-       * The cell row centers itself in CSS and therefore needs no measured left
-       * offset or width assignment here. Paint uses the same width so a vertical
-       * scrollbar cannot introduce horizontal overflow.
-       */
+      /* Use scrollbar-free layout width for paint; CSS handles row centering. */
       const visibleViewportWidth = getNavbarLayoutViewportWidth();
       const renderedNavbarRowWidth =
         measureRenderedNavbarContentWidth(contentElement);
@@ -173,11 +147,6 @@ export default function ResponsiveNavbar() {
         renderedNavbarRowWidth,
       );
 
-      /*
-       * Write layout variables for the shell, banner, and interactive row.
-       * CSS consumes these values in ResponsiveNavbar.module.css so browser-specific
-       * layout differences are handled by measured numbers, not guessed CSS.
-       */
       setCssVariable(
         rootElement,
         "--navbar-layout-width",
@@ -202,9 +171,7 @@ export default function ResponsiveNavbar() {
 
     syncNavbarGeometry();
 
-    /*
-     * Defer geometry sync until viewport and font layout have settled.
-     */
+    /* Sync geometry after viewport and font layout settle. */
     let firstFrameId: number | null = null;
     let secondFrameId: number | null = null;
 
@@ -262,7 +229,6 @@ export default function ResponsiveNavbar() {
         isScaleReady ? styles.navbarShellReady : ""
       }`}
     >
-      {/* Interactive faceplate layer. */}
       <div
         ref={rootRef}
         className={styles.navbarRoot}

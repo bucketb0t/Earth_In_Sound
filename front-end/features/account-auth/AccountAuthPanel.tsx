@@ -6,26 +6,10 @@ import styles from "./AccountAuthPanel.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
 
-/**
- * Account auth surface.
- * Lets visitors create normal accounts, sign in, and sign out.
- *
- * This component is browser UI only. It collects form input, calls authClient,
- * and displays the current Better Auth session. Password hashing, session
- * cookie writing, and database writes happen on the server through
- * app/api/auth/[...all]/route.ts and backend/authentication/auth.ts.
- */
+/** Browser login/signup UI; Better Auth handles passwords, sessions, and profile writes server-side. */
 export default function AccountAuthPanel() {
-  /*
-   * Better Auth session hook gives current user data and a refetch function.
-   */
   const session = authClient.useSession();
 
-  /*
-   * Local form state only.
-   * Passwords are sent to Better Auth and are not stored in React state longer
-   * than the user keeps them in the input.
-   */
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -33,16 +17,7 @@ export default function AccountAuthPanel() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /**
-   * Submits the selected auth action through Better Auth.
-   *
-   * The same HTML form handles two modes:
-   * - sign-up sends email, password, and username as Better Auth's name field;
-   * - sign-in sends email and password only.
-   *
-   * Better Auth receives the request through the API route. On successful
-   * signup, the server-side hook creates a matching normal user row.
-   */
+  /** Send signup username as Better Auth's name; login uses email and password. */
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -67,10 +42,7 @@ export default function AccountAuthPanel() {
 
       setMessage(mode === "sign-up" ? "Account created." : "Signed in.");
       setPassword("");
-      /*
-       * Refetch moves the UI immediately into the logged-in branch after
-       * Better Auth creates or restores the browser session.
-       */
+      /* Refresh session state after successful authentication. */
       await session.refetch();
     } catch (error) {
       setMessage(
@@ -81,13 +53,7 @@ export default function AccountAuthPanel() {
     }
   };
 
-  /**
-   * Ends the current Better Auth session.
-   *
-   * This clears the active browser session. It does not delete or disable the
-   * project's users table row; account lifecycle is handled by database
-   * functions such as disableUser and deleteUser.
-   */
+  /** End the browser session without disabling or deleting the account. */
   const handleSignOut = async () => {
     setIsSubmitting(true);
     setMessage("");
@@ -100,9 +66,6 @@ export default function AccountAuthPanel() {
       }
 
       setMessage("Signed out.");
-      /*
-       * Refetch returns the UI to the login/signup form after sign out.
-       */
       await session.refetch();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Sign out failed.");
@@ -112,9 +75,6 @@ export default function AccountAuthPanel() {
   };
 
   if (session.isPending) {
-    /*
-     * Loading branch while Better Auth checks the current browser session.
-     */
     return (
       <main className={styles.page}>
         <section className={styles.panel}>
@@ -126,10 +86,6 @@ export default function AccountAuthPanel() {
   }
 
   if (session.data?.user) {
-    /*
-     * Authenticated branch.
-     * The project profile/role row is created by the server-side auth hook.
-     */
     return (
       <main className={styles.page}>
         <section className={styles.panel}>
@@ -159,7 +115,7 @@ export default function AccountAuthPanel() {
         <h1>{mode === "sign-up" ? "Sign Up" : "Log In"}</h1>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* Username exists only for signup; login uses email + password. */}
+          {/* Username is required only for signup. */}
           {mode === "sign-up" ? (
             <label className={styles.field}>
               <span>Username</span>
@@ -174,7 +130,6 @@ export default function AccountAuthPanel() {
             </label>
           ) : null}
 
-          {/* Email is validated by the browser and again on the server. */}
           <label className={styles.field}>
             <span>Email</span>
             <input
@@ -188,7 +143,6 @@ export default function AccountAuthPanel() {
             />
           </label>
 
-          {/* Better Auth hashes the password server-side before storage. */}
           <label className={styles.field}>
             <span>Password</span>
             <input
@@ -206,7 +160,6 @@ export default function AccountAuthPanel() {
             />
           </label>
 
-          {/* Main auth action follows the current form mode. */}
           <button
             className={styles.primaryButton}
             type="submit"
@@ -216,7 +169,6 @@ export default function AccountAuthPanel() {
           </button>
         </form>
 
-        {/* Switch between login and signup without leaving the route. */}
         <button
           className={styles.modeButton}
           type="button"

@@ -1,13 +1,9 @@
-/**
- * Static navbar configuration.
- * Central place for labels, SVG geometry, navbar sizing, and artwork tuning.
- */
+/** Navbar labels, artwork geometry, and responsive sizing. */
 
-// State keys used by the EIS slider and shared knob sections.
 export type SectionId = "eis" | "ihm" | "jw";
 export type KnobSectionId = Exclude<SectionId, "eis">;
 
-// Link order is positional: index 0 means the first physical control stop.
+// Link order determines physical control stops.
 export const EIS_LINKS = ["Home", "About", "Contact"] as const;
 export const JW_LINKS = ["Biography", "Discography", "Production"] as const;
 export const IHM_LINKS = ["Podcast", "Community", "Patreon"] as const;
@@ -18,12 +14,12 @@ export const SECTION_LINKS: Record<SectionId, readonly string[]> = {
   ihm: IHM_LINKS,
 };
 
-/* Knob geometry: visual angles are clockwise from top; SVG math is converted. */
+/* Angles run clockwise from the top; convert them for SVG trigonometry. */
 export const LED_DEGREES_FROM_TOP: readonly [number, number, number] = [
   60, 90, 120,
 ] as const;
 
-// Diameter of the invisible SVG hit circle used for knob click/drag events.
+// Pointer hit-circle diameter in SVG units.
 export const KNOB_ARTWORK_SIZE = 48;
 export const KNOB_RADIUS = KNOB_ARTWORK_SIZE / 2;
 export const LED_ORBIT_RADIUS = 42;
@@ -33,44 +29,28 @@ export const KNOB_SVG_WIDTH = 160;
 export const KNOB_CENTER_X = KNOB_CANVAS_SIZE / 2;
 export const KNOB_CENTER_Y = KNOB_CANVAS_SIZE / 2;
 
-/* Responsive shell: total height includes the baseline artwork. */
+/* Navbar height includes the baseline. */
 export const DESIGN_HEIGHT = 118;
-// Unscaled visual thickness of BaseLineNavbar.svg.
 export const BASE_LINE_HEIGHT = 8;
-// Reference faceplate height used by artwork scaling.
+// Reference faceplate height for artwork scaling.
 export const ARTWORK_CELL_SCALE_BASE_HEIGHT = 112;
 
-/* Largest zoom-independent layout width that uses the compact arrangement. */
+/* Maximum zoom-independent width for compact layout. */
 export const NAVBAR_COMPACT_MAX_WIDTH_PX = 1024;
 
-/*
- * Shared knob/jack tuning.
- * These numbers drive the physical placement of the visible knob art, LEDs,
- * labels, and jack hardware. CSS owns assets/styles; this object owns layout.
- */
 export const KNOB_LAYOUT = {
-  /*
-   * dragStepPx controls how many pointer pixels equal one menu step while
-   * dragging a knob vertically.
-   */
+  /* Vertical pointer distance per knob stop. */
   dragStepPx: 18,
-  /*
-   * choiceLightSize is the SVG foreignObject box used for LED artwork.
-   */
+  /* LED artwork box size in SVG units. */
   choiceLightSize: 11,
-  /*
-   * labelOrbitGap pushes text labels farther from the knob center than LEDs.
-   */
+  /* Radial gap between LEDs and labels. */
   labelOrbitGap: 16,
   module: {
     maxWidth: 160,
     offset: { x: -2, y: 10 },
   },
   artwork: {
-    /*
-     * These values place and animate the visible knob SVG inside the invisible
-     * SVG hit target used for pointer/keyboard interaction.
-     */
+    /* Visible knob placement and press animation within its hit circle. */
     size: 52.5,
     leftPercent: 23,
     topPercent: 52,
@@ -83,10 +63,7 @@ export const KNOB_LAYOUT = {
     },
   },
   jack: {
-    /*
-     * Jack values place the socket and cable relative to the knob cell. Socket
-     * and plug sizes are separate because their artwork proportions differ.
-     */
+    /* Socket and cable share an anchor; their artwork sizes remain independent. */
     socketWidth: 16,
     plugWidth: 22,
     plugHeight: 48,
@@ -95,11 +72,7 @@ export const KNOB_LAYOUT = {
   },
 } as const;
 
-/*
- * Shared knob SVG nudges.
- * JWW and IHM intentionally read the same object so LEDs and labels stay on
- * matching lines whenever these values are tuned.
- */
+/* Shared SVG nudges keep JWW and IHM LEDs and labels aligned. */
 const SHARED_KNOB_OFFSETS = {
   label: [
     { x: 2, y: 7.5 },
@@ -123,23 +96,15 @@ export interface SvgPoint {
   y: number;
 }
 
-/**
- * Converts designer-friendly clock angles into SVG math angles.
- */
+/** Convert clockwise clock angles to SVG angles. */
 export function ledAngleToTrigDegrees(degreesFromTop: number): number {
   return 90 - degreesFromTop;
 }
 
-/**
- * Converts degrees into radians for Math.sin/cos.
- */
 export function degreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-/**
- * Converts polar knob coordinates into SVG x/y coordinates.
- */
 export function svgPoint(radius: number, trigDegrees: number): SvgPoint {
   const radians = degreesToRadians(trigDegrees);
   return {

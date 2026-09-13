@@ -1,16 +1,10 @@
 import SectionPlaceholderPage from "@/front-end/features/section-placeholder/SectionPlaceholderPage";
 
-/**
- * Browser metadata for the I Hate Music Community route.
- */
 export const metadata = {
   title: "I Hate Music Community | Earth In Sound",
 };
 
-/**
- * Temporary Community page content.
- * Uses the shared placeholder until this podcast section is designed.
- */
+/** Placeholder pending community content. */
 export default function IHateMusicCommunityPage() {
   return (
     <SectionPlaceholderPage

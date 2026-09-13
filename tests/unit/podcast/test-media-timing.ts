@@ -5,9 +5,7 @@ import {
   seekAudioToTimestamp,
 } from "../../../front-end/features/ihate-music-podcast/mediaTiming";
 
-/**
- * Verifies safe timestamp handling without loading real browser media.
- */
+/** Test safe timestamps and browser media errors using audio fakes. */
 export async function runMediaTimingTests(): Promise<void> {
   let playCount = 0;
   const playableAudio = {

@@ -1,8 +1,3 @@
-/*
- * I Hate Music cell artwork.
- * Keeps podcast-specific plaque, logo, and knob artwork out of the shared shell.
- */
-
 .iHateMusicCell {
   --cell-plaque-aspect: 280 / 142.28;
   --knob-logo-band-height: calc(37.4px * var(--artwork-cell-scale));
@@ -16,9 +11,6 @@
 }
 
 .iHateMusicLogo {
-  /*
-   * IHM logo layout slot and artwork dimensions.
-   */
   --ihm-logo-slot-width: calc(104px * var(--artwork-cell-scale));
   --ihm-logo-slot-height: var(--knob-logo-band-height);
   --ihm-logo-art-width: calc(104px * var(--artwork-cell-scale));
@@ -49,9 +41,6 @@
 }
 
 .iHateMusicLogoFrame {
-  /*
-   * Layered IHM logo art frame.
-   */
   position: absolute;
   left: 50%;
   top: var(--ihm-logo-art-top);
@@ -98,9 +87,6 @@
   opacity: 1;
 }
 
-/*
- * IHM logo hover/focus/press glow.
- */
 .iHateMusicLogo:hover .iHateMusicLogoImageOn,
 .iHateMusicLogo:focus-visible .iHateMusicLogoImageOn,
 .iHateMusicLogo:active .iHateMusicLogoImageOn {

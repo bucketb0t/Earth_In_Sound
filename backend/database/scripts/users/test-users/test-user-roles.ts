@@ -9,10 +9,7 @@ import {
   assertRejectsWithMessage,
 } from "./test-user-helpers";
 
-/**
- * Verifies role assignment, admin management, ownership transfer, and the
- * database-level guarantee that only one owner can exist.
- */
+/** Test role management, ownership transfer, and the single-owner constraint. */
 export async function testRolesAndOwnershipTransfer(
   context: UserDatabaseTestContext,
   owner: StoredUser,
@@ -131,10 +128,7 @@ export async function testRolesAndOwnershipTransfer(
     targetUserId: managedUser.id,
   });
 
-  /*
-   * Fail the second statement in ownership transfer. The transaction must
-   * restore the first statement so the current owner never disappears.
-   */
+  /* Fail the second transfer statement to verify rollback restores the current owner. */
   await turso.execute({
     sql: `
       CREATE TRIGGER reject_owner_transfer_for_test

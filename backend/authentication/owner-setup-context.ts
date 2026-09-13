@@ -7,10 +7,7 @@ interface OwnerSetupIdentity {
 
 const ownerSetupStorage = new AsyncLocalStorage<OwnerSetupIdentity>();
 
-/**
- * Marks one server-side Better Auth call as the trusted owner setup flow.
- * Browser requests cannot enter this context.
- */
+/** Trusted server-only owner setup context; browser requests cannot enter it. */
 export function runWithOwnerSetupContext<T>(
   identity: OwnerSetupIdentity,
   action: () => Promise<T>,

@@ -1,15 +1,10 @@
 import { z } from "zod";
-/*
- * Values permitted by the users table.
- * These schemas verify database values at runtime.
- */
+/* Runtime schemas match the users table's allowed roles and statuses. */
 
 const userRoleSchema = z.enum(["owner", "admin", "user"]);
 const userStatusSchema = z.enum(["active", "disabled", "deleted"]);
 
-/*
- * Complete shape expected from a SELECT * query on the users table.
- */
+/* Strict row schema for SELECT * queries. */
 
 export const storedUserSchema = z
   .strictObject({
@@ -31,19 +26,13 @@ export const storedUserSchema = z
 
 const storedUsersSchema = z.array(storedUserSchema);
 
-/*
- * TypeScript types are now generated from the runtime schemas.
- * This prevents the runtime checks and TypeScript definitions from drifting.
- */
+/* Derive types from schemas to keep compile-time and runtime validation aligned. */
 
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type UserStatus = z.infer<typeof userStatusSchema>;
 export type StoredUser = z.infer<typeof storedUserSchema>;
 
-/*
- * Validate one database row while preserving the original Zod error as the
- * cause for server-side debugging.
- */
+/* Validate a row and retain the Zod error as the cause. */
 
 export function parseStoredUser(row: unknown): StoredUser {
   const result = storedUserSchema.safeParse(row);
@@ -55,9 +44,7 @@ export function parseStoredUser(row: unknown): StoredUser {
   return result.data;
 }
 
-/*
- * Validate a complete list returned by a multi-row query.
- */
+/* Validate every row in a query result. */
 
 export function parseStoredUsers(rows: unknown): StoredUser[] {
   const result = storedUsersSchema.safeParse(rows);

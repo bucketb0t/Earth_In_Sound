@@ -7,29 +7,19 @@ import { EIS_LINKS } from "../../config";
 import { useNavbarContext } from "../../state";
 import styles from "./EISLogoCell.module.css";
 
-/* Local section constants used by active styles and slider math. */
 const LAST_EIS_INDEX = EIS_LINKS.length - 1;
 
-/* Mutable drag session; React only receives the final snapped index. */
+/* Keep pointer movement in refs; commit the snapped index on release. */
 interface DragState {
   active: boolean;
   startY: number;
   startTop: number;
 }
 
-/**
- * EIS logo + local navigation cell.
- * Owns plaque artwork, logo hover state, custom slider, and EIS link rows.
- *
- * This cell is self-contained visually, but it does not own navigation state.
- * It reads activePage/eisSliderPos from navbar context and writes changes back
- * through eisNavTo/goHome.
- */
+/** EIS artwork and slider controls share navigation state through navbar context. */
 export default function EISLogoCell() {
-  /* Shared state keeps this cell synchronized with the rest of the navbar. */
   const { activePage, eisSliderPos, eisNavTo, goHome } = useNavbarContext();
 
-  /* Slider refs provide rendered sizes after zoom and responsive resizing. */
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<DragState>({
@@ -38,16 +28,11 @@ export default function EISLogoCell() {
     startTop: 0,
   });
 
-  /* Derived render state for active visuals and slider accessibility text. */
   const isActive = activePage?.section === "eis";
   const activeLabel = EIS_LINKS[eisSliderPos] ?? EIS_LINKS[0];
 
-  /* Convert selected link index into the thumb's current pixel top. */
   const linkIndexToThumbTop = useCallback((linkIndex: number): number => {
-    /*
-     * The slider uses rendered DOM sizes instead of hard-coded pixels. This is
-     * why the thumb can still line up after navbar scaling or browser zoom.
-     */
+    /* Rendered sizes keep slider stops aligned after scaling and zoom. */
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
     if (!trackElement || !thumbElement) return 0;
@@ -57,12 +42,7 @@ export default function EISLogoCell() {
     return linkIndex * step;
   }, []);
 
-  /* Convert a dragged thumb top into the nearest valid link index. */
   const thumbTopToLinkIndex = useCallback((thumbTop: number): number => {
-    /*
-     * Dragging produces a pixel position. This converts that pixel position
-     * back into the nearest menu index: Home, About, or Contact.
-     */
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
     if (!trackElement || !thumbElement) return 0;
@@ -72,7 +52,7 @@ export default function EISLogoCell() {
     return Math.max(0, Math.min(LAST_EIS_INDEX, Math.round(thumbTop / step)));
   }, []);
 
-  /* Imperative thumb write keeps drag/snap visuals smooth between state updates. */
+  /* Update the thumb directly for smooth movement between React renders. */
   const snapThumb = useCallback(
     (linkIndex: number): void => {
       const thumbElement = thumbRef.current;
@@ -84,7 +64,7 @@ export default function EISLogoCell() {
     [linkIndexToThumbTop],
   );
 
-  /* Re-snap when the track or thumb size changes under zoom/resizing. */
+  /* Re-snap when the track or thumb size changes. */
   useEffect(() => {
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
@@ -117,7 +97,6 @@ export default function EISLogoCell() {
     };
   }, [eisSliderPos, snapThumb]);
 
-  /* Follow the pointer visually, clamped inside the current track height. */
   const moveThumbToPointer = (clientY: number): void => {
     const trackElement = trackRef.current;
     const thumbElement = thumbRef.current;
@@ -133,7 +112,6 @@ export default function EISLogoCell() {
     )}px`;
   };
 
-  /* End drag, release pointer capture, and commit the nearest link index. */
   const finishDrag = (
     thumbElement: HTMLDivElement,
     pointerId: number,
@@ -150,7 +128,7 @@ export default function EISLogoCell() {
     eisNavTo(thumbTopToLinkIndex(thumbTop));
   };
 
-  /* Start drag by saving pointer Y and the thumb's current top offset. */
+  /* Capture the pointer so dragging continues outside the thumb. */
   const onThumbPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     dragStateRef.current = {
       active: true,
@@ -168,11 +146,8 @@ export default function EISLogoCell() {
     moveThumbToPointer(event.clientY);
   };
 
-  /* Keyboard support mirrors normal slider expectations. */
   const onThumbKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    /*
-     * Keyboard mapping keeps the custom slider accessible like a real slider.
-     */
+    /* Match native slider keyboard behavior. */
     const keyToLinkIndex: Partial<Record<string, number>> = {
       ArrowDown: eisSliderPos + 1,
       ArrowRight: eisSliderPos + 1,
@@ -192,7 +167,6 @@ export default function EISLogoCell() {
   return (
     <div className={styles.eisLogoCell}>
       <div className={`navbar-fit ${styles.eisLogoContent}`}>
-        {/* Logo button: returns EIS to Home while preserving custom artwork. */}
         <button
           type="button"
           className={styles.eisLogoButton}
@@ -209,12 +183,9 @@ export default function EISLogoCell() {
           </span>
         </button>
 
-        {/* Slider area: custom rail/thumb plus the three EIS link buttons. */}
         <div className={`navbar-fit ${styles.eisControls}`}>
           <div className={`navbar-fit ${styles.sliderRow}`}>
-            {/* Track element is both visible artwork and measured drag rail. */}
             <div className={styles.eisTrack} ref={trackRef}>
-              {/* Thumb supports pointer drag, keyboard navigation, and resize snaps. */}
               <div
                 className={styles.eisThumb}
                 ref={thumbRef}
@@ -237,7 +208,6 @@ export default function EISLogoCell() {
               />
             </div>
 
-            {/* Link rows write to the same EIS state as the slider thumb. */}
             <div className={`navbar-fit ${styles.eisLinks}`}>
               {EIS_LINKS.map((link, linkIndex) => {
                 const isSelected = isActive && eisSliderPos === linkIndex;

@@ -20,10 +20,7 @@ async function withMockedFetch<T>(
   }
 }
 
-/**
- * Verifies the boundary that converts external Acast XML into project-owned
- * podcast data, including defaults and failure messages.
- */
+/** Test RSS normalization, optional-field defaults, and feed errors. */
 export async function runAcastTests(): Promise<void> {
   const feedXml = `
     <rss>

@@ -1,12 +1,6 @@
 /**
- * Better Auth lifecycle operations used by project account management.
- *
- * The dynamic import avoids a module cycle because auth.ts imports the project
- * user write hooks used during signup.
- *
- * These project-admin operations target another user without an HTTP session.
- * Better Auth's public user endpoints are session-oriented, while its admin
- * plugin would duplicate this project's role model and database fields.
+ * Server-side account lifecycle operations; auth and profiles share one database.
+ * The dynamic auth import avoids the signup-hook module cycle.
  */
 import { turso } from "@/backend/database/turso-client";
 
@@ -29,11 +23,7 @@ export interface DisableLinkedUserRecordsInput {
   disabledAt: number;
 }
 
-/**
- * Revokes database-backed sessions and disables the project profile in one
- * transaction. A failed profile update therefore cannot log out an otherwise
- * active account.
- */
+/** Revoke sessions and disable the profile atomically; failures preserve both. */
 export async function disableLinkedUserRecords(
   input: DisableLinkedUserRecordsInput,
 ): Promise<void> {
@@ -63,14 +53,7 @@ export interface DeleteLinkedUserRecordsInput {
   deletedAt: number;
 }
 
-/**
- * Deletes the Better Auth records and soft-deletes the project profile in one
- * database transaction.
- *
- * All statements succeed together or are all rolled back together. This works
- * because Better Auth and the project users table share the same Turso
- * database.
- */
+/** Delete auth records and soft-delete the profile in one shared-database transaction. */
 export async function deleteLinkedUserRecords(
   input: DeleteLinkedUserRecordsInput,
 ): Promise<void> {
