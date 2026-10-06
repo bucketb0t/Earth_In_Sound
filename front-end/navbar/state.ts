@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent,
   type RefObject,
 } from "react";
@@ -40,6 +41,17 @@ const ACCOUNT_ROUTE = "/account";
 const CART_ROUTE = "/cart";
 const I_HATE_MUSIC_PODCAST_ROUTE = "/i-hate-music/podcast";
 const STORE_ROUTE = "/store";
+
+const subscribeToHydration = () => () => {};
+
+/** Keep server and first browser render aligned before reading shared client state. */
+function useHasHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
+}
 
 export interface ActivePage {
   section: SectionId;
@@ -163,6 +175,7 @@ function getRouteVisualState(
 export function useNavbar(): NavbarState {
   const router = useRouter();
   const pathname = usePathname();
+  const hasHydrated = useHasHydrated();
   const session = authClient.useSession();
   const shellRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -183,8 +196,9 @@ export function useNavbar(): NavbarState {
     visualState.sourcePathname === pathname ? visualState : routeVisualState;
   const { activePage, eisSliderPos, isCartPressed, isStorePressed } =
     currentVisualState;
-  const isLoggedIn = Boolean(session.data?.user);
-  const accountDisplayName = session.data?.user.name ?? "Sign up";
+  const currentSession = hasHydrated ? session.data : null;
+  const isLoggedIn = Boolean(currentSession?.user);
+  const accountDisplayName = currentSession?.user.name ?? "Sign up";
 
   /*
    * Reported width selects the breakpoint; scrollbar-free width fits the layout.
@@ -509,7 +523,7 @@ export function useNavbar(): NavbarState {
     eisSliderPos,
     isLoggedIn,
     accountDisplayName,
-    isAuthPending: session.isPending,
+    isAuthPending: !hasHydrated || session.isPending,
     cartCount,
     shellRef,
     contentRef,

@@ -7,9 +7,20 @@ import AccountSettingsPanel from "./AccountSettingsPanel";
 
 type AuthMode = "sign-in" | "sign-up";
 
+interface AccountAuthPanelProps {
+  initialSession: typeof authClient.$Infer.Session | null;
+}
+
 /** Browser login/signup UI; Better Auth handles passwords, sessions, and profile writes server-side. */
-export default function AccountAuthPanel() {
+export default function AccountAuthPanel({
+  initialSession,
+}: AccountAuthPanelProps) {
+  authClient.hydrateSession(initialSession);
   const session = authClient.useSession();
+  const currentSession =
+    session.isPending && !session.isRefetching
+      ? initialSession
+      : session.data;
 
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
@@ -77,23 +88,12 @@ export default function AccountAuthPanel() {
     }
   };
 
-  if (session.isPending) {
-    return (
-      <main className={styles.page}>
-        <section className={styles.panel}>
-          <p className={styles.eyebrow}>Account</p>
-          <h1>Loading</h1>
-        </section>
-      </main>
-    );
-  }
-
-  if (session.data?.user) {
+  if (currentSession?.user) {
     return (
       <AccountSettingsPanel
-        key={session.data.user.id}
-        user={session.data.user}
-        currentSessionToken={session.data.session.token}
+        key={currentSession.user.id}
+        user={currentSession.user}
+        currentSessionToken={currentSession.session.token}
         isSigningOut={isSubmitting}
         signOutError={signOutError}
         onSignOut={handleSignOut}

@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { deleteAuthUser } from "./auth-user-lifecycle";
-
+import { requireAuthSecret } from "@/backend/configuration/environment";
 import {
   createNormalUserAfterSignup,
   createOrLinkOwnerAfterSignup,
@@ -46,7 +46,7 @@ export const auth = betterAuth({
     /* Silence expected auth failures in database tests only. */
     disabled: shouldSilenceBetterAuthLogs,
   },
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: requireAuthSecret(),
   database: {
     /* Shared transactions must match Better Auth's generated schema. */
     db: betterAuthDatabase,

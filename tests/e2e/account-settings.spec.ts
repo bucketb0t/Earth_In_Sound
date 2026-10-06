@@ -1,8 +1,30 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createTestAccount, expectSignedOut, signInTestAccount } from "./account-helpers";
+
+const hydrationErrors = new WeakMap<Page, string[]>();
 
 /* Test account mutations, device isolation, and closure through the browser. */
 test.describe("account settings", () => {
+  test.beforeEach(({ page }) => {
+    const errors: string[] = [];
+    hydrationErrors.set(page, errors);
+    page.on("pageerror", (error) => {
+      if (error.message.includes("Hydration failed")) errors.push(error.message);
+    });
+    page.on("console", (message) => {
+      if (
+        message.type() === "error" &&
+        message.text().includes("hydrated but some attributes")
+      ) {
+        errors.push(message.text());
+      }
+    });
+  });
+
+  test.afterEach(({ page }) => {
+    expect(hydrationErrors.get(page)).toEqual([]);
+  });
+
   test("keeps renamed usernames synchronized and rejects reserved names", async ({ page, browser }) => {
     const account = await createTestAccount(page);
     const otherContext = await browser.newContext({ baseURL: test.info().project.use.baseURL });
