@@ -2,7 +2,10 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { deleteAuthUser } from "./auth-user-lifecycle";
-import { requireAuthSecret } from "@/backend/configuration/environment";
+import {
+  requireAuthBaseUrl,
+  requireAuthSecret,
+} from "@/backend/configuration/environment";
 import {
   createNormalUserAfterSignup,
   createOrLinkOwnerAfterSignup,
@@ -20,7 +23,7 @@ import { betterAuthDatabase } from "./better-auth-database";
 import { getOwnerSetupIdentity } from "./owner-setup-context";
 import { accountManagement } from "./account-management";
 
-const appBaseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const appBaseUrl = requireAuthBaseUrl();
 const shouldSilenceBetterAuthLogs =
   process.env.EIS_SILENCE_BETTER_AUTH_LOGS === "true";
 
