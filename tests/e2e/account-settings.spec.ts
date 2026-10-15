@@ -32,6 +32,8 @@ test.describe("account settings", () => {
       const otherPage = await otherContext.newPage();
       const otherAccount = await createTestAccount(otherPage);
       const username = page.getByRole("region", { name: "Profile", exact: true }).getByLabel("Username");
+      await expect(username).toHaveAttribute("minlength", "3");
+      await expect(username).toHaveAttribute("maxlength", "32");
       await username.fill(otherAccount.username.toUpperCase());
       await page.getByRole("button", { name: "Save username" }).click();
       await expect(page.getByRole("main").getByRole("alert")).toHaveText("Username is already registered.");
@@ -59,23 +61,31 @@ test.describe("account settings", () => {
       const otherPage = await otherContext.newPage();
       await signInTestAccount(otherPage, account);
       const passwordForm = page.getByRole("region", { name: "Password", exact: true });
-      await passwordForm.getByLabel("Current password", { exact: true }).fill("Wrong-password-123");
-      await passwordForm.getByLabel("New password", { exact: true }).fill("New-browser-password-456");
-      await passwordForm.getByLabel("Confirm new password", { exact: true }).fill("Different-password-456");
+      const currentPassword = passwordForm.getByLabel("Current password", { exact: true });
+      const newPassword = passwordForm.getByLabel("New password", { exact: true });
+      const confirmPassword = passwordForm.getByLabel("Confirm new password", { exact: true });
+      await expect(currentPassword).toHaveAttribute("maxlength", "128");
+      await expect(newPassword).toHaveAttribute("minlength", "8");
+      await expect(newPassword).toHaveAttribute("maxlength", "128");
+      await expect(confirmPassword).toHaveAttribute("minlength", "8");
+      await expect(confirmPassword).toHaveAttribute("maxlength", "128");
+      await currentPassword.fill("Wrong-password-123");
+      await newPassword.fill("New-browser-password-456");
+      await confirmPassword.fill("Different-password-456");
       await page.getByRole("button", { name: "Change password", exact: true }).click();
       await expect(page.getByRole("main").getByRole("alert")).toHaveText("New passwords do not match.");
 
-      await passwordForm.getByLabel("Confirm new password", { exact: true }).fill("New-browser-password-456");
+      await confirmPassword.fill("New-browser-password-456");
       await page.getByRole("button", { name: "Change password", exact: true }).click();
       await expect(page.getByRole("main").getByRole("alert")).toHaveText("Invalid password");
       const otherSession = await otherPage.request.get("/api/auth/get-session");
       expect((await otherSession.json()).user.email).toBe(account.email);
 
-      await passwordForm.getByLabel("Current password", { exact: true }).fill(account.password);
+      await currentPassword.fill(account.password);
       await expect(passwordForm.getByRole("checkbox", { name: "Sign out other devices" })).toBeChecked();
       await page.getByRole("button", { name: "Change password", exact: true }).click();
       await expect(page.getByRole("status")).toHaveText("Password changed.");
-      await expect(passwordForm.getByLabel("Current password", { exact: true })).toHaveValue("");
+      await expect(currentPassword).toHaveValue("");
       await expect(page.getByRole("heading", { name: account.username, exact: true })).toBeVisible();
       await expectSignedOut(otherPage);
 
@@ -86,12 +96,12 @@ test.describe("account settings", () => {
       await signInTestAccount(otherPage, { ...account, password: "New-browser-password-456" });
 
       /* Opting out keeps the other device signed in. */
-      await passwordForm.getByLabel("Current password", { exact: true }).fill("New-browser-password-456");
-      await passwordForm.getByLabel("New password", { exact: true }).fill("Final-browser-password-789");
-      await passwordForm.getByLabel("Confirm new password", { exact: true }).fill("Final-browser-password-789");
+      await currentPassword.fill("New-browser-password-456");
+      await newPassword.fill("Final-browser-password-789");
+      await confirmPassword.fill("Final-browser-password-789");
       await passwordForm.getByRole("checkbox", { name: "Sign out other devices" }).uncheck();
       await page.getByRole("button", { name: "Change password", exact: true }).click();
-      await expect(passwordForm.getByLabel("Current password", { exact: true })).toHaveValue("");
+      await expect(currentPassword).toHaveValue("");
       await expect(page.getByRole("status")).toHaveText("Password changed.");
       const retainedSession = await otherPage.request.get("/api/auth/get-session", {
         params: { disableCookieCache: "true" },
@@ -153,17 +163,19 @@ test.describe("account settings", () => {
       await signInTestAccount(otherPage, account);
       await page.getByRole("button", { name: "Delete account", exact: true }).click();
       const dialog = page.getByRole("dialog", { name: "Delete account", exact: true });
+      const deletePassword = dialog.getByLabel("Confirm current password");
       await expect(dialog).toBeVisible();
+      await expect(deletePassword).toHaveAttribute("maxlength", "128");
       await expect(dialog.getByRole("button", { name: "Confirm deletion" })).toBeDisabled();
-      await dialog.getByLabel("Confirm current password").fill("Wrong-password-123");
+      await deletePassword.fill("Wrong-password-123");
       await dialog.getByLabel("Type DELETE to confirm").fill("DELETE");
       await dialog.getByRole("button", { name: "Confirm deletion" }).click();
       await expect(dialog.getByRole("alert")).toHaveText("Invalid password");
       await dialog.getByRole("button", { name: "Cancel" }).click();
       await page.getByRole("button", { name: "Delete account", exact: true }).click();
-      await expect(dialog.getByLabel("Confirm current password")).toHaveValue("");
+      await expect(deletePassword).toHaveValue("");
       await expect(dialog.getByLabel("Type DELETE to confirm")).toHaveValue("");
-      await dialog.getByLabel("Confirm current password").fill(account.password);
+      await deletePassword.fill(account.password);
       await dialog.getByLabel("Type DELETE to confirm").fill("DELETE");
       await dialog.getByRole("button", { name: "Confirm deletion" }).click();
       await expect(page.getByRole("heading", { name: "Log In", exact: true })).toBeVisible();

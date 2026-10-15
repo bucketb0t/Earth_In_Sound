@@ -1,3 +1,8 @@
+import {
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+} from "@/shared/account-policy";
+
 /** Normalize lookup keys for case-insensitive search and uniqueness. */
 export function toLookupValue(value: string): string {
   return value.toLowerCase();
@@ -38,8 +43,13 @@ export function requireValidUsername(username: string): string {
     throw new Error("Username is required.");
   }
 
-  if (cleanedUsername.length < 3 || cleanedUsername.length > 32) {
-    throw new Error("Username must be between 3 and 32 characters.");
+  if (
+    cleanedUsername.length < USERNAME_MIN_LENGTH ||
+    cleanedUsername.length > USERNAME_MAX_LENGTH
+  ) {
+    throw new Error(
+      `Username must be between ${USERNAME_MIN_LENGTH} and ${USERNAME_MAX_LENGTH} characters.`,
+    );
   }
 
   if (

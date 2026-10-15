@@ -7,6 +7,10 @@ import {
   requireAuthSecret,
 } from "@/backend/configuration/environment";
 import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "@/shared/account-policy";
+import {
   createNormalUserAfterSignup,
   createOrLinkOwnerAfterSignup,
 } from "@/backend/database/users/write/write-users";
@@ -59,8 +63,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     /* Better Auth handles passwords and sessions; mailbox ownership is not yet verified. */
     enabled: true,
-    minPasswordLength: 8,
-    maxPasswordLength: 128,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
     autoSignIn: true,
   },
   databaseHooks: {

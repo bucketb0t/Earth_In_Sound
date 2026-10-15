@@ -6,7 +6,8 @@ import {
   type NavbarWindowMetrics,
 } from "../../../front-end/navbar/layoutGeometry";
 import {
-  SECTION_LINKS,
+  NAVBAR_SECTIONS,
+  SECTION_IDS,
   degreesToRadians,
   ledAngleToTrigDegrees,
   svgPoint,
@@ -29,19 +30,34 @@ function createMetrics(
 /** Test knob geometry and responsive sizing, including page zoom versus real resizing. */
 export function runNavbarLogicTests(): void {
   assert.deepEqual(
-    SECTION_LINKS.eis,
-    ["Home", "About", "Contact"],
-    "EIS control order should remain stable",
+    NAVBAR_SECTIONS,
+    {
+      eis: [
+        { label: "Home", route: "/" },
+        { label: "About", route: "/about" },
+        { label: "Contact", route: "/contact" },
+      ],
+      jw: [
+        { label: "Biography", route: "/jason-walton/biography" },
+        { label: "Discography", route: "/jason-walton/discography" },
+        { label: "Production", route: "/jason-walton/production" },
+      ],
+      ihm: [
+        { label: "Podcast", route: "/i-hate-music/podcast" },
+        { label: "Community", route: "/i-hate-music/community" },
+        { label: "Patreon", route: "/i-hate-music/patreon" },
+      ],
+    },
+    "navbar labels and routes should preserve their physical control order",
   );
-  assert.deepEqual(
-    SECTION_LINKS.jw,
-    ["Biography", "Discography", "Production"],
-    "Jason Walton control order should remain stable",
+
+  const routes = SECTION_IDS.flatMap((section) =>
+    NAVBAR_SECTIONS[section].map((link) => link.route),
   );
-  assert.deepEqual(
-    SECTION_LINKS.ihm,
-    ["Podcast", "Community", "Patreon"],
-    "I Hate Music control order should remain stable",
+  assert.equal(
+    new Set(routes).size,
+    routes.length,
+    "each navbar destination should have one control position",
   );
 
   assert.equal(ledAngleToTrigDegrees(60), 30);

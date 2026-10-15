@@ -15,6 +15,7 @@ import {
   ledAngleToTrigDegrees as clockAngleToMathAngle,
   svgPoint as polarToCartesian,
   type KnobSectionId,
+  type NavbarSectionLink,
 } from "../../config";
 import { activateOnEnterOrSpace, useNavbarContext } from "../../state";
 import styles from "./KnobJackCell.module.css";
@@ -62,7 +63,7 @@ interface KnobDragState {
 export interface KnobJackCellProps {
   sectionId: KnobSectionId;
   sectionLabel: string;
-  sectionLinks: readonly string[];
+  sectionLinks: readonly NavbarSectionLink[];
   knobArtworkClassName: string;
   showJackPort?: boolean;
 }
@@ -237,7 +238,7 @@ export default function KnobJackCell({
             return (
               <g
                 className={styles.choiceGroup}
-                key={link}
+                key={link.route}
                 data-section-id={sectionId}
                 data-choice-index={linkIndex}
                 onClick={() => knobNavTo(sectionId, linkIndex)}
@@ -248,7 +249,7 @@ export default function KnobJackCell({
                 }
                 tabIndex={0}
                 role="button"
-                aria-label={`${sectionLabel}: ${link}`}
+                aria-label={`${sectionLabel}: ${link.label}`}
                 aria-pressed={linkIsSelected}
                 aria-current={linkIsSelected ? "page" : undefined}
               >
@@ -289,7 +290,7 @@ export default function KnobJackCell({
                   dominantBaseline="middle"
                   textAnchor="start"
                 >
-                  {link}
+                  {link.label}
                 </text>
               </g>
             );

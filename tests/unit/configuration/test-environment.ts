@@ -28,7 +28,7 @@ export function runEnvironmentTests(): void {
         BETTER_AUTH_URL: "   ",
       }),
     {
-      message: "Missing required environment variable: BETTER_AUTH_URL.",
+      message: "Missing required envir  onment variable: BETTER_AUTH_URL.",
     },
     "a blank authentication URL should be rejected",
   );

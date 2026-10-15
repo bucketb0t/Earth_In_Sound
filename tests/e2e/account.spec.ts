@@ -47,7 +47,10 @@ test.describe("account page", () => {
     await expect(password).toHaveAttribute("maxlength", "128");
 
     await page.getByRole("button", { name: "Need an account?" }).click();
-    await expect(page.getByLabel("Username")).toHaveAttribute("required", "");
+    const username = page.getByLabel("Username");
+    await expect(username).toHaveAttribute("required", "");
+    await expect(username).toHaveAttribute("minlength", "3");
+    await expect(username).toHaveAttribute("maxlength", "32");
   });
 
   /* Test signup, logout, rejected login, and successful login without creating real accounts. */

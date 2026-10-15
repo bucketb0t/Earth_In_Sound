@@ -1,6 +1,6 @@
 "use client";
 
-import { IHM_LINKS } from "../../config";
+import { NAVBAR_SECTIONS } from "../../config";
 import KnobJackCell from "../../shared/KnobJackCell/KnobJackCell";
 import { useNavbarContext } from "../../state";
 import styles from "./IHateMusicCell.module.css";
@@ -30,7 +30,7 @@ export default function IHateMusicCell() {
       <KnobJackCell
         sectionId="ihm"
         sectionLabel="I Hate Music"
-        sectionLinks={IHM_LINKS}
+        sectionLinks={NAVBAR_SECTIONS.ihm}
         knobArtworkClassName={styles.iHateMusicKnob}
         showJackPort
       />

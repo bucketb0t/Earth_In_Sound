@@ -6,6 +6,7 @@ import { getUserByAuthProviderId } from "@/backend/database/users/read/read-user
 import { deleteUser, updateUsername } from "@/backend/database/users/write/write-users";
 import { requireValidUsername } from "@/backend/database/users/validation/validate-user-input";
 import type { UserRole } from "@/backend/database/users/read/read-users";
+import { PASSWORD_MAX_LENGTH } from "@/shared/account-policy";
 
 export interface AccountProfile {
   username: string;
@@ -76,7 +77,10 @@ export function accountManagement() {
       }),
       closeAccount: createAuthEndpoint("/account/close", {
         method: "POST",
-        body: z.object({ currentPassword: z.string().min(1).max(128), confirmation: z.literal("DELETE") }).strict(),
+        body: z.object({
+          currentPassword: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+          confirmation: z.literal("DELETE"),
+        }).strict(),
         use: [sensitiveSessionMiddleware],
       }, async (ctx) => {
         const profile = await requireAccountProfile(ctx.context.session.user.id);

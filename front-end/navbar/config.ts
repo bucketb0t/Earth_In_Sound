@@ -1,18 +1,32 @@
-/** Navbar labels, artwork geometry, and responsive sizing. */
+/** Navbar destinations, artwork geometry, and responsive sizing. */
 
-export type SectionId = "eis" | "ihm" | "jw";
+export const SECTION_IDS = ["eis", "jw", "ihm"] as const;
+export type SectionId = (typeof SECTION_IDS)[number];
 export type KnobSectionId = Exclude<SectionId, "eis">;
 
-// Link order determines physical control stops.
-export const EIS_LINKS = ["Home", "About", "Contact"] as const;
-export const JW_LINKS = ["Biography", "Discography", "Production"] as const;
-export const IHM_LINKS = ["Podcast", "Community", "Patreon"] as const;
+export interface NavbarSectionLink {
+  readonly label: string;
+  readonly route: `/${string}`;
+}
 
-export const SECTION_LINKS: Record<SectionId, readonly string[]> = {
-  eis: EIS_LINKS,
-  jw: JW_LINKS,
-  ihm: IHM_LINKS,
-};
+// Entry order determines physical control stops.
+export const NAVBAR_SECTIONS = {
+  eis: [
+    { label: "Home", route: "/" },
+    { label: "About", route: "/about" },
+    { label: "Contact", route: "/contact" },
+  ],
+  jw: [
+    { label: "Biography", route: "/jason-walton/biography" },
+    { label: "Discography", route: "/jason-walton/discography" },
+    { label: "Production", route: "/jason-walton/production" },
+  ],
+  ihm: [
+    { label: "Podcast", route: "/i-hate-music/podcast" },
+    { label: "Community", route: "/i-hate-music/community" },
+    { label: "Patreon", route: "/i-hate-music/patreon" },
+  ],
+} as const satisfies Record<SectionId, readonly NavbarSectionLink[]>;
 
 /* Angles run clockwise from the top; convert them for SVG trigonometry. */
 export const LED_DEGREES_FROM_TOP: readonly [number, number, number] = [

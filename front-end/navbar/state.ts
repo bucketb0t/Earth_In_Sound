@@ -17,8 +17,9 @@ import {
   ARTWORK_CELL_SCALE_BASE_HEIGHT,
   BASE_LINE_HEIGHT,
   DESIGN_HEIGHT,
+  NAVBAR_SECTIONS,
   NAVBAR_COMPACT_MAX_WIDTH_PX,
-  SECTION_LINKS,
+  SECTION_IDS,
   type KnobSectionId,
   type SectionId,
 } from "./config";
@@ -36,10 +37,8 @@ import {
 // Placeholder count until real cart data is connected.
 const INITIAL_CART_COUNT = 1;
 
-const HOME_ROUTE = "/";
 const ACCOUNT_ROUTE = "/account";
 const CART_ROUTE = "/cart";
-const I_HATE_MUSIC_PODCAST_ROUTE = "/i-hate-music/podcast";
 const STORE_ROUTE = "/store";
 
 const subscribeToHydration = () => () => {};
@@ -58,6 +57,15 @@ export interface ActivePage {
   linkIndex: number;
 }
 
+/* Derive reverse route lookup from the same entries used by the controls. */
+const ACTIVE_PAGE_BY_ROUTE = new Map<string, ActivePage>(
+  SECTION_IDS.flatMap((section) =>
+    NAVBAR_SECTIONS[section].map(
+      (link, linkIndex) => [link.route, { section, linkIndex }] as const,
+    ),
+  ),
+);
+
 interface NavbarVisualState {
   /* sourcePathname ties local highlights and latched utility controls to their route. */
   activePage: ActivePage | null;
@@ -66,40 +74,6 @@ interface NavbarVisualState {
   isStorePressed: boolean;
   sourcePathname: string;
 }
-
-const NAVBAR_LINK_ROUTES: Partial<
-  Record<SectionId, Partial<Record<number, string>>>
-> = {
-  /* Map physical control stops to routes. */
-  eis: {
-    0: HOME_ROUTE,
-    1: "/about",
-    2: "/contact",
-  },
-  jw: {
-    0: "/jason-walton/biography",
-    1: "/jason-walton/discography",
-    2: "/jason-walton/production",
-  },
-  ihm: {
-    0: I_HATE_MUSIC_PODCAST_ROUTE,
-    1: "/i-hate-music/community",
-    2: "/i-hate-music/patreon",
-  },
-};
-
-const ACTIVE_PAGE_BY_ROUTE: Partial<Record<string, ActivePage>> = {
-  /* Derive control highlights from direct links and browser history. */
-  [HOME_ROUTE]: { section: "eis", linkIndex: 0 },
-  "/about": { section: "eis", linkIndex: 1 },
-  "/contact": { section: "eis", linkIndex: 2 },
-  "/jason-walton/biography": { section: "jw", linkIndex: 0 },
-  "/jason-walton/discography": { section: "jw", linkIndex: 1 },
-  "/jason-walton/production": { section: "jw", linkIndex: 2 },
-  [I_HATE_MUSIC_PODCAST_ROUTE]: { section: "ihm", linkIndex: 0 },
-  "/i-hate-music/community": { section: "ihm", linkIndex: 1 },
-  "/i-hate-music/patreon": { section: "ihm", linkIndex: 2 },
-};
 
 export interface NavbarState {
   activePage: ActivePage | null;
@@ -150,7 +124,7 @@ function clampSectionLinkIndex(
   section: SectionId,
   requestedLinkIndex: number,
 ): number {
-  const maxLinkIndex = SECTION_LINKS[section].length - 1;
+  const maxLinkIndex = NAVBAR_SECTIONS[section].length - 1;
   if (!Number.isFinite(requestedLinkIndex)) return 0;
   return Math.max(0, Math.min(maxLinkIndex, Math.round(requestedLinkIndex)));
 }
@@ -159,7 +133,7 @@ function getRouteVisualState(
   pathname: string,
   cartCount: number,
 ): NavbarVisualState {
-  const routeActivePage = ACTIVE_PAGE_BY_ROUTE[pathname] ?? null;
+  const routeActivePage = ACTIVE_PAGE_BY_ROUTE.get(pathname) ?? null;
 
   return {
     activePage: routeActivePage,
@@ -417,7 +391,7 @@ export function useNavbar(): NavbarState {
 
   const navigateToLinkedRoute = useCallback(
     (sectionId: SectionId, linkIndex: number): void => {
-      const targetRoute = NAVBAR_LINK_ROUTES[sectionId]?.[linkIndex];
+      const targetRoute = NAVBAR_SECTIONS[sectionId][linkIndex]?.route;
       if (targetRoute) router.push(targetRoute);
     },
     [router],
@@ -452,7 +426,7 @@ export function useNavbar(): NavbarState {
 
   const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
     /* Cycle active knob stops; inactive sections start at the first stop. */
-    const linkCount = SECTION_LINKS[sectionId].length;
+    const linkCount = NAVBAR_SECTIONS[sectionId].length;
     const selectedLinkIndex =
       activePage?.section === sectionId
         ? (activePage.linkIndex + 1) % linkCount

@@ -1,12 +1,19 @@
 import type { ReactNode } from "react";
 
-import ResponsiveSiteView from "./ResponsiveSiteView";
+import Navbar from "@/front-end/navbar/Navbar";
+
+import styles from "./SiteShell.module.css";
 
 interface SiteShellProps {
   children: ReactNode;
 }
 
-/** Persistent site frame; responsive CSS adapts the layout without replacing the page subtree. */
+/** Persistent site frame containing the navbar and current page. */
 export default function SiteShell({ children }: SiteShellProps) {
-  return <ResponsiveSiteView>{children}</ResponsiveSiteView>;
+  return (
+    <div className={styles.siteView}>
+      <Navbar />
+      <div className={styles.siteContent}>{children}</div>
+    </div>
+  );
 }

@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 
-import { EIS_LINKS } from "../../config";
+import { NAVBAR_SECTIONS } from "../../config";
 import { useNavbarContext } from "../../state";
 import styles from "./EISLogoCell.module.css";
 
+const EIS_LINKS = NAVBAR_SECTIONS.eis;
 const LAST_EIS_INDEX = EIS_LINKS.length - 1;
 
 /* Keep pointer movement in refs; commit the snapped index on release. */
@@ -29,7 +30,7 @@ export default function EISLogoCell() {
   });
 
   const isActive = activePage?.section === "eis";
-  const activeLabel = EIS_LINKS[eisSliderPos] ?? EIS_LINKS[0];
+  const activeLabel = EIS_LINKS[eisSliderPos]?.label ?? EIS_LINKS[0].label;
 
   const linkIndexToThumbTop = useCallback((linkIndex: number): number => {
     /* Rendered sizes keep slider stops aligned after scaling and zoom. */
@@ -214,11 +215,11 @@ export default function EISLogoCell() {
 
                 return (
                   <button
-                    key={link}
+                    key={link.route}
                     type="button"
                     className={styles.eisLinkRow}
                     onClick={() => eisNavTo(linkIndex)}
-                    aria-label={`Navigate to ${link}`}
+                    aria-label={`Navigate to ${link.label}`}
                     aria-pressed={isSelected}
                     aria-current={isSelected ? "page" : undefined}
                   >
@@ -232,7 +233,7 @@ export default function EISLogoCell() {
                         isSelected ? styles.eisLinkLabelOn : ""
                       }`}
                     >
-                      {link}
+                      {link.label}
                     </span>
                   </button>
                 );
