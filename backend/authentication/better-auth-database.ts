@@ -1,15 +1,8 @@
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { Kysely } from "kysely";
-import { requireEnvironmentVariable } from "@/backend/configuration/environment";
+import { databaseConfiguration } from "@/backend/database/database-configuration";
 
-/** Server-only credentials for the shared database. */
-const databaseUrl = requireEnvironmentVariable("TURSO_DATABASE_URL");
-const databaseToken = requireEnvironmentVariable("TURSO_AUTH_TOKEN");
-
-/** Better Auth's connection; project queries use the separate Turso client. */
+/** Better Auth's Kysely adapter uses the shared database configuration. */
 export const betterAuthDatabase = new Kysely<Record<string, never>>({
-  dialect: new LibsqlDialect({
-    url: databaseUrl,
-    authToken: databaseToken,
-  }),
+  dialect: new LibsqlDialect(databaseConfiguration),
 });
