@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { deleteAuthUser } from "./auth-user-lifecycle";
 import {
@@ -9,6 +9,7 @@ import {
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  requireValidPassword,
 } from "@/shared/account-policy";
 import {
   createNormalUserAfterSignup,
@@ -66,6 +67,31 @@ export const auth = betterAuth({
     minPasswordLength: PASSWORD_MIN_LENGTH,
     maxPasswordLength: PASSWORD_MAX_LENGTH,
     autoSignIn: true,
+  },
+  hooks: {
+    /** Apply the project password policy before Better Auth hashes a new password. */
+    before: createAuthMiddleware(async (context) => {
+      const password =
+        context.path === "/sign-up/email"
+          ? context.body?.password
+          : context.path === "/change-password" ||
+              context.path === "/reset-password"
+            ? context.body?.newPassword
+            : undefined;
+
+      if (typeof password !== "string") {
+        return;
+      }
+
+      try {
+        requireValidPassword(password);
+      } catch (error) {
+        throw new APIError("BAD_REQUEST", {
+          message:
+            error instanceof Error ? error.message : "Enter a valid password.",
+        });
+      }
+    }),
   },
   databaseHooks: {
     user: {

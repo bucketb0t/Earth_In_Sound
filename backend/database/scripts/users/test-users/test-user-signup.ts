@@ -8,6 +8,7 @@ import {
   assertRejects,
   assertRejectsWithMessage,
 } from "./test-user-helpers";
+import { PASSWORD_WHITESPACE_MESSAGE } from "@/shared/account-policy";
 
 /** Test signup rollback: failed profile creation removes auth records and releases the identity. */
 export async function testFailedSignupRecovery(
@@ -76,10 +77,30 @@ export async function testNormalSignupAndProfile(
   context: UserDatabaseTestContext,
   owner: StoredUser,
 ): Promise<NormalUserTestResult> {
-  const { auth, userReads, userWrites, testRunId } = context;
+  const { auth, authContext, userReads, userWrites, testRunId } = context;
   const email = `${testRunId}-user@example.com`;
   const username = `${testRunId}-user`;
   const password = "User-test-password-123";
+  const spacedPasswordEmail = `${testRunId}-spaced-password@example.com`;
+
+  await assertRejectsWithMessage(
+    () =>
+      auth.api.signUpEmail({
+        body: {
+          email: spacedPasswordEmail,
+          name: `${testRunId}-spaced-password`,
+          password: "Invalid password 123",
+        },
+      }),
+    PASSWORD_WHITESPACE_MESSAGE,
+    "signup should reject passwords containing spaces",
+  );
+  assert(
+    (await authContext.internalAdapter.findUserByEmail(spacedPasswordEmail)) ===
+      null && (await userReads.getUserByEmail(spacedPasswordEmail)) === null,
+    "rejected passwords should not create auth or project users",
+  );
+
   const signup = await auth.api.signUpEmail({
     body: { email, name: username, password },
   });

@@ -102,6 +102,8 @@ test.describe("account settings", () => {
       const confirmPassword = passwordForm.getByLabel("Confirm new password", {
         exact: true,
       });
+      await expect(newPassword).toHaveAttribute("pattern", "\\S+");
+      await expect(confirmPassword).toHaveAttribute("pattern", "\\S+");
       await expect(currentPassword).toHaveAttribute("maxlength", "128");
       await expect(newPassword).toHaveAttribute("minlength", "8");
       await expect(newPassword).toHaveAttribute("maxlength", "128");

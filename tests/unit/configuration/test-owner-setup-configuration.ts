@@ -11,7 +11,7 @@ const incompleteConfigurationMessage =
 
 const passwordLengthMessage = `LOCAL_OWNER_PASSWORD must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters.`;
 
-const validOwnerPassword = "  valid-owner-password-123  ";
+const validOwnerPassword = "valid-owner-password-123";
 
 const incompleteOwnerEnvironments: readonly Partial<NodeJS.ProcessEnv>[] = [
   {
@@ -91,6 +91,17 @@ export function runOwnerSetupConfigurationTests(): void {
         'Username may use letters, numbers, "-", "_" and ".", but separators cannot touch.',
     },
     "an invalid owner username should be rejected",
+  );
+
+  assert.throws(
+    () =>
+      readOwnerSetupConfiguration({
+        LOCAL_OWNER_EMAIL: "owner@example.com",
+        LOCAL_OWNER_USERNAME: "owner",
+        LOCAL_OWNER_PASSWORD: "invalid owner password",
+      }),
+    { message: "LOCAL_OWNER_PASSWORD cannot contain spaces." },
+    "an owner password containing spaces should be rejected",
   );
 
   assert.throws(

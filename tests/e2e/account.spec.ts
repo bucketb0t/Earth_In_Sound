@@ -53,6 +53,11 @@ test.describe("account page", () => {
     await expect(username).toHaveAttribute("required", "");
     await expect(username).toHaveAttribute("minlength", "3");
     await expect(username).toHaveAttribute("maxlength", "32");
+    await expect(password).toHaveAttribute("pattern", "\\S+");
+    await expect(password).toHaveAttribute(
+      "title",
+      "Password cannot contain spaces.",
+    );
   });
 
   /* Test signup, logout, rejected login, and successful login without creating real accounts. */

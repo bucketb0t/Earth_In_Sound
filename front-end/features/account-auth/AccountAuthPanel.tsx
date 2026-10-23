@@ -5,6 +5,8 @@ import { authClient } from "@/front-end/authentication/auth-client";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  PASSWORD_WHITESPACE_MESSAGE,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from "@/shared/account-policy";
@@ -164,6 +166,10 @@ export default function AccountAuthPanel({
               }
               minLength={PASSWORD_MIN_LENGTH}
               maxLength={PASSWORD_MAX_LENGTH}
+              pattern={mode === "sign-up" ? PASSWORD_PATTERN : undefined}
+              title={
+                mode === "sign-up" ? PASSWORD_WHITESPACE_MESSAGE : undefined
+              }
               required
             />
           </label>

@@ -1,9 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { pathToFileURL } from "node:url";
-import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-} from "@/shared/account-policy";
+import { requireValidPassword } from "@/shared/account-policy";
 import {
   requireValidEmail,
   requireValidUsername,
@@ -39,19 +36,10 @@ export function readOwnerSetupConfiguration(
     );
   }
 
-  if (
-    password.length < PASSWORD_MIN_LENGTH ||
-    password.length > PASSWORD_MAX_LENGTH
-  ) {
-    throw new Error(
-      `LOCAL_OWNER_PASSWORD must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters.`,
-    );
-  }
-
   return {
     email: requireValidEmail(email),
     username: requireValidUsername(username),
-    password,
+    password: requireValidPassword(password, "LOCAL_OWNER_PASSWORD"),
   };
 }
 

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import type { StoredUser } from "../../../users/read/read-users";
 import type { UserDatabaseTestContext } from "./test-user-context";
 import { assert } from "./test-user-helpers";
+import { PASSWORD_WHITESPACE_MESSAGE } from "@/shared/account-policy";
 
 function sessionHeaders(response: Response): Headers {
   const cookies = response.headers
@@ -44,6 +45,27 @@ export async function testAccountManagement(
       }),
     );
   }
+
+  const rejectedPasswordChange = await request("/change-password", {
+    currentPassword: password,
+    newPassword: "Invalid new password 123",
+    revokeOtherSessions: false,
+  });
+  assert(
+    rejectedPasswordChange.status === 400 &&
+      (await rejectedPasswordChange.json()).message ===
+        PASSWORD_WHITESPACE_MESSAGE,
+    "password changes should reject passwords containing spaces",
+  );
+  assert(
+    (
+      await auth.api.signInEmail({
+        body: { email, password },
+        asResponse: true,
+      })
+    ).status === 200,
+    "a rejected password change should preserve the existing password",
+  );
 
   /* Require a valid session and reject actor IDs supplied by the browser. */
   assert(

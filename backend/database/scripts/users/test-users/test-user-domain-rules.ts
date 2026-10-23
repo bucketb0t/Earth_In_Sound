@@ -12,6 +12,12 @@ import {
 } from "../../../users/validation/validate-user-input";
 import type { StoredUser } from "../../../users/validation/validate-stored-user";
 import { assert, assertThrowsWithMessage } from "./test-user-helpers";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_WHITESPACE_MESSAGE,
+  requireValidPassword,
+} from "@/shared/account-policy";
 
 const baseUser: StoredUser = {
   id: "base-user-id",
@@ -49,6 +55,7 @@ export function runUserDomainRuleTests(): void {
   testLookupValues();
   testEmailValidation();
   testUsernameValidation();
+  testPasswordValidation();
   testUserGuards();
   testManagementPermissions();
 
@@ -138,6 +145,38 @@ function testUsernameValidation(): void {
       () => requireValidUsername(invalidUsername),
       characterMessage,
       `username validation should reject ${invalidUsername}`,
+    );
+  }
+}
+
+function testPasswordValidation(): void {
+  const validPassword = "Valid-password-123";
+  const lengthMessage = `Password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters.`;
+
+  assert(
+    requireValidPassword(validPassword) === validPassword,
+    "password validation should preserve a valid password",
+  );
+  assertThrowsWithMessage(
+    () => requireValidPassword("x".repeat(PASSWORD_MIN_LENGTH - 1)),
+    lengthMessage,
+    "passwords shorter than the minimum should be rejected",
+  );
+  assertThrowsWithMessage(
+    () => requireValidPassword("x".repeat(PASSWORD_MAX_LENGTH + 1)),
+    lengthMessage,
+    "passwords longer than the maximum should be rejected",
+  );
+
+  for (const invalidPassword of [
+    "invalid password",
+    "invalid\tpassword",
+    "invalid\npassword",
+  ]) {
+    assertThrowsWithMessage(
+      () => requireValidPassword(invalidPassword),
+      PASSWORD_WHITESPACE_MESSAGE,
+      "password whitespace should be rejected",
     );
   }
 }
