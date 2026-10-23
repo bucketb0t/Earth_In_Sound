@@ -8,10 +8,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import {
-  playAudioFromTimestamp,
-  seekAudioToTimestamp,
-} from "./mediaTiming";
+import { playAudioFromTimestamp, seekAudioToTimestamp } from "./mediaTiming";
 import {
   YOUTUBE_ENDED_STATE,
   YOUTUBE_PAUSED_STATE,
@@ -140,8 +137,8 @@ export function useVideoAudioContinuity({
     stopBackgroundAudioStandby();
   }, [cancelVideoToAudioHandoff, stopBackgroundAudioStandby]);
 
-  const prepareBackgroundAudioForHandoff = useCallback(
-    async (): Promise<boolean> => {
+  const prepareBackgroundAudioForHandoff =
+    useCallback(async (): Promise<boolean> => {
       const audioElement = audioRef.current;
       if (!audioElement || !audioUrl) {
         setBackgroundAudioError("This episode does not have background audio.");
@@ -177,14 +174,10 @@ export function useVideoAudioContinuity({
       } finally {
         audioElement.muted = previousMuted;
       }
-    },
-    [audioRef, audioUrl],
-  );
+    }, [audioRef, audioUrl]);
 
   const startBackgroundAudioStandby = useCallback(
-    async (
-      consentIsAvailable = backgroundAudioConsentGiven,
-    ): Promise<void> => {
+    async (consentIsAvailable = backgroundAudioConsentGiven): Promise<void> => {
       if (
         !backgroundAudioStandbyIsSupported ||
         !consentIsAvailable ||

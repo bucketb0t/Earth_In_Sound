@@ -54,13 +54,8 @@ function setCssVariable(
  * Measurements synchronize artwork scale and shell geometry.
  */
 export default function ResponsiveNavbar() {
-  const {
-    shellRef,
-    contentRef,
-    scale,
-    isScaleReady,
-    isCompactLayout,
-  } = useNavbarContext();
+  const { shellRef, contentRef, scale, isScaleReady, isCompactLayout } =
+    useNavbarContext();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const pointerZoomAnchorRef = useRef<PointerZoomAnchor | null>(null);
 
@@ -110,8 +105,7 @@ export default function ResponsiveNavbar() {
 
     const syncNavbarGeometry = () => {
       const layoutHeightFactor = readNavbarLayoutHeightFactor(contentElement);
-      const scaledFaceplateHeight =
-        (DESIGN_HEIGHT - BASE_LINE_HEIGHT) * scale;
+      const scaledFaceplateHeight = (DESIGN_HEIGHT - BASE_LINE_HEIGHT) * scale;
 
       /* Measure control geometry only; decorative paint must not affect sizing. */
       setCssVariable(
@@ -133,9 +127,7 @@ export default function ResponsiveNavbar() {
       setCssVariable(
         rootElement,
         "--navbar-base-artwork-scale",
-        String(
-          scaledFaceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT,
-        ),
+        String(scaledFaceplateHeight / ARTWORK_CELL_SCALE_BASE_HEIGHT),
       );
 
       /* Use scrollbar-free layout width for paint; CSS handles row centering. */

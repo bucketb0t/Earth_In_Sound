@@ -11,10 +11,7 @@ export default defineConfig({
   /* One worker keeps the shared test server and disposable database ordered. */
   workers: 1,
 
-  reporter: [
-    ["list"],
-    ["html", { open: "never" }],
-  ],
+  reporter: [["list"], ["html", { open: "never" }]],
 
   use: {
     baseURL: E2E_BASE_URL,

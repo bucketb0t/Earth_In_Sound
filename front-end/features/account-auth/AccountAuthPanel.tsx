@@ -24,9 +24,7 @@ export default function AccountAuthPanel({
   authClient.hydrateSession(initialSession);
   const session = authClient.useSession();
   const currentSession =
-    session.isPending && !session.isRefetching
-      ? initialSession
-      : session.data;
+    session.isPending && !session.isRefetching ? initialSession : session.data;
 
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
@@ -88,7 +86,9 @@ export default function AccountAuthPanel({
       setMessage("Signed out.");
       await session.refetch();
     } catch (error) {
-      setSignOutError(error instanceof Error ? error.message : "Sign out failed.");
+      setSignOutError(
+        error instanceof Error ? error.message : "Sign out failed.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -131,8 +131,8 @@ export default function AccountAuthPanel({
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
-                 minLength={USERNAME_MIN_LENGTH}
-                 maxLength={USERNAME_MAX_LENGTH}
+                minLength={USERNAME_MIN_LENGTH}
+                maxLength={USERNAME_MAX_LENGTH}
                 required
               />
             </label>

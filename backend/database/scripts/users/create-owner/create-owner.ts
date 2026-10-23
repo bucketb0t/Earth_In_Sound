@@ -1,23 +1,80 @@
 import { loadEnvConfig } from "@next/env";
 import { pathToFileURL } from "node:url";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "@/shared/account-policy";
+import {
+  requireValidEmail,
+  requireValidUsername,
+} from "@/backend/database/users/validation/validate-user-input";
 
-loadEnvConfig(process.cwd());
+type OwnerSetupEnvironment = Partial<NodeJS.ProcessEnv> & {
+  LOCAL_OWNER_EMAIL?: string;
+  LOCAL_OWNER_USERNAME?: string;
+  LOCAL_OWNER_PASSWORD?: string;
+};
+
+interface OwnerSetupConfiguration {
+  email: string;
+  username: string;
+  password: string;
+}
+
+export function readOwnerSetupConfiguration(
+  environment: OwnerSetupEnvironment = process.env,
+): OwnerSetupConfiguration | null {
+  const email = environment.LOCAL_OWNER_EMAIL?.trim();
+  const username = environment.LOCAL_OWNER_USERNAME?.trim();
+  const password = environment.LOCAL_OWNER_PASSWORD;
+
+  const passwordIsMissing = !password || password.trim().length === 0;
+  if (!email && !username && passwordIsMissing) {
+    return null;
+  }
+
+  if (!email || !username || passwordIsMissing) {
+    throw new Error(
+      "LOCAL_OWNER_EMAIL, LOCAL_OWNER_USERNAME, and LOCAL_OWNER_PASSWORD must either all be provided or all be omitted.",
+    );
+  }
+
+  if (
+    password.length < PASSWORD_MIN_LENGTH ||
+    password.length > PASSWORD_MAX_LENGTH
+  ) {
+    throw new Error(
+      `LOCAL_OWNER_PASSWORD must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters.`,
+    );
+  }
+
+  return {
+    email: requireValidEmail(email),
+    username: requireValidUsername(username),
+    password,
+  };
+}
 
 /**
  * Create or repair the first owner using trusted LOCAL_OWNER_* inputs.
  * Revoke setup sessions so the owner must sign in normally afterward.
  */
 export async function runCreateOwnerScript(): Promise<void> {
-  const ownerEmail = process.env.LOCAL_OWNER_EMAIL?.trim();
-  const ownerUsername = process.env.LOCAL_OWNER_USERNAME?.trim();
-  const ownerPassword = process.env.LOCAL_OWNER_PASSWORD;
+  loadEnvConfig(process.cwd());
+  const ownerConfiguration = readOwnerSetupConfiguration();
 
-  if (!ownerEmail || !ownerUsername || !ownerPassword) {
+  if (ownerConfiguration === null) {
     console.log(
-      "LOCAL_OWNER_EMAIL, LOCAL_OWNER_USERNAME, or LOCAL_OWNER_PASSWORD is missing. Skipping owner creation.",
+      "No LOCAL_OWNER_* configuration was provided. Skipping owner creation.",
     );
     return;
   }
+
+  const {
+    email: ownerEmail,
+    username: ownerUsername,
+    password: ownerPassword,
+  } = ownerConfiguration;
 
   const [{ auth }, { runWithOwnerSetupContext }, userReads, userWrites] =
     await Promise.all([

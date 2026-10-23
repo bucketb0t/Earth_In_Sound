@@ -33,8 +33,7 @@ export function getNavbarLayoutViewportWidth(
 export function readNavbarWindowMetrics(
   fallbackElement?: HTMLElement,
 ): NavbarWindowMetrics {
-  const layoutViewportWidth =
-    getNavbarLayoutViewportWidth(fallbackElement);
+  const layoutViewportWidth = getNavbarLayoutViewportWidth(fallbackElement);
 
   return {
     viewportWidth:
@@ -65,9 +64,7 @@ function dimensionsDiffer(first: number, second: number): boolean {
   return Math.abs(first - second) > DIMENSION_EPSILON_PX;
 }
 
-function viewportMatchesReportedScreen(
-  metrics: NavbarWindowMetrics,
-): boolean {
+function viewportMatchesReportedScreen(metrics: NavbarWindowMetrics): boolean {
   if (metrics.screenWidth <= 0) return false;
 
   const tolerance = Math.max(
@@ -89,15 +86,12 @@ export function getInitialNavbarReferenceWidth(
   const viewportWidth = metrics[viewportMetric];
   if (metrics.outerWidth <= 0) return viewportWidth;
 
-  const outerViewportDifference = Math.abs(
-    metrics.outerWidth - viewportWidth,
-  );
+  const outerViewportDifference = Math.abs(metrics.outerWidth - viewportWidth);
   const viewportLooksEmulated =
     viewportMatchesReportedScreen({
       ...metrics,
       viewportWidth,
-    }) &&
-    outerViewportDifference > NORMAL_BROWSER_FRAME_MAX_PX;
+    }) && outerViewportDifference > NORMAL_BROWSER_FRAME_MAX_PX;
 
   if (viewportLooksEmulated) return viewportWidth;
   if (
@@ -132,14 +126,8 @@ export function resolveNavbarReferenceWidth(
       previousMetrics.devicePixelRatio - currentMetrics.devicePixelRatio,
     ) > DEVICE_PIXEL_RATIO_EPSILON;
   const screenContextChanged =
-    dimensionsDiffer(
-      previousMetrics.screenWidth,
-      currentMetrics.screenWidth,
-    ) ||
-    dimensionsDiffer(
-      previousMetrics.screenHeight,
-      currentMetrics.screenHeight,
-    );
+    dimensionsDiffer(previousMetrics.screenWidth, currentMetrics.screenWidth) ||
+    dimensionsDiffer(previousMetrics.screenHeight, currentMetrics.screenHeight);
 
   if (!viewportChanged && !outerWidthChanged) return previousReferenceWidth;
 
@@ -162,9 +150,7 @@ export function resolveNavbarReferenceWidth(
 
   const previousOuterWidth = previousMetrics.outerWidth;
   const referenceToOuterRatio =
-    previousOuterWidth > 0
-      ? previousReferenceWidth / previousOuterWidth
-      : 1;
+    previousOuterWidth > 0 ? previousReferenceWidth / previousOuterWidth : 1;
 
   // Preserve the browser-frame correction during window resizing.
   return Math.max(0, currentMetrics.outerWidth * referenceToOuterRatio);
@@ -233,7 +219,8 @@ export function measureRenderedNavbarContentWidth(
 
   if (rowElements.length === 0) {
     return getNavbarCellElements(contentElement).reduce(
-      (totalWidth, cellElement) => totalWidth + getElementOuterWidth(cellElement),
+      (totalWidth, cellElement) =>
+        totalWidth + getElementOuterWidth(cellElement),
       0,
     );
   }
@@ -243,7 +230,10 @@ export function measureRenderedNavbarContentWidth(
 
   return rowsAreStacked
     ? Math.max(0, ...renderedRowWidths)
-    : renderedRowWidths.reduce((totalWidth, rowWidth) => totalWidth + rowWidth, 0);
+    : renderedRowWidths.reduce(
+        (totalWidth, rowWidth) => totalWidth + rowWidth,
+        0,
+      );
 }
 
 export function navbarRowsAreStacked(contentElement: HTMLElement): boolean {

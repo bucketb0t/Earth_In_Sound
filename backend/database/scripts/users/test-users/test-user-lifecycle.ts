@@ -104,7 +104,7 @@ export async function testDisableAndReactivate(
     () =>
       auth.api.signInEmail({
         body: { email: normalUser.email, password: normalUser.password },
-    }),
+      }),
     "disabled users should not create new sessions",
   );
   assert(
@@ -176,8 +176,9 @@ export async function testProjectDeletionFailureSafety(
     "failed-deletion test signup should begin with an auth session",
   );
   assert(
-    (await authContext.internalAdapter.findCredentialAccount(signup.user.id)) !==
-      null,
+    (await authContext.internalAdapter.findCredentialAccount(
+      signup.user.id,
+    )) !== null,
     "failed-deletion test signup should begin with login credentials",
   );
 
@@ -225,8 +226,9 @@ export async function testProjectDeletionFailureSafety(
     "failed deletion should keep the Better Auth user",
   );
   assert(
-    (await authContext.internalAdapter.findCredentialAccount(signup.user.id)) !==
-      null,
+    (await authContext.internalAdapter.findCredentialAccount(
+      signup.user.id,
+    )) !== null,
     "failed deletion should restore the credential account",
   );
   assert(
@@ -289,8 +291,9 @@ export async function testAccountDeletion(
     "delete should remove the Better Auth user",
   );
   assert(
-    (await authContext.internalAdapter.findCredentialAccount(signup.user.id)) ===
-      null,
+    (await authContext.internalAdapter.findCredentialAccount(
+      signup.user.id,
+    )) === null,
     "delete should remove the credential account",
   );
   assert(

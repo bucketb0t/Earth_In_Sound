@@ -49,7 +49,11 @@ function PodcastContent({ show }: { show: PodcastShow }) {
             <div>
               <dt>Source</dt>
               <dd>
-                <a href={show.acastEpisodesUrl} target="_blank" rel="noreferrer">
+                <a
+                  href={show.acastEpisodesUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Acast RSS
                 </a>
               </dd>

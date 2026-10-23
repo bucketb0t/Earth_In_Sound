@@ -54,6 +54,5 @@ export function seekAudioToTimestamp(
 
   try {
     audioElement.currentTime = Math.max(0, seconds);
-  } catch {
-  }
+  } catch {}
 }

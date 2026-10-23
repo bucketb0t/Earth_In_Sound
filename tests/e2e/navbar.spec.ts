@@ -57,9 +57,7 @@ const SECTION_NAVIGATION_CASES: readonly NavigationCase[] = [
 ] as const;
 
 async function expectPathname(page: Page, expectedPathname: string) {
-  await expect
-    .poll(() => new URL(page.url()).pathname)
-    .toBe(expectedPathname);
+  await expect.poll(() => new URL(page.url()).pathname).toBe(expectedPathname);
 }
 
 /* Open the page and wait for the expected navbar layout. */
@@ -126,10 +124,22 @@ async function expectNavbarGeometry(
   await expect(utilityCells).toHaveCount(3);
 
   if (layout === "wide") {
-    await expectCellSpanCentered(page, primaryCells.first(), utilityCells.last());
+    await expectCellSpanCentered(
+      page,
+      primaryCells.first(),
+      utilityCells.last(),
+    );
   } else {
-    await expectCellSpanCentered(page, primaryCells.first(), primaryCells.last());
-    await expectCellSpanCentered(page, utilityCells.first(), utilityCells.last());
+    await expectCellSpanCentered(
+      page,
+      primaryCells.first(),
+      primaryCells.last(),
+    );
+    await expectCellSpanCentered(
+      page,
+      utilityCells.first(),
+      utilityCells.last(),
+    );
   }
 
   await expectNoHorizontalOverflow(page);
@@ -220,7 +230,9 @@ test.describe("desktop navbar", () => {
   });
 
   /* Test desktop alignment and overflow. */
-  test("keeps the wide cell row centered without overflow", async ({ page }) => {
+  test("keeps the wide cell row centered without overflow", async ({
+    page,
+  }) => {
     await openNavbar(page, "wide");
     await expectNavbarGeometry(page, "wide");
   });
@@ -303,7 +315,9 @@ test.describe("compact navbar", () => {
   });
 
   /* Test compact row alignment and overflow. */
-  test("keeps both compact rows centered without overflow", async ({ page }) => {
+  test("keeps both compact rows centered without overflow", async ({
+    page,
+  }) => {
     await openNavbar(page, "compact");
     await expectNavbarGeometry(page, "compact");
   });
@@ -472,7 +486,9 @@ test.describe("compact navbar", () => {
 
     await store.hover();
     await expect
-      .poll(() => hoverVideo.evaluate((video) => getComputedStyle(video).opacity))
+      .poll(() =>
+        hoverVideo.evaluate((video) => getComputedStyle(video).opacity),
+      )
       .toBe("1");
 
     await store.click();

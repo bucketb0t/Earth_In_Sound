@@ -11,10 +11,7 @@ import {
   toLookupValue,
 } from "../../../users/validation/validate-user-input";
 import type { StoredUser } from "../../../users/validation/validate-stored-user";
-import {
-  assert,
-  assertThrowsWithMessage,
-} from "./test-user-helpers";
+import { assert, assertThrowsWithMessage } from "./test-user-helpers";
 
 const baseUser: StoredUser = {
   id: "base-user-id",
@@ -78,17 +75,17 @@ function testLookupValues(): void {
 }
 
 function testEmailValidation(): void {
-  assert(
-    requireValidEmail("  Person@Example.COM  ") === "Person@Example.COM",
-    "email validation should trim edges and preserve visible casing",
-  );
-
   const invalidEmailCases = [
     { value: "", message: "Email is required." },
     { value: "person @example.com", message: "Email cannot contain spaces." },
     { value: "person@example", message: "Enter a valid email address." },
     { value: "person.example.com", message: "Enter a valid email address." },
   ] as const;
+
+  assert(
+    requireValidEmail("  Person@Example.COM  ") === "Person@Example.COM",
+    "email validation should trim edges and preserve visible casing",
+  );
 
   for (const invalidEmail of invalidEmailCases) {
     assertThrowsWithMessage(
@@ -107,6 +104,9 @@ function testUsernameValidation(): void {
     "user.name",
     "a".repeat(32),
   ];
+  const lengthMessage = "Username must be between 3 and 32 characters.";
+  const characterMessage =
+    'Username may use letters, numbers, "-", "_" and ".", but separators cannot touch.';
 
   for (const validUsername of validUsernames) {
     assert(
@@ -115,7 +115,6 @@ function testUsernameValidation(): void {
     );
   }
 
-  const lengthMessage = "Username must be between 3 and 32 characters.";
   assertThrowsWithMessage(
     () => requireValidUsername("ab"),
     lengthMessage,
@@ -127,8 +126,6 @@ function testUsernameValidation(): void {
     "usernames longer than 32 characters should be rejected",
   );
 
-  const characterMessage =
-    'Username may use letters, numbers, "-", "_" and ".", but separators cannot touch.';
   for (const invalidUsername of [
     ".username",
     "username-",
@@ -185,12 +182,6 @@ function testManagementPermissions(): void {
   const secondAdmin = createUser("second-admin", "admin");
   const user = createUser("normal-user", "user");
   const secondUser = createUser("second-user", "user");
-
-  requireCanManageUser(user, user);
-  requireCanManageUser(owner, admin);
-  requireCanManageUser(owner, user);
-  requireCanManageUser(admin, user);
-
   const permissionMessage = "You do not have permission to manage this user.";
   const rejectedPairs = [
     [user, secondUser],
@@ -198,6 +189,11 @@ function testManagementPermissions(): void {
     [admin, secondAdmin],
     [admin, owner],
   ] as const;
+
+  requireCanManageUser(user, user);
+  requireCanManageUser(owner, admin);
+  requireCanManageUser(owner, user);
+  requireCanManageUser(admin, user);
 
   for (const [currentUser, targetUser] of rejectedPairs) {
     assertThrowsWithMessage(

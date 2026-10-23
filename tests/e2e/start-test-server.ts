@@ -18,7 +18,9 @@ async function main(): Promise<void> {
     relativeDatabaseDirectory.startsWith("..") ||
     isAbsolute(relativeDatabaseDirectory)
   ) {
-    throw new Error("Refusing to prepare an E2E database outside test-results.");
+    throw new Error(
+      "Refusing to prepare an E2E database outside test-results.",
+    );
   }
 
   await rm(databaseDirectory, { recursive: true, force: true });
@@ -56,11 +58,15 @@ async function main(): Promise<void> {
     "bin",
     "next",
   );
-  const server = spawn(process.execPath, [nextCliPath, "dev", "-p", serverPort], {
-    cwd: projectRoot,
-    env: process.env,
-    stdio: "inherit",
-  });
+  const server = spawn(
+    process.execPath,
+    [nextCliPath, "dev", "-p", serverPort],
+    {
+      cwd: projectRoot,
+      env: process.env,
+      stdio: "inherit",
+    },
+  );
 
   const stopServer = (): void => {
     if (!server.killed) server.kill();

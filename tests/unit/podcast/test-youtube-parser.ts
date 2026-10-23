@@ -4,20 +4,31 @@ import { parseYouTubeVideoId } from "../../../front-end/features/ihate-music-pod
 
 const VIDEO_ID = "dQw4w9WgXcQ";
 
+const VALID_YOUTUBE_VALUES = [
+  VIDEO_ID,
+  `https://youtube.com/watch?v=${VIDEO_ID}`,
+  `https://www.youtube.com/watch?v=${VIDEO_ID}&feature=share`,
+  `https://m.youtube.com/watch?v=${VIDEO_ID}`,
+  `https://youtu.be/${VIDEO_ID}?si=test`,
+  `https://youtube.com/embed/${VIDEO_ID}`,
+  `https://youtube.com/shorts/${VIDEO_ID}`,
+  `https://youtube.com/live/${VIDEO_ID}`,
+] as const;
+
+const INVALID_YOUTUBE_VALUES = [
+  "",
+  "not-a-video-id",
+  "short123",
+  `https://example.com/watch?v=${VIDEO_ID}`,
+  `https://evilyoutube.com/watch?v=${VIDEO_ID}`,
+  `https://youtube.com.evil.example/watch?v=${VIDEO_ID}`,
+  "https://youtube.com/watch?v=too-short",
+  "https://youtu.be/too-short",
+] as const;
+
 /** Test supported YouTube IDs/URLs and reject malformed or lookalike hosts. */
 export function runYouTubeParserTests(): void {
-  const validValues = [
-    VIDEO_ID,
-    `https://youtube.com/watch?v=${VIDEO_ID}`,
-    `https://www.youtube.com/watch?v=${VIDEO_ID}&feature=share`,
-    `https://m.youtube.com/watch?v=${VIDEO_ID}`,
-    `https://youtu.be/${VIDEO_ID}?si=test`,
-    `https://youtube.com/embed/${VIDEO_ID}`,
-    `https://youtube.com/shorts/${VIDEO_ID}`,
-    `https://youtube.com/live/${VIDEO_ID}`,
-  ];
-
-  for (const value of validValues) {
+  for (const value of VALID_YOUTUBE_VALUES) {
     assert.equal(
       parseYouTubeVideoId(`  ${value}  `),
       VIDEO_ID,
@@ -25,18 +36,7 @@ export function runYouTubeParserTests(): void {
     );
   }
 
-  const invalidValues = [
-    "",
-    "not-a-video-id",
-    "short123",
-    `https://example.com/watch?v=${VIDEO_ID}`,
-    `https://evilyoutube.com/watch?v=${VIDEO_ID}`,
-    `https://youtube.com.evil.example/watch?v=${VIDEO_ID}`,
-    "https://youtube.com/watch?v=too-short",
-    "https://youtu.be/too-short",
-  ];
-
-  for (const value of invalidValues) {
+  for (const value of INVALID_YOUTUBE_VALUES) {
     assert.equal(
       parseYouTubeVideoId(value),
       null,

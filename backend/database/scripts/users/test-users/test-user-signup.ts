@@ -86,21 +86,17 @@ export async function testNormalSignupAndProfile(
   const projectUser = await userReads.getUserByAuthProviderId(signup.user.id);
 
   assert(projectUser !== null, "signup should create a project profile");
-  assert(
-    projectUser.role === "user",
-    "public signup should create role=user",
-  );
+  assert(projectUser.role === "user", "public signup should create role=user");
   assert(
     projectUser.status === "active",
     "public signup should create an active profile",
   );
 
-  const repeatedProfileWrite =
-    await userWrites.createNormalUserAfterSignup({
-      authProviderUserId: signup.user.id,
-      email: "ignored-repeat@example.com",
-      username: "ignored-repeat",
-    });
+  const repeatedProfileWrite = await userWrites.createNormalUserAfterSignup({
+    authProviderUserId: signup.user.id,
+    email: "ignored-repeat@example.com",
+    username: "ignored-repeat",
+  });
   assert(
     repeatedProfileWrite.id === projectUser.id,
     "repeated signup hooks should return the existing project profile",

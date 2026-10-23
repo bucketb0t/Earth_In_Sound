@@ -134,9 +134,7 @@ export default function EpisodeMediaTabs({
         </label>
 
         {backgroundAudioError && (
-          <p className={styles.invalidVideoMessage}>
-            {backgroundAudioError}
-          </p>
+          <p className={styles.invalidVideoMessage}>{backgroundAudioError}</p>
         )}
 
         {videoError && (

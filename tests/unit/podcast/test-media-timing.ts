@@ -17,10 +17,18 @@ export async function runMediaTimingTests(): Promise<void> {
   } as unknown as HTMLAudioElement;
 
   seekAudioToTimestamp(playableAudio, -5);
-  assert.equal(playableAudio.currentTime, 0, "negative seeks should clamp to zero");
+  assert.equal(
+    playableAudio.currentTime,
+    0,
+    "negative seeks should clamp to zero",
+  );
 
   seekAudioToTimestamp(playableAudio, Number.NaN);
-  assert.equal(playableAudio.currentTime, 0, "non-finite seeks should be ignored");
+  assert.equal(
+    playableAudio.currentTime,
+    0,
+    "non-finite seeks should be ignored",
+  );
 
   await playAudioFromTimestamp(playableAudio, 42.5);
   assert.equal(playableAudio.currentTime, 42.5);

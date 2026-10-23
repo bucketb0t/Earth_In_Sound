@@ -1,6 +1,7 @@
 import { turso } from "../../turso-client";
 import {
   requireValidEmail,
+  requireValidUsername,
   toLookupValue,
 } from "../validation/validate-user-input";
 import {
@@ -111,11 +112,7 @@ export async function getUserByEmail(
 export async function getUserByUsername(
   username: string,
 ): Promise<StoredUser | null> {
-  const cleanedUsername = username.trim();
-
-  if (!cleanedUsername) {
-    throw new Error("Username is required.");
-  }
+  const cleanedUsername = requireValidUsername(username);
 
   const result = await turso.execute({
     sql: "SELECT * FROM users WHERE username_lookup = ? LIMIT 1",

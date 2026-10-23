@@ -45,7 +45,7 @@ export function useAccountSettings(
       } else {
         setSessionsError(
           devices.status === "fulfilled"
-            ? devices.value.error?.message ?? "Could not load sessions."
+            ? (devices.value.error?.message ?? "Could not load sessions.")
             : "Could not load sessions. Please try again.",
         );
       }
@@ -140,7 +140,9 @@ export function useAccountSettings(
           ? await authClient.revokeSession({ token })
           : await authClient.revokeOtherSessions();
         if (result.error) {
-          throw new Error(result.error.message ?? "Could not sign out sessions.");
+          throw new Error(
+            result.error.message ?? "Could not sign out sessions.",
+          );
         }
         await reloadSessions();
       },
@@ -149,7 +151,10 @@ export function useAccountSettings(
 
   function closeAccount(currentPassword: string, confirmation: "DELETE") {
     return runAction("close", "Account closed.", async () => {
-      const result = await authClient.account.close({ currentPassword, confirmation });
+      const result = await authClient.account.close({
+        currentPassword,
+        confirmation,
+      });
       if (result.error) {
         throw new Error(result.error.message ?? "Could not close account.");
       }

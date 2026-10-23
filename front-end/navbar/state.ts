@@ -228,7 +228,11 @@ export function useNavbar(): NavbarState {
     const shellElement = shellRef.current;
     const contentElement = contentRef.current;
     const rootElement = contentElement?.parentElement?.parentElement;
-    if (!shellElement || !contentElement || !(rootElement instanceof HTMLElement)) {
+    if (
+      !shellElement ||
+      !contentElement ||
+      !(rootElement instanceof HTMLElement)
+    ) {
       return;
     }
 
@@ -290,14 +294,10 @@ export function useNavbar(): NavbarState {
       const rowsAreStacked = navbarRowsAreStacked(contentElement);
       const zoomIndependentViewportWidth =
         layoutReferenceWidthRef.current ||
-        getInitialNavbarReferenceWidth(
-          readNavbarWindowMetrics(shellElement),
-        );
+        getInitialNavbarReferenceWidth(readNavbarWindowMetrics(shellElement));
       const fullScaleNavbarRowWidth =
         syncFullScaleNavbarRowWidth(rowsAreStacked);
-      const maximumScale = rowsAreStacked
-        ? Number.POSITIVE_INFINITY
-        : 1;
+      const maximumScale = rowsAreStacked ? Number.POSITIVE_INFINITY : 1;
       const nextScale =
         fullScaleNavbarRowWidth > 0
           ? Math.min(
@@ -397,17 +397,20 @@ export function useNavbar(): NavbarState {
     [router],
   );
 
-  const eisNavTo = useCallback((linkIndex: number): void => {
-    const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
-    setVisualState({
-      activePage: { section: "eis", linkIndex: clampedEisLinkIndex },
-      eisSliderPos: clampedEisLinkIndex,
-      isCartPressed: false,
-      isStorePressed: false,
-      sourcePathname: pathname,
-    });
-    navigateToLinkedRoute("eis", clampedEisLinkIndex);
-  }, [navigateToLinkedRoute, pathname]);
+  const eisNavTo = useCallback(
+    (linkIndex: number): void => {
+      const clampedEisLinkIndex = clampSectionLinkIndex("eis", linkIndex);
+      setVisualState({
+        activePage: { section: "eis", linkIndex: clampedEisLinkIndex },
+        eisSliderPos: clampedEisLinkIndex,
+        isCartPressed: false,
+        isStorePressed: false,
+        sourcePathname: pathname,
+      });
+      navigateToLinkedRoute("eis", clampedEisLinkIndex);
+    },
+    [navigateToLinkedRoute, pathname],
+  );
 
   const knobNavTo = useCallback(
     (sectionId: KnobSectionId, linkIndex: number): void => {
@@ -424,23 +427,26 @@ export function useNavbar(): NavbarState {
     [navigateToLinkedRoute, pathname],
   );
 
-  const knobFacePress = useCallback((sectionId: KnobSectionId): void => {
-    /* Cycle active knob stops; inactive sections start at the first stop. */
-    const linkCount = NAVBAR_SECTIONS[sectionId].length;
-    const selectedLinkIndex =
-      activePage?.section === sectionId
-        ? (activePage.linkIndex + 1) % linkCount
-        : 0;
+  const knobFacePress = useCallback(
+    (sectionId: KnobSectionId): void => {
+      /* Cycle active knob stops; inactive sections start at the first stop. */
+      const linkCount = NAVBAR_SECTIONS[sectionId].length;
+      const selectedLinkIndex =
+        activePage?.section === sectionId
+          ? (activePage.linkIndex + 1) % linkCount
+          : 0;
 
-    setVisualState({
-      activePage: { section: sectionId, linkIndex: selectedLinkIndex },
-      eisSliderPos: 0,
-      isCartPressed: false,
-      isStorePressed: false,
-      sourcePathname: pathname,
-    });
-    navigateToLinkedRoute(sectionId, selectedLinkIndex);
-  }, [activePage, navigateToLinkedRoute, pathname]);
+      setVisualState({
+        activePage: { section: sectionId, linkIndex: selectedLinkIndex },
+        eisSliderPos: 0,
+        isCartPressed: false,
+        isStorePressed: false,
+        sourcePathname: pathname,
+      });
+      navigateToLinkedRoute(sectionId, selectedLinkIndex);
+    },
+    [activePage, navigateToLinkedRoute, pathname],
+  );
 
   const goHome = useCallback((): void => {
     eisNavTo(0);

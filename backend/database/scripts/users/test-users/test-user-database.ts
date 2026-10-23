@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { loadEnvConfig } from "@next/env";
 import type { UserDatabaseTestContext } from "./test-user-context";
 import {
   testAccountDeletion,
@@ -21,8 +20,6 @@ import {
   testFailedSignupRecovery,
   testNormalSignupAndProfile,
 } from "./test-user-signup";
-
-loadEnvConfig(process.cwd());
 
 /**
  * Run integration scenarios against a disposable database.

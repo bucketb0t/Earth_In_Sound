@@ -2,10 +2,7 @@ import type {
   NormalUserTestResult,
   UserDatabaseTestContext,
 } from "./test-user-context";
-import {
-  assert,
-  assertRejectsWithMessage,
-} from "./test-user-helpers";
+import { assert, assertRejectsWithMessage } from "./test-user-helpers";
 
 /** Test normalized reads, missing rows, session lookup, search limits, and invalid IDs. */
 export async function testUserReads(
@@ -33,8 +30,9 @@ export async function testUserReads(
 
   for (const missingAuthId of [null, undefined, "   "]) {
     assert(
-      (await userReads.getCurrentUser({ authProviderUserId: missingAuthId })) ===
-        null,
+      (await userReads.getCurrentUser({
+        authProviderUserId: missingAuthId,
+      })) === null,
       "current-user lookup should return null without an auth id",
     );
   }
@@ -45,8 +43,8 @@ export async function testUserReads(
     "email lookup should be case-insensitive",
   );
   assert(
-    (await userReads.getUserByUsername(storedUser.username.toUpperCase()))?.id ===
-      storedUser.id,
+    (await userReads.getUserByUsername(storedUser.username.toUpperCase()))
+      ?.id === storedUser.id,
     "username lookup should be case-insensitive",
   );
   assert(
@@ -91,6 +89,11 @@ export async function testUserReads(
     () => userReads.getUserByUsername("   "),
     "Username is required.",
     "blank username lookups should be rejected",
+  );
+  await assertRejectsWithMessage(
+    () => userReads.getUserByUsername("invalid..username"),
+    'Username may use letters, numbers, "-", "_" and ".", but separators cannot touch.',
+    "invalid username lookups should be rejected",
   );
   await assertRejectsWithMessage(
     () => userReads.getUserByEmail("not-an-email"),

@@ -74,7 +74,11 @@ export async function runAcastTests(): Promise<void> {
     assert.equal(show.summary, "Show & summary");
     assert.deepEqual(show.keywords, ["music", "production", "metal"]);
     assert.equal(show.imageUrl, "https://example.com/cover.jpg");
-    assert.equal(show.episodes.length, 1, "one RSS item should become an array");
+    assert.equal(
+      show.episodes.length,
+      1,
+      "one RSS item should become an array",
+    );
     assert.deepEqual(show.episodes[0], {
       id: "https://example.com/episode-one",
       title: "Episode & One",
@@ -124,18 +128,16 @@ export async function runAcastTests(): Promise<void> {
 
   await assert.rejects(
     () =>
-      withMockedFetch(
-        { ok: false, text: async () => "" },
-        async () => getIHateMusicShow(),
+      withMockedFetch({ ok: false, text: async () => "" }, async () =>
+        getIHateMusicShow(),
       ),
     /Unable to load the I Hate Music Acast feed/,
   );
 
   await assert.rejects(
     () =>
-      withMockedFetch(
-        { ok: true, text: async () => "<rss />" },
-        async () => getIHateMusicShow(),
+      withMockedFetch({ ok: true, text: async () => "<rss />" }, async () =>
+        getIHateMusicShow(),
       ),
     /missing its channel/,
   );

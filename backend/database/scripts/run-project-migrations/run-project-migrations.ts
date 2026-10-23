@@ -2,8 +2,6 @@ import { loadEnvConfig } from "@next/env";
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-loadEnvConfig(process.cwd());
-
 const migrationsDirectory = fileURLToPath(
   new URL("../../migrations/", import.meta.url),
 );
@@ -15,6 +13,7 @@ const legacyMigrationIds = [
 
 /** Apply committed migrations once, in filename order. */
 export async function runProjectMigrationsScript(): Promise<void> {
+  loadEnvConfig(process.cwd());
   const { turso } = await import("../../turso-client");
 
   await turso.execute(`
@@ -31,8 +30,7 @@ export async function runProjectMigrationsScript(): Promise<void> {
     ),
   ]);
 
-  const hasMigrationHistory =
-    Number(migrationCount.rows[0]?.count ?? 0) > 0;
+  const hasMigrationHistory = Number(migrationCount.rows[0]?.count ?? 0) > 0;
   const hasExistingUsersTable = usersTable.rows.length > 0;
 
   /*

@@ -61,10 +61,7 @@ export async function testRolesAndOwnershipTransfer(
     targetUserId: normalUser.user.id,
     targetRole: "admin",
   });
-  assert(
-    promotedUser.role === "admin",
-    "owner should be able to assign admin",
-  );
+  assert(promotedUser.role === "admin", "owner should be able to assign admin");
   const unchangedAdmin = await userWrites.setUserRole({
     currentOwnerId: owner.id,
     targetUserId: normalUser.user.id,
@@ -170,10 +167,7 @@ export async function testRolesAndOwnershipTransfer(
     currentOwnerId: owner.id,
     targetUserId: normalUser.user.id,
   });
-  assert(
-    newOwner.role === "owner",
-    "ownership should transfer to target user",
-  );
+  assert(newOwner.role === "owner", "ownership should transfer to target user");
   assert(
     (await userReads.getUserById(owner.id))?.role === "admin",
     "previous owner should become admin",

@@ -295,7 +295,9 @@ export function parseYouTubeVideoId(value: string): string | null {
   return null;
 }
 
-function normalizeYouTubeVideoId(value: string | null | undefined): string | null {
+function normalizeYouTubeVideoId(
+  value: string | null | undefined,
+): string | null {
   if (!value) return null;
 
   const [videoId] = value.split(/[?&#]/);

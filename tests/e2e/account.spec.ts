@@ -35,7 +35,9 @@ test.describe("account page", () => {
     await expect(page.getByRole("heading", { name: "Log In" })).toBeVisible();
   });
 
-  test("exposes the intended browser-side field constraints", async ({ page }) => {
+  test("exposes the intended browser-side field constraints", async ({
+    page,
+  }) => {
     await page.goto("/account");
 
     const email = page.getByLabel("Email");
@@ -71,18 +73,20 @@ test.describe("account page", () => {
       page.getByRole("heading", { name: username, exact: true }),
     ).toBeVisible();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
-    await expect(
-      page.getByRole("switch", { name: "Log Out" }),
-    ).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("switch", { name: "Log Out" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
 
     await page
       .getByRole("main")
       .getByRole("button", { name: "Log Out" })
       .click();
     await expect(page.getByText("Signed out.", { exact: true })).toBeVisible();
-    await expect(
-      page.getByRole("switch", { name: "LogIn" }),
-    ).toHaveAttribute("aria-checked", "false");
+    await expect(page.getByRole("switch", { name: "LogIn" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
 
     await page
       .getByRole("button", { name: "Already have an account?" })
@@ -99,9 +103,10 @@ test.describe("account page", () => {
       page.getByText("Invalid email or password", { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Log In" })).toBeVisible();
-    await expect(
-      page.getByRole("switch", { name: "LogIn" }),
-    ).toHaveAttribute("aria-checked", "false");
+    await expect(page.getByRole("switch", { name: "LogIn" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
 
     await page.getByLabel("Password").fill(password);
     await page
