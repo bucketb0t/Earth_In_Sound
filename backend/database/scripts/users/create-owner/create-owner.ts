@@ -6,11 +6,11 @@ import {
   requireValidUsername,
 } from "@/backend/database/users/validation/validate-user-input";
 
-type OwnerSetupEnvironment = Partial<NodeJS.ProcessEnv> & {
+interface OwnerSetupEnvironment {
   LOCAL_OWNER_EMAIL?: string;
   LOCAL_OWNER_USERNAME?: string;
   LOCAL_OWNER_PASSWORD?: string;
-};
+}
 
 interface OwnerSetupConfiguration {
   email: string;
@@ -19,7 +19,7 @@ interface OwnerSetupConfiguration {
 }
 
 export function readOwnerSetupConfiguration(
-  environment: OwnerSetupEnvironment = process.env,
+  environment: OwnerSetupEnvironment,
 ): OwnerSetupConfiguration | null {
   const email = environment.LOCAL_OWNER_EMAIL?.trim();
   const username = environment.LOCAL_OWNER_USERNAME?.trim();
@@ -49,7 +49,11 @@ export function readOwnerSetupConfiguration(
  */
 export async function runCreateOwnerScript(): Promise<void> {
   loadEnvConfig(process.cwd());
-  const ownerConfiguration = readOwnerSetupConfiguration();
+  const ownerConfiguration = readOwnerSetupConfiguration({
+    LOCAL_OWNER_EMAIL: process.env.LOCAL_OWNER_EMAIL,
+    LOCAL_OWNER_USERNAME: process.env.LOCAL_OWNER_USERNAME,
+    LOCAL_OWNER_PASSWORD: process.env.LOCAL_OWNER_PASSWORD,
+  });
 
   if (ownerConfiguration === null) {
     console.log(

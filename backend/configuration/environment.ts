@@ -1,4 +1,4 @@
-type EnvironmentVariables = Partial<NodeJS.ProcessEnv>;
+type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
 
 /** Identify hostnames that refer to the current computer. */
 function isLocalHostname(hostname: string): boolean {
@@ -13,7 +13,7 @@ function isLocalHostname(hostname: string): boolean {
 /** Read a required setting without exposing its value in errors. */
 export function requireEnvironmentVariable(
   name: string,
-  environment: EnvironmentVariables = process.env,
+  environment: EnvironmentVariables,
 ): string {
   const value = environment[name];
 
@@ -25,9 +25,7 @@ export function requireEnvironmentVariable(
 }
 
 /** Require an authentication secret of at least 32 characters. */
-export function requireAuthSecret(
-  environment: EnvironmentVariables = process.env,
-): string {
+export function requireAuthSecret(environment: EnvironmentVariables): string {
   const secret = requireEnvironmentVariable("BETTER_AUTH_SECRET", environment);
 
   if (secret.length < 32) {
@@ -38,9 +36,7 @@ export function requireAuthSecret(
 }
 
 /** Read the URL used as Better Auth's public origin. */
-export function requireAuthBaseUrl(
-  environment: EnvironmentVariables = process.env,
-): string {
+export function requireAuthBaseUrl(environment: EnvironmentVariables): string {
   const value = requireEnvironmentVariable("BETTER_AUTH_URL", environment);
 
   let url: URL;

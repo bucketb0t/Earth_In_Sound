@@ -28,7 +28,7 @@ import { betterAuthDatabase } from "./better-auth-database";
 import { getOwnerSetupIdentity } from "./owner-setup-context";
 import { accountManagement } from "./account-management";
 
-const appBaseUrl = requireAuthBaseUrl();
+const appBaseUrl = requireAuthBaseUrl(process.env);
 const shouldSilenceBetterAuthLogs =
   process.env.EIS_SILENCE_BETTER_AUTH_LOGS === "true";
 
@@ -54,7 +54,7 @@ export const auth = betterAuth({
     /* Silence expected auth failures in database tests only. */
     disabled: shouldSilenceBetterAuthLogs,
   },
-  secret: requireAuthSecret(),
+  secret: requireAuthSecret(process.env),
   database: {
     /* Shared transactions must match Better Auth's generated schema. */
     db: betterAuthDatabase,

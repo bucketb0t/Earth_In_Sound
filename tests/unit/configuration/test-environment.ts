@@ -1,12 +1,56 @@
 import assert from "node:assert/strict";
 
-import { requireAuthBaseUrl } from "../../../backend/configuration/environment";
+import {
+  requireAuthBaseUrl,
+  requireAuthSecret,
+} from "../../../backend/configuration/environment";
+
+const validAuthSecret =
+  "earth-in-sound-test-secret-at-least-thirty-two-characters";
 
 /** Test required authentication environment configuration. */
 export function runEnvironmentTests(): void {
-  const validEnvironment: Partial<NodeJS.ProcessEnv> = {
+  const validEnvironment = {
     BETTER_AUTH_URL: "http://localhost:3000",
   };
+
+  assert.equal(
+    requireAuthSecret({
+      BETTER_AUTH_SECRET: validAuthSecret,
+    }),
+    validAuthSecret,
+    "a valid authentication secret should be returned",
+  );
+
+  assert.throws(
+    () => requireAuthSecret({}),
+    {
+      message: "Missing required environment variable: BETTER_AUTH_SECRET.",
+    },
+    "a missing authentication secret should be rejected",
+  );
+
+  assert.throws(
+    () =>
+      requireAuthSecret({
+        BETTER_AUTH_SECRET: "   ",
+      }),
+    {
+      message: "Missing required environment variable: BETTER_AUTH_SECRET.",
+    },
+    "a blank authentication secret should be rejected",
+  );
+
+  assert.throws(
+    () =>
+      requireAuthSecret({
+        BETTER_AUTH_SECRET: "x".repeat(31),
+      }),
+    {
+      message: "BETTER_AUTH_SECRET must be at least 32 characters long.",
+    },
+    "a short authentication secret should be rejected",
+  );
 
   assert.equal(
     requireAuthBaseUrl(validEnvironment),

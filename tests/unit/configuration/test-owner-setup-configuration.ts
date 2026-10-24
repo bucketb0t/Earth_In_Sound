@@ -13,7 +13,7 @@ const passwordLengthMessage = `LOCAL_OWNER_PASSWORD must be between ${PASSWORD_M
 
 const validOwnerPassword = "valid-owner-password-123";
 
-const incompleteOwnerEnvironments: readonly Partial<NodeJS.ProcessEnv>[] = [
+const incompleteOwnerEnvironments = [
   {
     LOCAL_OWNER_USERNAME: "owner",
     LOCAL_OWNER_PASSWORD: "valid-owner-password-123",
