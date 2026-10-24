@@ -113,6 +113,34 @@ export async function testNormalSignupAndProfile(
     "public signup should create an active profile",
   );
 
+  const usernameSignInResponse = await auth.api.signInWithIdentifier({
+    body: {
+      identifier: username.toUpperCase(),
+      password,
+    },
+    asResponse: true,
+  });
+  assert(
+    usernameSignInResponse.status === 200,
+    "username login should create a session",
+  );
+  await authContext.internalAdapter.deleteUserSessions(signup.user.id);
+
+  const unknownUsernameResponse = await auth.api.signInWithIdentifier({
+    body: {
+      identifier: `${testRunId}-missing-user`,
+      password,
+    },
+    asResponse: true,
+  });
+  assert(
+    unknownUsernameResponse.status === 401 &&
+      (await unknownUsernameResponse.text()).includes(
+        "Invalid email or password",
+      ),
+    "unknown usernames should receive the generic credentials error",
+  );
+
   const repeatedProfileWrite = await userWrites.createNormalUserAfterSignup({
     authProviderUserId: signup.user.id,
     email: "ignored-repeat@example.com",

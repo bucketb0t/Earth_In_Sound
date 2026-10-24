@@ -30,7 +30,9 @@ export async function createTestAccount(page: Page): Promise<TestAccount> {
 
 export async function signInTestAccount(page: Page, account: TestAccount) {
   await page.goto("/account");
-  await page.getByLabel("Email", { exact: true }).fill(account.email);
+  await page
+    .getByLabel("Email or Username", { exact: true })
+    .fill(account.email);
   await page.getByLabel("Password", { exact: true }).fill(account.password);
   await page
     .getByRole("main")

@@ -2,18 +2,40 @@ import type { BetterAuthPlugin } from "better-auth";
 import {
   APIError,
   createAuthEndpoint,
+  dispatchAuthEndpoint,
+  formCsrfMiddleware,
   sensitiveSessionMiddleware,
+  signInEmail,
 } from "better-auth/api";
 import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
-import { getUserByAuthProviderId } from "@/backend/database/users/read/read-users";
+import {
+  getUserByAuthProviderId,
+  getUserByUsername,
+} from "@/backend/database/users/read/read-users";
 import {
   deleteUser,
   updateUsername,
 } from "@/backend/database/users/write/write-users";
-import { requireValidUsername } from "@/backend/database/users/validation/validate-user-input";
+import {
+  requireValidEmail,
+  requireValidUsername,
+} from "@/backend/database/users/validation/validate-user-input";
 import type { UserRole } from "@/backend/database/users/read/read-users";
 import { PASSWORD_MAX_LENGTH } from "@/shared/account-policy";
+
+const emailSignInEndpoint = signInEmail();
+const invalidCredentialsMessage = "Invalid email or password";
+
+async function rejectInvalidCredentials(
+  password: string,
+  hashPassword: (password: string) => Promise<string>,
+): Promise<never> {
+  await hashPassword(password);
+  throw new APIError("UNAUTHORIZED", {
+    message: invalidCredentialsMessage,
+  });
+}
 
 export interface AccountProfile {
   username: string;
@@ -38,6 +60,75 @@ export function accountManagement() {
       { pathMatcher: (path) => path === "/account/close", window: 300, max: 5 },
     ],
     endpoints: {
+      signInWithIdentifier: createAuthEndpoint(
+        "/sign-in/identifier",
+        {
+          method: "POST",
+          body: z
+            .object({
+              identifier: z.string().min(1).max(320),
+              password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+              rememberMe: z.boolean().optional(),
+            })
+            .strict(),
+          use: [formCsrfMiddleware],
+        },
+        async (ctx) => {
+          const identifier = ctx.body.identifier.trim();
+          let email: string;
+
+          if (identifier.includes("@")) {
+            try {
+              email = requireValidEmail(identifier);
+            } catch {
+              return rejectInvalidCredentials(
+                ctx.body.password,
+                ctx.context.password.hash,
+              );
+            }
+          } else {
+            let username: string;
+            try {
+              username = requireValidUsername(identifier);
+            } catch {
+              return rejectInvalidCredentials(
+                ctx.body.password,
+                ctx.context.password.hash,
+              );
+            }
+
+            const profile = await getUserByUsername(username);
+            if (!profile) {
+              return rejectInvalidCredentials(
+                ctx.body.password,
+                ctx.context.password.hash,
+              );
+            }
+            email = profile.email;
+          }
+
+          const response = await dispatchAuthEndpoint(emailSignInEndpoint, {
+            context: ctx.context,
+            body: {
+              email,
+              password: ctx.body.password,
+              rememberMe: ctx.body.rememberMe,
+            },
+            headers: ctx.headers,
+            request: ctx.request,
+            method: "POST",
+            asResponse: true,
+          });
+
+          if (!(response instanceof Response)) {
+            throw new APIError("INTERNAL_SERVER_ERROR", {
+              message: "Could not complete sign in. Please try again.",
+            });
+          }
+
+          return response;
+        },
+      ),
       getAccountProfile: createAuthEndpoint(
         "/account/profile",
         {

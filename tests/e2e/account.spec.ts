@@ -7,20 +7,24 @@ test.describe("account page", () => {
 
     await expect(page).toHaveTitle("Account | Earth In Sound");
     await expect(page.getByRole("heading", { name: "Log In" })).toBeVisible();
-    await expect(page.getByLabel("Email")).toHaveAttribute(
+    await expect(page.getByLabel("Email or Username")).toHaveAttribute(
       "autocomplete",
-      "email",
+      "username",
     );
     await expect(page.getByLabel("Password")).toHaveAttribute(
       "autocomplete",
       "current-password",
     );
-    await expect(page.getByLabel("Username")).toHaveCount(0);
+    await expect(page.getByLabel("Username", { exact: true })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Need an account?" }).click();
 
     await expect(page.getByRole("heading", { name: "Sign Up" })).toBeVisible();
     await expect(page.getByLabel("Username")).toBeVisible();
+    await expect(page.getByLabel("Email", { exact: true })).toHaveAttribute(
+      "autocomplete",
+      "email",
+    );
     await expect(page.getByLabel("Password")).toHaveAttribute(
       "autocomplete",
       "new-password",
@@ -40,19 +44,21 @@ test.describe("account page", () => {
   }) => {
     await page.goto("/account");
 
-    const email = page.getByLabel("Email");
+    const identifier = page.getByLabel("Email or Username");
     const password = page.getByLabel("Password");
-    await expect(email).toHaveAttribute("required", "");
-    await expect(email).toHaveAttribute("type", "email");
+    await expect(identifier).toHaveAttribute("required", "");
+    await expect(identifier).toHaveAttribute("type", "text");
     await expect(password).toHaveAttribute("required", "");
     await expect(password).toHaveAttribute("minlength", "8");
     await expect(password).toHaveAttribute("maxlength", "128");
 
     await page.getByRole("button", { name: "Need an account?" }).click();
     const username = page.getByLabel("Username");
+    const email = page.getByLabel("Email", { exact: true });
     await expect(username).toHaveAttribute("required", "");
     await expect(username).toHaveAttribute("minlength", "3");
     await expect(username).toHaveAttribute("maxlength", "32");
+    await expect(email).toHaveAttribute("type", "email");
     await expect(password).toHaveAttribute("pattern", "\\S+");
     await expect(password).toHaveAttribute(
       "title",
@@ -70,7 +76,7 @@ test.describe("account page", () => {
     await page.goto("/account");
     await page.getByRole("button", { name: "Need an account?" }).click();
     await page.getByLabel("Username").fill(username);
-    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Email", { exact: true }).fill(email);
     await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create Account" }).click();
 
@@ -97,7 +103,7 @@ test.describe("account page", () => {
       .getByRole("button", { name: "Already have an account?" })
       .click();
     await expect(page.getByRole("heading", { name: "Log In" })).toBeVisible();
-    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Email or Username").fill(email);
     await page.getByLabel("Password").fill("Wrong-password-123");
     await page
       .getByRole("main")
@@ -113,6 +119,7 @@ test.describe("account page", () => {
       "false",
     );
 
+    await page.getByLabel("Email or Username").fill(username.toUpperCase());
     await page.getByLabel("Password").fill(password);
     await page
       .getByRole("main")

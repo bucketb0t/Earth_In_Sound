@@ -29,14 +29,14 @@ export default function AccountAuthPanel({
     session.isPending && !session.isRefetching ? initialSession : session.data;
 
   const [mode, setMode] = useState<AuthMode>("sign-in");
-  const [email, setEmail] = useState("");
+  const [emailOrUsername, setEmailOrUsername] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [signOutError, setSignOutError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /** Send signup username as Better Auth's name; login uses email and password. */
+  /** Send signup details or authenticate with an email/username identifier. */
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -46,12 +46,12 @@ export default function AccountAuthPanel({
       const result =
         mode === "sign-up"
           ? await authClient.signUp.email({
-              email,
+              email: emailOrUsername,
               password,
               name: username,
             })
-          : await authClient.signIn.email({
-              email,
+          : await authClient.signIn.identifier({
+              identifier: emailOrUsername,
               password,
             });
 
@@ -141,14 +141,14 @@ export default function AccountAuthPanel({
           ) : null}
 
           <label className={styles.field}>
-            <span>Email</span>
+            <span>{mode === "sign-up" ? "Email" : "Email or Username"}</span>
             <input
-              id="account-email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
+              id={mode === "sign-up" ? "account-email" : "account-identifier"}
+              name={mode === "sign-up" ? "email" : "identifier"}
+              type={mode === "sign-up" ? "email" : "text"}
+              value={emailOrUsername}
+              onChange={(event) => setEmailOrUsername(event.target.value)}
+              autoComplete={mode === "sign-up" ? "email" : "username"}
               required
             />
           </label>

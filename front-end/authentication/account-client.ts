@@ -8,7 +8,9 @@ export function accountClient() {
     atomListeners: [
       {
         matcher: (path) =>
-          path === "/account/update-username" || path === "/account/close",
+          path === "/sign-in/identifier" ||
+          path === "/account/update-username" ||
+          path === "/account/close",
         signal: "$sessionSignal",
       },
     ],
