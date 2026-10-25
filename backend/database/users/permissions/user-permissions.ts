@@ -1,5 +1,11 @@
 import type { StoredUser, UserRole } from "../read/read-users";
 
+const roleRanks: Readonly<Record<UserRole, number>> = Object.freeze({
+  owner: 3,
+  admin: 2,
+  user: 1,
+});
+
 export function requireStoredUser(
   user: StoredUser | null,
   message = "User was not found.",
@@ -21,12 +27,6 @@ export function requireActiveUser(user: StoredUser): StoredUser {
 
 /** Management requires a higher role rank: owner > admin > user. */
 export function getRoleRank(role: UserRole): number {
-  const roleRanks: Record<UserRole, number> = {
-    owner: 3,
-    admin: 2,
-    user: 1,
-  };
-
   return roleRanks[role];
 }
 

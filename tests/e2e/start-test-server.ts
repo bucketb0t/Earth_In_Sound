@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   process.env.BETTER_AUTH_SECRET =
     "earth-in-sound-e2e-secret-at-least-thirty-two-characters";
   process.env.BETTER_AUTH_URL = `http://localhost:${serverPort}`;
-  process.env.EIS_SILENCE_BETTER_AUTH_LOGS = "true";
+  process.env.SILENCE_AUTHENTICATION_LOGS = "true";
   process.env.NEXT_TELEMETRY_DISABLED = "1";
 
   const [{ runProjectMigrationsScript }, { runBetterAuthMigrationsScript }] =
@@ -43,10 +43,8 @@ async function main(): Promise<void> {
   await runProjectMigrationsScript();
   await runBetterAuthMigrationsScript();
 
-  const [{ betterAuthDatabase }, { turso }] = await Promise.all([
-    import("../../backend/authentication/better-auth-database"),
-    import("../../backend/database/turso-client"),
-  ]);
+  const { betterAuthDatabase, turso } =
+    await import("../../backend/database/database-module");
   await betterAuthDatabase.destroy();
   turso.close();
 

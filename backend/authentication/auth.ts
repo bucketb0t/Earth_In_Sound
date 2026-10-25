@@ -1,186 +1,27 @@
-import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
-import { nextCookies } from "better-auth/next-js";
-import { deleteAuthUser } from "./auth-user-lifecycle";
+import { applicationConfiguration } from "@/backend/configuration/application-configuration";
 import {
   requireAuthBaseUrl,
   requireAuthSecret,
 } from "@/backend/configuration/environment";
-import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  requireValidPassword,
-} from "@/shared/account-policy";
-import {
-  createNormalUserAfterSignup,
-  createOrLinkOwnerAfterSignup,
-} from "@/backend/database/users/write/write-users";
-import {
-  getUserByAuthProviderId,
-  getUserByEmail,
-  getUserByUsername,
-} from "@/backend/database/users/read/read-users";
-import {
-  requireValidEmail,
-  requireValidUsername,
-} from "@/backend/database/users/validation/validate-user-input";
-import { betterAuthDatabase } from "./better-auth-database";
-import { getOwnerSetupIdentity } from "./owner-setup-context";
-import { accountManagement } from "./account-management";
+import { userReader, userWriter } from "@/backend/database/users/user-module";
+import { betterAuthDatabase } from "@/backend/database/database-module";
+import { createAuthentication } from "./create-authentication";
+import { ownerSetupContext } from "@/backend/ownership/owner-setup-context";
 
-const appBaseUrl = requireAuthBaseUrl(process.env);
-const shouldSilenceBetterAuthLogs =
-  process.env.EIS_SILENCE_BETTER_AUTH_LOGS === "true";
-
-function isOwnerSetupIdentity(email: string, username: string): boolean {
-  const ownerSetupIdentity = getOwnerSetupIdentity();
-
-  return (
-    ownerSetupIdentity !== null &&
-    requireValidEmail(ownerSetupIdentity.email).toLowerCase() ===
-      requireValidEmail(email).toLowerCase() &&
-    requireValidUsername(ownerSetupIdentity.username).toLowerCase() ===
-      requireValidUsername(username).toLowerCase()
-  );
-}
-
-/** Better Auth owns passwords and sessions; project users own roles and status. */
-export const auth = betterAuth({
-  appName: "Earth In Sound",
-  baseURL: appBaseUrl,
-  /* Project endpoints preserve linked profile/auth data during edits and closure. */
-  disabledPaths: ["/update-user", "/delete-user"],
-  logger: {
-    /* Silence expected auth failures in database tests only. */
-    disabled: shouldSilenceBetterAuthLogs,
+/** Production authentication assembled from reusable modules. */
+export const auth = createAuthentication({
+  configuration: {
+    appName: applicationConfiguration.name,
+    baseUrl: requireAuthBaseUrl(process.env),
+    secret: requireAuthSecret(process.env),
+    silenceLogs: applicationConfiguration.silenceAuthenticationLogs,
   },
-  secret: requireAuthSecret(process.env),
   database: {
-    /* Shared transactions must match Better Auth's generated schema. */
     db: betterAuthDatabase,
     type: "sqlite",
     casing: "snake",
   },
-  emailAndPassword: {
-    /* Better Auth handles passwords and sessions; mailbox ownership is not yet verified. */
-    enabled: true,
-    minPasswordLength: PASSWORD_MIN_LENGTH,
-    maxPasswordLength: PASSWORD_MAX_LENGTH,
-    autoSignIn: true,
-  },
-  hooks: {
-    /** Apply the project password policy before Better Auth hashes a new password. */
-    before: createAuthMiddleware(async (context) => {
-      const password =
-        context.path === "/sign-up/email"
-          ? context.body?.password
-          : context.path === "/change-password" ||
-              context.path === "/reset-password"
-            ? context.body?.newPassword
-            : undefined;
-
-      if (typeof password !== "string") {
-        return;
-      }
-
-      try {
-        requireValidPassword(password);
-      } catch (error) {
-        throw new APIError("BAD_REQUEST", {
-          message:
-            error instanceof Error ? error.message : "Enter a valid password.",
-        });
-      }
-    }),
-  },
-  databaseHooks: {
-    user: {
-      create: {
-        /** Validate and normalize signup input; enforce reserved identities before auth writes. */
-        before: async (user) => {
-          const email = requireValidEmail(user.email);
-          const username = requireValidUsername(String(user.name ?? ""));
-          const isOwnerSetup = isOwnerSetupIdentity(email, username);
-          const existingEmailUser = await getUserByEmail(email);
-
-          if (
-            existingEmailUser &&
-            !(
-              isOwnerSetup &&
-              existingEmailUser.role === "owner" &&
-              existingEmailUser.status === "active" &&
-              existingEmailUser.auth_provider_user_id === null
-            )
-          ) {
-            throw new Error("Email is already registered.");
-          }
-
-          const existingUsernameUser = await getUserByUsername(username);
-          if (
-            existingUsernameUser &&
-            existingUsernameUser.id !== existingEmailUser?.id
-          ) {
-            throw new Error("Username is already registered.");
-          }
-
-          return {
-            data: {
-              ...user,
-              email,
-              name: username,
-            },
-          };
-        },
-
-        /** Link the auth user to a normal project profile; remove the auth user if linking fails. */
-        after: async (user) => {
-          const username = String(user.name ?? "");
-          const createProjectUser = isOwnerSetupIdentity(user.email, username)
-            ? createOrLinkOwnerAfterSignup
-            : createNormalUserAfterSignup;
-
-          try {
-            await createProjectUser({
-              authProviderUserId: user.id,
-              email: user.email,
-              username,
-            });
-          } catch (profileError) {
-            try {
-              await deleteAuthUser(user.id);
-            } catch (cleanupError) {
-              throw new AggregateError(
-                [profileError, cleanupError],
-                "Signup failed and the incomplete authentication account could not be removed.",
-              );
-            }
-
-            throw profileError;
-          }
-        },
-      },
-    },
-    session: {
-      create: {
-        /** Reject sessions for inactive or missing profiles, except during signup and trusted owner setup. */
-        before: async (session, context) => {
-          const projectUser = await getUserByAuthProviderId(session.userId);
-
-          if (
-            !projectUser &&
-            (context?.path === "/sign-up/email" || getOwnerSetupIdentity())
-          ) {
-            return;
-          }
-
-          if (!projectUser || projectUser.status !== "active") {
-            throw new APIError("FORBIDDEN", {
-              message: "User account is not active.",
-            });
-          }
-        },
-      },
-    },
-  },
-  plugins: [accountManagement(), nextCookies()],
+  ownerSetupContext,
+  userReader,
+  userWriter,
 });

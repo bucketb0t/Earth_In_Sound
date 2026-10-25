@@ -1,14 +1,22 @@
 import { XMLParser } from "fast-xml-parser";
 
-const I_HATE_MUSIC_ACAST_EPISODES_URL =
-  "https://shows.acast.com/i-hate-music/episodes";
-
-const I_HATE_MUSIC_ACAST_FEED_URL =
-  "https://feeds.acast.com/public/shows/i-hate-music";
-
-export const PODCAST_FEED_REVALIDATE_SECONDS = 3600;
-
 type OptionalArray<T> = T | T[] | undefined;
+
+export interface AcastPodcastConfiguration {
+  feedUrl: string;
+  episodesUrl: string;
+  fallbackTitle: string;
+  revalidateSeconds: number;
+}
+
+export interface PodcastFetchOptions extends RequestInit {
+  next?: { revalidate: number };
+}
+
+export type PodcastFeedFetcher = (
+  url: string,
+  options: PodcastFetchOptions,
+) => Promise<Pick<Response, "ok" | "text">>;
 
 /* RSS channel fields required by the podcast page. */
 interface AcastRssChannel {
@@ -76,47 +84,58 @@ export interface PodcastShow {
   episodes: PodcastEpisode[];
 }
 
-/** Fetch and normalize Acast RSS server-side into PodcastShow data. */
-export async function getIHateMusicShow(): Promise<PodcastShow> {
-  const response = await fetch(I_HATE_MUSIC_ACAST_FEED_URL, {
-    next: { revalidate: PODCAST_FEED_REVALIDATE_SECONDS },
-  });
+const defaultPodcastFeedFetcher: PodcastFeedFetcher = (url, options) =>
+  fetch(url, options);
 
-  if (!response.ok) {
-    throw new Error("Unable to load the I Hate Music Acast feed.");
-  }
+/** Create a configured Acast RSS loader with an optional fetch adapter. */
+export function createAcastPodcastLoader(
+  configuration: AcastPodcastConfiguration,
+  fetchFeed: PodcastFeedFetcher = defaultPodcastFeedFetcher,
+): () => Promise<PodcastShow> {
+  return async function getAcastShow(): Promise<PodcastShow> {
+    const response = await fetchFeed(configuration.feedUrl, {
+      next: { revalidate: configuration.revalidateSeconds },
+    });
 
-  const xml = await response.text();
+    if (!response.ok) {
+      throw new Error(
+        `Unable to load the ${configuration.fallbackTitle} Acast feed.`,
+      );
+    }
 
-  /* Preserve XML attributes to read enclosure audio URLs. */
-  const parser = new XMLParser({
-    attributeNamePrefix: "@_",
-    ignoreAttributes: false,
-    textNodeName: "#text",
-  });
-  const feed = parser.parse(xml) as AcastRssFeed;
-  const channel = feed.rss?.channel;
+    const xml = await response.text();
 
-  if (!channel) {
-    throw new Error("The I Hate Music Acast feed is missing its channel.");
-  }
+    const parser = new XMLParser({
+      attributeNamePrefix: "@_",
+      ignoreAttributes: false,
+      textNodeName: "#text",
+    });
+    const feed = parser.parse(xml) as AcastRssFeed;
+    const channel = feed.rss?.channel;
 
-  const episodes = asArray(channel.item).map(mapEpisode);
+    if (!channel) {
+      throw new Error(
+        `The ${configuration.fallbackTitle} Acast feed is missing its channel.`,
+      );
+    }
 
-  return {
-    title: channel.title ?? "I Hate Music",
-    subtitle: channel["itunes:subtitle"] ?? "",
-    summary: cleanAcastText(
-      channel["itunes:summary"] ?? channel.description ?? "",
-    ),
-    author: channel["itunes:author"] ?? "",
-    copyright: channel.copyright ?? "",
-    language: channel.language ?? "",
-    keywords: splitKeywords(channel["itunes:keywords"]),
-    imageUrl: cleanTextOrNull(channel.image?.url),
-    acastEpisodesUrl: I_HATE_MUSIC_ACAST_EPISODES_URL,
-    feedUrl: I_HATE_MUSIC_ACAST_FEED_URL,
-    episodes,
+    const episodes = asArray(channel.item).map(mapEpisode);
+
+    return {
+      title: channel.title ?? configuration.fallbackTitle,
+      subtitle: channel["itunes:subtitle"] ?? "",
+      summary: cleanAcastText(
+        channel["itunes:summary"] ?? channel.description ?? "",
+      ),
+      author: channel["itunes:author"] ?? "",
+      copyright: channel.copyright ?? "",
+      language: channel.language ?? "",
+      keywords: splitKeywords(channel["itunes:keywords"]),
+      imageUrl: cleanTextOrNull(channel.image?.url),
+      acastEpisodesUrl: configuration.episodesUrl,
+      feedUrl: configuration.feedUrl,
+      episodes,
+    };
   };
 }
 

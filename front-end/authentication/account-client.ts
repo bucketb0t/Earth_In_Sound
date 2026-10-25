@@ -1,10 +1,10 @@
 import type { BetterAuthClientPlugin } from "better-auth";
-import type { accountManagement } from "@/backend/authentication/account-management";
+import type { createAccountManagement } from "@/backend/authentication/account-management";
 
 export function accountClient() {
   return {
-    id: "eis-account" as const,
-    $InferServerPlugin: {} as ReturnType<typeof accountManagement>,
+    id: "project-account" as const,
+    $InferServerPlugin: {} as ReturnType<typeof createAccountManagement>,
     atomListeners: [
       {
         matcher: (path) =>

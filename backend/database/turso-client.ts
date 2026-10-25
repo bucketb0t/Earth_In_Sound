@@ -1,5 +1,9 @@
-import { createClient } from "@libsql/client";
-import { databaseConfiguration } from "./database-configuration";
+import { createClient, type Client } from "@libsql/client";
+import type { DatabaseConfiguration } from "./database-configuration";
 
-/** Project query client; Better Auth uses a separate database adapter. */
-export const turso = createClient(databaseConfiguration);
+/** Create a project query client from explicit database configuration. */
+export function createTursoClient(
+  configuration: DatabaseConfiguration,
+): Client {
+  return createClient(configuration);
+}

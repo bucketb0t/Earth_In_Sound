@@ -9,19 +9,15 @@ import {
 } from "better-auth/api";
 import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { z } from "zod";
-import {
-  getUserByAuthProviderId,
-  getUserByUsername,
+import type {
+  UserReader,
+  UserRole,
 } from "@/backend/database/users/read/read-users";
-import {
-  deleteUser,
-  updateUsername,
-} from "@/backend/database/users/write/write-users";
+import type { UserWriter } from "@/backend/database/users/write/write-users";
 import {
   requireValidEmail,
   requireValidUsername,
 } from "@/backend/database/users/validation/validate-user-input";
-import type { UserRole } from "@/backend/database/users/read/read-users";
 import { PASSWORD_MAX_LENGTH } from "@/shared/account-policy";
 
 const emailSignInEndpoint = signInEmail();
@@ -44,18 +40,31 @@ export interface AccountProfile {
   emailVerified: boolean;
 }
 
-async function requireAccountProfile(authUserId: string) {
-  const profile = await getUserByAuthProviderId(authUserId);
-  if (!profile || profile.status !== "active") {
-    throw new APIError("FORBIDDEN", { message: "User account is not active." });
-  }
-  return profile;
+export interface AccountManagementDependencies {
+  userReader: Pick<UserReader, "getUserByAuthProviderId" | "getUserByUsername">;
+  userWriter: Pick<UserWriter, "deleteUser" | "updateUsername">;
 }
 
 /** Extend Better Auth so account endpoints share its origin, session, and rate checks. */
-export function accountManagement() {
+export function createAccountManagement(
+  dependencies: AccountManagementDependencies,
+) {
+  const { getUserByAuthProviderId, getUserByUsername } =
+    dependencies.userReader;
+  const { deleteUser, updateUsername } = dependencies.userWriter;
+
+  async function requireAccountProfile(authUserId: string) {
+    const profile = await getUserByAuthProviderId(authUserId);
+    if (!profile || profile.status !== "active") {
+      throw new APIError("FORBIDDEN", {
+        message: "User account is not active.",
+      });
+    }
+    return profile;
+  }
+
   return {
-    id: "eis-account" as const,
+    id: "project-account" as const,
     rateLimit: [
       { pathMatcher: (path) => path === "/account/close", window: 300, max: 5 },
     ],

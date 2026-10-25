@@ -34,7 +34,7 @@ export async function runUserDatabaseTests(): Promise<void> {
   process.env.BETTER_AUTH_SECRET =
     "earth-in-sound-test-secret-at-least-thirty-two-characters";
   process.env.BETTER_AUTH_URL = "http://localhost:3000";
-  process.env.EIS_SILENCE_BETTER_AUTH_LOGS = "true";
+  process.env.SILENCE_AUTHENTICATION_LOGS = "true";
 
   let closeConnections: (() => Promise<void>) | null = null;
 
@@ -51,18 +51,14 @@ export async function runUserDatabaseTests(): Promise<void> {
 
     const [
       { auth },
-      { betterAuthDatabase },
-      { runWithOwnerSetupContext },
-      { turso },
-      userReads,
-      userWrites,
+      { ownerSetupContext },
+      { betterAuthDatabase, turso },
+      { userReader, userWriter },
     ] = await Promise.all([
       import("../../../../authentication/auth"),
-      import("../../../../authentication/better-auth-database"),
-      import("../../../../authentication/owner-setup-context"),
-      import("../../../turso-client"),
-      import("../../../users/read/read-users"),
-      import("../../../users/write/write-users"),
+      import("../../../../ownership/owner-setup-context"),
+      import("../../../database-module"),
+      import("../../../users/user-module"),
     ]);
 
     closeConnections = async () => {
@@ -73,10 +69,10 @@ export async function runUserDatabaseTests(): Promise<void> {
     const context: UserDatabaseTestContext = {
       auth,
       authContext: await auth.$context,
-      runWithOwnerSetupContext,
+      runWithOwnerSetupContext: ownerSetupContext.run,
       turso,
-      userReads,
-      userWrites,
+      userReads: userReader,
+      userWrites: userWriter,
       testRunId: randomUUID().slice(0, 8),
     };
 

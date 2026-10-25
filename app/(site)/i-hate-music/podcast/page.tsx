@@ -1,5 +1,6 @@
 import IHateMusicPodcastPage from "@/front-end/features/ihate-music-podcast/IHateMusicPodcastPage";
-import { getIHateMusicShow, type PodcastShow } from "@/backend/podcast/acast";
+import type { PodcastShow } from "@/backend/podcast/acast";
+import { getIHateMusicShow } from "@/backend/podcast/i-hate-music";
 
 /** Refresh cached podcast data hourly. */
 export const revalidate = 3600;

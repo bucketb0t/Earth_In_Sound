@@ -4,7 +4,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
 } from "@/shared/account-policy";
-import { readOwnerSetupConfiguration } from "../../../backend/database/scripts/users/create-owner/create-owner";
+import { readOwnerSetupConfiguration } from "../../../backend/ownership/owner-setup-configuration";
 
 const incompleteConfigurationMessage =
   "LOCAL_OWNER_EMAIL, LOCAL_OWNER_USERNAME, and LOCAL_OWNER_PASSWORD must either all be provided or all be omitted.";

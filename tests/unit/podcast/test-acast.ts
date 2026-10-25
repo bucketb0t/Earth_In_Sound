@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 
+import { createAcastPodcastLoader } from "../../../backend/podcast/acast";
 import {
   getIHateMusicShow,
   PODCAST_FEED_REVALIDATE_SECONDS,
-} from "../../../backend/podcast/acast";
+} from "../../../backend/podcast/i-hate-music";
 
 async function withMockedFetch<T>(
   response: Pick<Response, "ok" | "text">,
@@ -93,6 +94,32 @@ export async function runAcastTests(): Promise<void> {
   } finally {
     globalThis.fetch = originalFetch;
   }
+
+  let configuredFeedUrl = "";
+  const getConfiguredShow = createAcastPodcastLoader(
+    {
+      feedUrl: "https://feeds.example.com/another-band",
+      episodesUrl: "https://shows.example.com/another-band",
+      fallbackTitle: "Another Band Podcast",
+      revalidateSeconds: 120,
+    },
+    async (url) => {
+      configuredFeedUrl = url;
+      return {
+        ok: true,
+        text: async () =>
+          "<rss><channel><item><title>Episode</title></item></channel></rss>",
+      };
+    },
+  );
+  const configuredShow = await getConfiguredShow();
+
+  assert.equal(configuredFeedUrl, "https://feeds.example.com/another-band");
+  assert.equal(configuredShow.title, "Another Band Podcast");
+  assert.equal(
+    configuredShow.acastEpisodesUrl,
+    "https://shows.example.com/another-band",
+  );
 
   const sparseShow = await withMockedFetch(
     {

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 
+import { readApplicationConfiguration } from "../../../backend/configuration/application-configuration";
+import { readDatabaseConfiguration } from "../../../backend/database/database-configuration";
 import {
   requireAuthBaseUrl,
   requireAuthSecret,
@@ -13,6 +15,42 @@ export function runEnvironmentTests(): void {
   const validEnvironment = {
     BETTER_AUTH_URL: "http://localhost:3000",
   };
+
+  assert.deepEqual(
+    readApplicationConfiguration({}, "Default Project"),
+    {
+      name: "Default Project",
+      silenceAuthenticationLogs: false,
+    },
+    "application configuration should use safe defaults",
+  );
+
+  assert.deepEqual(
+    readApplicationConfiguration(
+      {
+        APPLICATION_NAME: " Another Band ",
+        SILENCE_AUTHENTICATION_LOGS: "true",
+      },
+      "Default Project",
+    ),
+    {
+      name: "Another Band",
+      silenceAuthenticationLogs: true,
+    },
+    "application configuration should accept deployment overrides",
+  );
+
+  assert.deepEqual(
+    readDatabaseConfiguration({
+      TURSO_DATABASE_URL: "libsql://database.example.com",
+      TURSO_AUTH_TOKEN: "database-token",
+    }),
+    {
+      url: "libsql://database.example.com",
+      authToken: "database-token",
+    },
+    "database configuration should be returned as one validated unit",
+  );
 
   assert.equal(
     requireAuthSecret({

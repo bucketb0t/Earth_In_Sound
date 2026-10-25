@@ -1,21 +1,14 @@
 import { randomUUID } from "node:crypto";
-import {
-  deleteLinkedUserRecords,
-  disableLinkedUserRecords,
-} from "@/backend/authentication/auth-user-lifecycle";
-import { turso } from "../../turso-client";
+import type { Client } from "@libsql/client";
+import type { AuthUserLifecycle } from "@/backend/authentication/auth-user-lifecycle";
 import {
   requireActiveUser,
   requireCanManageUser,
   requireStoredUser,
 } from "../permissions/user-permissions";
 import {
-  getUserByAuthProviderId,
-  getUserByEmail,
-  getUserById,
-  getUserByUsername,
-  getOwner,
   type StoredUser,
+  type UserReader,
   type UserRole,
 } from "../read/read-users";
 import {
@@ -72,87 +65,131 @@ export interface SetUserRoleInput {
   targetRole: AssignableUserRole;
 }
 
-/** Create or link the first owner profile within the trusted owner setup context. */
-export async function createOrLinkOwnerAfterSignup(
-  input: CreateOrLinkOwnerAfterSignupInput,
-): Promise<StoredUser> {
-  const authProviderUserId = input.authProviderUserId.trim();
+export interface UserWriter {
+  createOrLinkOwnerAfterSignup(
+    input: CreateOrLinkOwnerAfterSignupInput,
+  ): Promise<StoredUser>;
+  createNormalUserAfterSignup(
+    input: CreateNormalUserAfterSignupInput,
+  ): Promise<StoredUser>;
+  updateUsername(input: UpdateUsernameInput): Promise<StoredUser>;
+  disableUser(input: DisableUserInput): Promise<StoredUser>;
+  deleteUser(input: DeleteUserInput): Promise<StoredUser>;
+  reactivateUser(input: ReactivateUserInput): Promise<StoredUser>;
+  transferOwnership(input: TransferOwnershipInput): Promise<StoredUser>;
+  setUserRole(input: SetUserRoleInput): Promise<StoredUser>;
+}
 
-  if (!authProviderUserId) {
-    throw new Error("Auth provider user id is required.");
-  }
+export interface CreateUserWriterDependencies {
+  database: Pick<Client, "execute" | "batch" | "transaction">;
+  userReader: UserReader;
+  authUserLifecycle: AuthUserLifecycle;
+  generateId?: () => string;
+  getCurrentTime?: () => number;
+}
 
-  const linkedUser = await getUserByAuthProviderId(authProviderUserId);
-  if (linkedUser) {
-    if (linkedUser.role !== "owner") {
-      throw new Error("Auth account is already linked to a non-owner user.");
+/** Create user commands from explicit storage, lifecycle, ID, and clock dependencies. */
+export function createUserWriter(
+  dependencies: CreateUserWriterDependencies,
+): UserWriter {
+  const {
+    database: turso,
+    userReader,
+    authUserLifecycle,
+    generateId = randomUUID,
+    getCurrentTime = Date.now,
+  } = dependencies;
+  const {
+    getUserByAuthProviderId,
+    getUserByEmail,
+    getUserById,
+    getUserByUsername,
+    getOwner,
+  } = userReader;
+  const { deleteLinkedUserRecords, disableLinkedUserRecords } =
+    authUserLifecycle;
+
+  /** Create or link the first owner profile within the trusted owner setup context. */
+  async function createOrLinkOwnerAfterSignup(
+    input: CreateOrLinkOwnerAfterSignupInput,
+  ): Promise<StoredUser> {
+    const authProviderUserId = input.authProviderUserId.trim();
+
+    if (!authProviderUserId) {
+      throw new Error("Auth provider user id is required.");
     }
 
-    return linkedUser;
-  }
+    const linkedUser = await getUserByAuthProviderId(authProviderUserId);
+    if (linkedUser) {
+      if (linkedUser.role !== "owner") {
+        throw new Error("Auth account is already linked to a non-owner user.");
+      }
 
-  const email = requireValidEmail(input.email);
-  const username = requireValidUsername(input.username);
-  const emailLookup = toLookupValue(email);
-  const usernameLookup = toLookupValue(username);
-  const existingOwner = await getOwner();
-
-  if (existingOwner) {
-    if (
-      existingOwner.status !== "active" ||
-      existingOwner.email_lookup !== emailLookup ||
-      existingOwner.username_lookup !== usernameLookup
-    ) {
-      throw new Error(
-        "Owner setup identity does not match the existing owner.",
-      );
+      return linkedUser;
     }
 
-    if (
-      existingOwner.auth_provider_user_id &&
-      existingOwner.auth_provider_user_id !== authProviderUserId
-    ) {
-      throw new Error("Owner is already linked to another auth account.");
-    }
+    const email = requireValidEmail(input.email);
+    const username = requireValidUsername(input.username);
+    const emailLookup = toLookupValue(email);
+    const usernameLookup = toLookupValue(username);
+    const existingOwner = await getOwner();
 
-    const now = Date.now();
-    await turso.execute({
-      sql: `
+    if (existingOwner) {
+      if (
+        existingOwner.status !== "active" ||
+        existingOwner.email_lookup !== emailLookup ||
+        existingOwner.username_lookup !== usernameLookup
+      ) {
+        throw new Error(
+          "Owner setup identity does not match the existing owner.",
+        );
+      }
+
+      if (
+        existingOwner.auth_provider_user_id &&
+        existingOwner.auth_provider_user_id !== authProviderUserId
+      ) {
+        throw new Error("Owner is already linked to another auth account.");
+      }
+
+      const now = getCurrentTime();
+      await turso.execute({
+        sql: `
         UPDATE users
         SET auth_provider_user_id = ?, updated_at = ?
         WHERE id = ? AND auth_provider_user_id IS NULL
       `,
-      args: [authProviderUserId, now, existingOwner.id],
-    });
+        args: [authProviderUserId, now, existingOwner.id],
+      });
 
-    const linkedOwner = await getUserById(existingOwner.id);
-    const storedLinkedOwner = requireStoredUser(
-      linkedOwner,
-      "Linked owner was not found.",
-    );
+      const linkedOwner = await getUserById(existingOwner.id);
+      const storedLinkedOwner = requireStoredUser(
+        linkedOwner,
+        "Linked owner was not found.",
+      );
 
-    if (storedLinkedOwner.auth_provider_user_id !== authProviderUserId) {
-      throw new Error("Owner is already linked to another auth account.");
+      if (storedLinkedOwner.auth_provider_user_id !== authProviderUserId) {
+        throw new Error("Owner is already linked to another auth account.");
+      }
+
+      return storedLinkedOwner;
     }
 
-    return storedLinkedOwner;
-  }
+    const existingEmail = await getUserByEmail(email);
+    if (existingEmail) {
+      throw new Error("Email is already registered.");
+    }
 
-  const existingEmail = await getUserByEmail(email);
-  if (existingEmail) {
-    throw new Error("Email is already registered.");
-  }
+    const existingUsername = await getUserByUsername(username);
+    if (existingUsername) {
+      throw new Error("Username is already registered.");
+    }
 
-  const existingUsername = await getUserByUsername(username);
-  if (existingUsername) {
-    throw new Error("Username is already registered.");
-  }
+    const ownerId = generateId();
+    const now = getCurrentTime();
 
-  const ownerId = randomUUID();
-  const now = Date.now();
-
-  await turso.execute({
-    sql: `
+    await turso.execute({
+      sql: `
       INSERT INTO users (
         id,
         auth_provider_user_id,
@@ -167,65 +204,65 @@ export async function createOrLinkOwnerAfterSignup(
       )
       VALUES (?, ?, ?, ?, ?, ?, 'owner', 'active', ?, ?)
     `,
-    args: [
-      ownerId,
-      authProviderUserId,
-      email,
-      emailLookup,
-      username,
-      usernameLookup,
-      now,
-      now,
-    ],
-  });
+      args: [
+        ownerId,
+        authProviderUserId,
+        email,
+        emailLookup,
+        username,
+        usernameLookup,
+        now,
+        now,
+      ],
+    });
 
-  const createdOwner = await getUserById(ownerId);
-  return requireStoredUser(createdOwner, "Created owner was not found.");
-}
-
-/** Link successful auth signups to active project profiles with the fixed user role. */
-export async function createNormalUserAfterSignup(
-  input: CreateNormalUserAfterSignupInput,
-): Promise<StoredUser> {
-  const authProviderUserId = input.authProviderUserId.trim();
-
-  if (!authProviderUserId) {
-    throw new Error("Auth provider user id is required.");
+    const createdOwner = await getUserById(ownerId);
+    return requireStoredUser(createdOwner, "Created owner was not found.");
   }
 
-  const existingAuthUser = await getUserByAuthProviderId(authProviderUserId);
+  /** Link successful auth signups to active project profiles with the fixed user role. */
+  async function createNormalUserAfterSignup(
+    input: CreateNormalUserAfterSignupInput,
+  ): Promise<StoredUser> {
+    const authProviderUserId = input.authProviderUserId.trim();
 
-  /* Repeated signup hooks must not create duplicate profiles. */
-  if (existingAuthUser) {
-    return existingAuthUser;
-  }
+    if (!authProviderUserId) {
+      throw new Error("Auth provider user id is required.");
+    }
 
-  const email = requireValidEmail(input.email);
-  const username = requireValidUsername(input.username);
-  const now = Date.now();
+    const existingAuthUser = await getUserByAuthProviderId(authProviderUserId);
 
-  const existingEmail = await turso.execute({
-    sql: "SELECT id FROM users WHERE email_lookup = ? LIMIT 1",
-    args: [toLookupValue(email)],
-  });
+    /* Repeated signup hooks must not create duplicate profiles. */
+    if (existingAuthUser) {
+      return existingAuthUser;
+    }
 
-  if (existingEmail.rows.length > 0) {
-    throw new Error("Email is already registered.");
-  }
+    const email = requireValidEmail(input.email);
+    const username = requireValidUsername(input.username);
+    const now = getCurrentTime();
 
-  const existingUsername = await turso.execute({
-    sql: "SELECT id FROM users WHERE username_lookup = ? LIMIT 1",
-    args: [toLookupValue(username)],
-  });
+    const existingEmail = await turso.execute({
+      sql: "SELECT id FROM users WHERE email_lookup = ? LIMIT 1",
+      args: [toLookupValue(email)],
+    });
 
-  if (existingUsername.rows.length > 0) {
-    throw new Error("Username is already registered.");
-  }
+    if (existingEmail.rows.length > 0) {
+      throw new Error("Email is already registered.");
+    }
 
-  const userId = randomUUID();
+    const existingUsername = await turso.execute({
+      sql: "SELECT id FROM users WHERE username_lookup = ? LIMIT 1",
+      args: [toLookupValue(username)],
+    });
 
-  await turso.execute({
-    sql: `
+    if (existingUsername.rows.length > 0) {
+      throw new Error("Username is already registered.");
+    }
+
+    const userId = generateId();
+
+    await turso.execute({
+      sql: `
       INSERT INTO users (
         id,
         auth_provider_user_id,
@@ -240,182 +277,180 @@ export async function createNormalUserAfterSignup(
       )
       VALUES (?, ?, ?, ?, ?, ?, 'user', 'active', ?, ?)
     `,
-    args: [
-      userId,
-      authProviderUserId,
-      email,
-      toLookupValue(email),
-      username,
-      toLookupValue(username),
-      now,
-      now,
-    ],
-  });
-
-  const createdUser = await getUserById(userId);
-
-  return requireStoredUser(createdUser, "Created user was not found.");
-}
-
-/** Self-service username update; enforce validation and uniqueness. */
-export async function updateUsername(
-  input: UpdateUsernameInput,
-): Promise<StoredUser> {
-  const currentUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentUserId),
-      "Current user was not found.",
-    ),
-  );
-
-  const cleanedUsername = requireValidUsername(input.username);
-  const usernameLookup = toLookupValue(cleanedUsername);
-  const now = Date.now();
-  const transaction = await turso.transaction("write");
-
-  try {
-    const existingUsername = await transaction.execute({
-      sql: "SELECT id FROM users WHERE username_lookup = ? AND id != ? LIMIT 1",
-      args: [usernameLookup, currentUser.id],
+      args: [
+        userId,
+        authProviderUserId,
+        email,
+        toLookupValue(email),
+        username,
+        toLookupValue(username),
+        now,
+        now,
+      ],
     });
 
-    if (existingUsername.rows.length > 0) {
-      throw new Error("Username is already registered.");
-    }
+    const createdUser = await getUserById(userId);
 
-    const updatedProfile = await transaction.execute({
-      sql: `
+    return requireStoredUser(createdUser, "Created user was not found.");
+  }
+
+  /** Self-service username update; enforce validation and uniqueness. */
+  async function updateUsername(
+    input: UpdateUsernameInput,
+  ): Promise<StoredUser> {
+    const currentUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentUserId),
+        "Current user was not found.",
+      ),
+    );
+
+    const cleanedUsername = requireValidUsername(input.username);
+    const usernameLookup = toLookupValue(cleanedUsername);
+    const now = getCurrentTime();
+    const transaction = await turso.transaction("write");
+
+    try {
+      const existingUsername = await transaction.execute({
+        sql: "SELECT id FROM users WHERE username_lookup = ? AND id != ? LIMIT 1",
+        args: [usernameLookup, currentUser.id],
+      });
+
+      if (existingUsername.rows.length > 0) {
+        throw new Error("Username is already registered.");
+      }
+
+      const updatedProfile = await transaction.execute({
+        sql: `
         UPDATE users
         SET username = ?, username_lookup = ?, updated_at = ?
         WHERE id = ? AND status = 'active'
       `,
-      args: [cleanedUsername, usernameLookup, now, currentUser.id],
-    });
-
-    if (updatedProfile.rowsAffected !== 1) {
-      throw new Error("User account is not active.");
-    }
-
-    /* Keep the auth display name and project username in the same transaction. */
-    if (currentUser.auth_provider_user_id) {
-      const updatedAuthUser = await transaction.execute({
-        sql: 'UPDATE "user" SET name = ?, "updatedAt" = ? WHERE id = ?',
-        args: [
-          cleanedUsername,
-          new Date(now).toISOString(),
-          currentUser.auth_provider_user_id,
-        ],
+        args: [cleanedUsername, usernameLookup, now, currentUser.id],
       });
 
-      if (updatedAuthUser.rowsAffected !== 1) {
-        throw new Error("Linked authentication user was not found.");
+      if (updatedProfile.rowsAffected !== 1) {
+        throw new Error("User account is not active.");
       }
+
+      /* Keep the auth display name and project username in the same transaction. */
+      if (currentUser.auth_provider_user_id) {
+        const updatedAuthUser = await transaction.execute({
+          sql: 'UPDATE "user" SET name = ?, "updatedAt" = ? WHERE id = ?',
+          args: [
+            cleanedUsername,
+            new Date(now).toISOString(),
+            currentUser.auth_provider_user_id,
+          ],
+        });
+
+        if (updatedAuthUser.rowsAffected !== 1) {
+          throw new Error("Linked authentication user was not found.");
+        }
+      }
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    } finally {
+      transaction.close();
     }
 
-    await transaction.commit();
-  } catch (error) {
-    await transaction.rollback();
-    throw error;
-  } finally {
-    transaction.close();
+    const updatedUser = await getUserById(currentUser.id);
+
+    return requireStoredUser(updatedUser, "Updated user was not found.");
   }
 
-  const updatedUser = await getUserById(currentUser.id);
+  /** Disable without releasing email or username reservations; reactivation remains possible. */
+  async function disableUser(input: DisableUserInput): Promise<StoredUser> {
+    const currentUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentUserId),
+        "Current user was not found.",
+      ),
+    );
 
-  return requireStoredUser(updatedUser, "Updated user was not found.");
-}
+    const targetUser = requireStoredUser(
+      await getUserById(input.targetUserId),
+      "Target user was not found.",
+    );
 
-/** Disable without releasing email or username reservations; reactivation remains possible. */
-export async function disableUser(
-  input: DisableUserInput,
-): Promise<StoredUser> {
-  const currentUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentUserId),
-      "Current user was not found.",
-    ),
-  );
+    if (targetUser.status === "deleted") {
+      throw new Error("Deleted users cannot be disabled.");
+    }
 
-  const targetUser = requireStoredUser(
-    await getUserById(input.targetUserId),
-    "Target user was not found.",
-  );
+    if (currentUser.id === targetUser.id && currentUser.role === "owner") {
+      throw new Error("Transfer ownership before disabling the owner account.");
+    }
 
-  if (targetUser.status === "deleted") {
-    throw new Error("Deleted users cannot be disabled.");
-  }
+    requireCanManageUser(currentUser, targetUser);
 
-  if (currentUser.id === targetUser.id && currentUser.role === "owner") {
-    throw new Error("Transfer ownership before disabling the owner account.");
-  }
+    const now = getCurrentTime();
 
-  requireCanManageUser(currentUser, targetUser);
-
-  const now = Date.now();
-
-  if (targetUser.auth_provider_user_id) {
-    await disableLinkedUserRecords({
-      authProviderUserId: targetUser.auth_provider_user_id,
-      projectUserId: targetUser.id,
-      disabledAt: now,
-    });
-  } else {
-    await turso.execute({
-      sql: `
+    if (targetUser.auth_provider_user_id) {
+      await disableLinkedUserRecords({
+        authProviderUserId: targetUser.auth_provider_user_id,
+        projectUserId: targetUser.id,
+        disabledAt: now,
+      });
+    } else {
+      await turso.execute({
+        sql: `
         UPDATE users
         SET status = 'disabled', updated_at = ?
         WHERE id = ?
       `,
-      args: [now, targetUser.id],
-    });
+        args: [now, targetUser.id],
+      });
+    }
+
+    const disabledUser = await getUserById(targetUser.id);
+
+    return requireStoredUser(disabledUser, "Disabled user was not found.");
   }
 
-  const disabledUser = await getUserById(targetUser.id);
+  /**
+   * Soft-delete and remove auth access. Release the email, reserve the username,
+   * and prevent normal reactivation.
+   */
+  async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
+    const currentUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentUserId),
+        "Current user was not found.",
+      ),
+    );
 
-  return requireStoredUser(disabledUser, "Disabled user was not found.");
-}
+    const targetUser = requireStoredUser(
+      await getUserById(input.targetUserId),
+      "Target user was not found.",
+    );
 
-/**
- * Soft-delete and remove auth access. Release the email, reserve the username,
- * and prevent normal reactivation.
- */
-export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
-  const currentUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentUserId),
-      "Current user was not found.",
-    ),
-  );
+    if (targetUser.status === "deleted") {
+      throw new Error("User is already deleted.");
+    }
 
-  const targetUser = requireStoredUser(
-    await getUserById(input.targetUserId),
-    "Target user was not found.",
-  );
+    if (currentUser.id === targetUser.id && currentUser.role === "owner") {
+      throw new Error("Transfer ownership before deleting the owner account.");
+    }
 
-  if (targetUser.status === "deleted") {
-    throw new Error("User is already deleted.");
-  }
+    requireCanManageUser(currentUser, targetUser);
 
-  if (currentUser.id === targetUser.id && currentUser.role === "owner") {
-    throw new Error("Transfer ownership before deleting the owner account.");
-  }
+    const now = getCurrentTime();
+    const deletedEmailLookup = getDeletedEmailLookup(targetUser.id, now);
 
-  requireCanManageUser(currentUser, targetUser);
-
-  const now = Date.now();
-  const deletedEmailLookup = getDeletedEmailLookup(targetUser.id, now);
-
-  /* Delete linked auth and profile records atomically; legacy unlinked profiles need only a profile update. */
-  if (targetUser.auth_provider_user_id) {
-    await deleteLinkedUserRecords({
-      authProviderUserId: targetUser.auth_provider_user_id,
-      projectUserId: targetUser.id,
-      deletedEmailLookup,
-      deletedAt: now,
-    });
-  } else {
-    await turso.execute({
-      sql: `
+    /* Delete linked auth and profile records atomically; legacy unlinked profiles need only a profile update. */
+    if (targetUser.auth_provider_user_id) {
+      await deleteLinkedUserRecords({
+        authProviderUserId: targetUser.auth_provider_user_id,
+        projectUserId: targetUser.id,
+        deletedEmailLookup,
+        deletedAt: now,
+      });
+    } else {
+      await turso.execute({
+        sql: `
         UPDATE users
         SET
           auth_provider_user_id = NULL,
@@ -424,151 +459,164 @@ export async function deleteUser(input: DeleteUserInput): Promise<StoredUser> {
           updated_at = ?
         WHERE id = ?
       `,
-      args: [deletedEmailLookup, now, targetUser.id],
-    });
+        args: [deletedEmailLookup, now, targetUser.id],
+      });
+    }
+
+    const deletedUser = await getUserById(targetUser.id);
+
+    return requireStoredUser(deletedUser, "Deleted user was not found.");
   }
 
-  const deletedUser = await getUserById(targetUser.id);
+  /** Reactivate disabled accounts only; deleted identities have released their auth links. */
+  async function reactivateUser(
+    input: ReactivateUserInput,
+  ): Promise<StoredUser> {
+    const currentUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentUserId),
+        "Current user was not found.",
+      ),
+    );
 
-  return requireStoredUser(deletedUser, "Deleted user was not found.");
-}
+    const targetUser = requireStoredUser(
+      await getUserById(input.targetUserId),
+      "Target user was not found.",
+    );
 
-/** Reactivate disabled accounts only; deleted identities have released their auth links. */
-export async function reactivateUser(
-  input: ReactivateUserInput,
-): Promise<StoredUser> {
-  const currentUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentUserId),
-      "Current user was not found.",
-    ),
-  );
+    if (targetUser.status !== "disabled") {
+      throw new Error("Only disabled users can be reactivated.");
+    }
 
-  const targetUser = requireStoredUser(
-    await getUserById(input.targetUserId),
-    "Target user was not found.",
-  );
+    requireCanManageUser(currentUser, targetUser);
 
-  if (targetUser.status !== "disabled") {
-    throw new Error("Only disabled users can be reactivated.");
-  }
+    const now = getCurrentTime();
 
-  requireCanManageUser(currentUser, targetUser);
-
-  const now = Date.now();
-
-  await turso.execute({
-    sql: `
+    await turso.execute({
+      sql: `
       UPDATE users
       SET status = 'active', updated_at = ?
       WHERE id = ?
     `,
-    args: [now, targetUser.id],
-  });
+      args: [now, targetUser.id],
+    });
 
-  const reactivatedUser = await getUserById(targetUser.id);
+    const reactivatedUser = await getUserById(targetUser.id);
 
-  return requireStoredUser(reactivatedUser, "Reactivated user was not found.");
-}
-
-/** Transfer ownership atomically: demote the current owner to admin and promote the active target. */
-export async function transferOwnership(
-  input: TransferOwnershipInput,
-): Promise<StoredUser> {
-  const currentOwner = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentOwnerId),
-      "Current owner was not found.",
-    ),
-  );
-
-  if (currentOwner.role !== "owner") {
-    throw new Error("Only the owner can transfer ownership.");
+    return requireStoredUser(
+      reactivatedUser,
+      "Reactivated user was not found.",
+    );
   }
 
-  const targetUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.targetUserId),
-      "Target user was not found.",
-    ),
-  );
+  /** Transfer ownership atomically: demote the current owner to admin and promote the active target. */
+  async function transferOwnership(
+    input: TransferOwnershipInput,
+  ): Promise<StoredUser> {
+    const currentOwner = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentOwnerId),
+        "Current owner was not found.",
+      ),
+    );
 
-  if (targetUser.id === currentOwner.id) {
-    throw new Error("Ownership is already assigned to this user.");
-  }
+    if (currentOwner.role !== "owner") {
+      throw new Error("Only the owner can transfer ownership.");
+    }
 
-  const now = Date.now();
+    const targetUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.targetUserId),
+        "Target user was not found.",
+      ),
+    );
 
-  /* Batch both role changes so a failure preserves the current owner. */
-  await turso.batch(
-    [
-      {
-        sql: `
+    if (targetUser.id === currentOwner.id) {
+      throw new Error("Ownership is already assigned to this user.");
+    }
+
+    const now = getCurrentTime();
+
+    /* Batch both role changes so a failure preserves the current owner. */
+    await turso.batch(
+      [
+        {
+          sql: `
           UPDATE users
           SET role = 'admin', updated_at = ?
           WHERE id = ?
         `,
-        args: [now, currentOwner.id],
-      },
-      {
-        sql: `
+          args: [now, currentOwner.id],
+        },
+        {
+          sql: `
           UPDATE users
           SET role = 'owner', updated_at = ?
           WHERE id = ?
         `,
-        args: [now, targetUser.id],
-      },
-    ],
-    "write",
-  );
+          args: [now, targetUser.id],
+        },
+      ],
+      "write",
+    );
 
-  const newOwner = await getUserById(targetUser.id);
+    const newOwner = await getUserById(targetUser.id);
 
-  return requireStoredUser(newOwner, "New owner was not found.");
-}
-
-/** Owner-only role changes for active non-owner accounts; ownership uses transferOwnership. */
-export async function setUserRole(
-  input: SetUserRoleInput,
-): Promise<StoredUser> {
-  const currentOwner = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.currentOwnerId),
-      "Current owner was not found.",
-    ),
-  );
-
-  if (currentOwner.role !== "owner") {
-    throw new Error("Only the owner can change user roles.");
+    return requireStoredUser(newOwner, "New owner was not found.");
   }
 
-  const targetUser = requireActiveUser(
-    requireStoredUser(
-      await getUserById(input.targetUserId),
-      "Target user was not found.",
-    ),
-  );
+  /** Owner-only role changes for active non-owner accounts; ownership uses transferOwnership. */
+  async function setUserRole(input: SetUserRoleInput): Promise<StoredUser> {
+    const currentOwner = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.currentOwnerId),
+        "Current owner was not found.",
+      ),
+    );
 
-  if (targetUser.role === "owner") {
-    throw new Error("Use ownership transfer to change the owner.");
-  }
+    if (currentOwner.role !== "owner") {
+      throw new Error("Only the owner can change user roles.");
+    }
 
-  if (targetUser.role === input.targetRole) {
-    return targetUser;
-  }
+    const targetUser = requireActiveUser(
+      requireStoredUser(
+        await getUserById(input.targetUserId),
+        "Target user was not found.",
+      ),
+    );
 
-  const now = Date.now();
+    if (targetUser.role === "owner") {
+      throw new Error("Use ownership transfer to change the owner.");
+    }
 
-  await turso.execute({
-    sql: `
+    if (targetUser.role === input.targetRole) {
+      return targetUser;
+    }
+
+    const now = getCurrentTime();
+
+    await turso.execute({
+      sql: `
       UPDATE users
       SET role = ?, updated_at = ?
       WHERE id = ?
     `,
-    args: [input.targetRole, now, targetUser.id],
+      args: [input.targetRole, now, targetUser.id],
+    });
+
+    const updatedUser = await getUserById(targetUser.id);
+
+    return requireStoredUser(updatedUser, "Updated user was not found.");
+  }
+
+  return Object.freeze({
+    createOrLinkOwnerAfterSignup,
+    createNormalUserAfterSignup,
+    updateUsername,
+    disableUser,
+    deleteUser,
+    reactivateUser,
+    transferOwnership,
+    setUserRole,
   });
-
-  const updatedUser = await getUserById(targetUser.id);
-
-  return requireStoredUser(updatedUser, "Updated user was not found.");
 }

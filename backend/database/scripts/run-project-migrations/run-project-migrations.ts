@@ -14,7 +14,7 @@ const legacyMigrationIds = [
 /** Apply committed migrations once, in filename order. */
 export async function runProjectMigrationsScript(): Promise<void> {
   loadEnvConfig(process.cwd());
-  const { turso } = await import("../../turso-client");
+  const { turso } = await import("../../database-module");
 
   await turso.execute(`
     CREATE TABLE IF NOT EXISTS project_migrations (

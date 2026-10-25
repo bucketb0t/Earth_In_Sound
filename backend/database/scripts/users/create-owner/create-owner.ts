@@ -1,145 +1,72 @@
 import { loadEnvConfig } from "@next/env";
 import { pathToFileURL } from "node:url";
-import { requireValidPassword } from "@/shared/account-policy";
-import {
-  requireValidEmail,
-  requireValidUsername,
-} from "@/backend/database/users/validation/validate-user-input";
+import { readOwnerSetupConfiguration } from "@/backend/ownership/owner-setup-configuration";
+import { setupOwner } from "@/backend/ownership/setup-owner";
 
-interface OwnerSetupEnvironment {
-  LOCAL_OWNER_EMAIL?: string;
-  LOCAL_OWNER_USERNAME?: string;
-  LOCAL_OWNER_PASSWORD?: string;
-}
-
-interface OwnerSetupConfiguration {
-  email: string;
-  username: string;
-  password: string;
-}
-
-export function readOwnerSetupConfiguration(
-  environment: OwnerSetupEnvironment,
-): OwnerSetupConfiguration | null {
-  const email = environment.LOCAL_OWNER_EMAIL?.trim();
-  const username = environment.LOCAL_OWNER_USERNAME?.trim();
-  const password = environment.LOCAL_OWNER_PASSWORD;
-
-  const passwordIsMissing = !password || password.trim().length === 0;
-  if (!email && !username && passwordIsMissing) {
-    return null;
-  }
-
-  if (!email || !username || passwordIsMissing) {
-    throw new Error(
-      "LOCAL_OWNER_EMAIL, LOCAL_OWNER_USERNAME, and LOCAL_OWNER_PASSWORD must either all be provided or all be omitted.",
-    );
-  }
-
-  return {
-    email: requireValidEmail(email),
-    username: requireValidUsername(username),
-    password: requireValidPassword(password, "LOCAL_OWNER_PASSWORD"),
-  };
-}
-
-/**
- * Create or repair the first owner using trusted LOCAL_OWNER_* inputs.
- * Revoke setup sessions so the owner must sign in normally afterward.
- */
+/** Load deployment inputs and run the reusable owner bootstrap use case. */
 export async function runCreateOwnerScript(): Promise<void> {
   loadEnvConfig(process.cwd());
-  const ownerConfiguration = readOwnerSetupConfiguration({
+
+  const configuration = readOwnerSetupConfiguration({
     LOCAL_OWNER_EMAIL: process.env.LOCAL_OWNER_EMAIL,
     LOCAL_OWNER_USERNAME: process.env.LOCAL_OWNER_USERNAME,
     LOCAL_OWNER_PASSWORD: process.env.LOCAL_OWNER_PASSWORD,
   });
 
-  if (ownerConfiguration === null) {
+  if (configuration === null) {
     console.log(
       "No LOCAL_OWNER_* configuration was provided. Skipping owner creation.",
     );
     return;
   }
 
-  const {
-    email: ownerEmail,
-    username: ownerUsername,
-    password: ownerPassword,
-  } = ownerConfiguration;
-
-  const [{ auth }, { runWithOwnerSetupContext }, userReads, userWrites] =
+  const [{ auth }, { ownerSetupContext }, { userReader, userWriter }] =
     await Promise.all([
       import("../../../../authentication/auth"),
-      import("../../../../authentication/owner-setup-context"),
-      import("../../../users/read/read-users"),
-      import("../../../users/write/write-users"),
+      import("../../../../ownership/owner-setup-context"),
+      import("../../../users/user-module"),
     ]);
-
-  const existingOwner = await userReads.getOwner();
   const authContext = await auth.$context;
+  const result = await setupOwner(configuration, {
+    authentication: {
+      findUserById: async (userId) => {
+        const user = await authContext.internalAdapter.findUserById(userId);
+        return user ? { id: user.id } : null;
+      },
+      findUserByEmail: async (email) => {
+        const record = await authContext.internalAdapter.findUserByEmail(email);
+        return record?.user ? { user: { id: record.user.id } } : null;
+      },
+      signIn: async (email, password) => {
+        await auth.api.signInEmail({ body: { email, password } });
+      },
+      signUp: async (email, username, password) => {
+        const signup = await auth.api.signUpEmail({
+          body: { email, name: username, password },
+        });
+        return { id: signup.user.id };
+      },
+      deleteUserSessions: (userId) =>
+        authContext.internalAdapter.deleteUserSessions(userId),
+    },
+    ownerSetupContext,
+    userReader,
+    userWriter,
+  });
 
-  if (existingOwner?.auth_provider_user_id) {
-    const authUser = await authContext.internalAdapter.findUserById(
-      existingOwner.auth_provider_user_id,
-    );
-
-    if (!authUser) {
-      throw new Error(
-        "The owner profile points to a missing Better Auth account.",
-      );
-    }
-
+  if (result.status === "already-linked") {
     console.log("Owner already exists and is linked. Skipping owner creation.");
     return;
   }
 
-  const existingAuthRecord =
-    await authContext.internalAdapter.findUserByEmail(ownerEmail);
-
-  const ownerAuthUserId = await runWithOwnerSetupContext(
-    { email: ownerEmail, username: ownerUsername },
-    async () => {
-      if (existingAuthRecord?.user) {
-        await auth.api.signInEmail({
-          body: {
-            email: ownerEmail,
-            password: ownerPassword,
-          },
-        });
-
-        await userWrites.createOrLinkOwnerAfterSignup({
-          authProviderUserId: existingAuthRecord.user.id,
-          email: ownerEmail,
-          username: ownerUsername,
-        });
-
-        return existingAuthRecord.user.id;
-      }
-
-      const signupResult = await auth.api.signUpEmail({
-        body: {
-          email: ownerEmail,
-          name: ownerUsername,
-          password: ownerPassword,
-        },
-      });
-
-      return signupResult.user.id;
-    },
-  );
-
-  await authContext.internalAdapter.deleteUserSessions(ownerAuthUserId);
-
-  const owner = await userReads.getOwner();
   console.log("Owner account is ready.");
   console.log({
-    id: owner?.id,
-    email: owner?.email,
-    username: owner?.username,
-    role: owner?.role,
-    status: owner?.status,
-    authLinked: owner?.auth_provider_user_id === ownerAuthUserId,
+    id: result.owner.id,
+    email: result.owner.email,
+    username: result.owner.username,
+    role: result.owner.role,
+    status: result.owner.status,
+    authLinked: result.owner.auth_provider_user_id !== null,
   });
 }
 

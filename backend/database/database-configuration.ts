@@ -1,7 +1,18 @@
 import { requireEnvironmentVariable } from "@/backend/configuration/environment";
 
-/** Shared credentials used by every server-side database client. */
-export const databaseConfiguration = Object.freeze({
-  url: requireEnvironmentVariable("TURSO_DATABASE_URL", process.env),
-  authToken: requireEnvironmentVariable("TURSO_AUTH_TOKEN", process.env),
-});
+type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
+
+export interface DatabaseConfiguration {
+  url: string;
+  authToken: string;
+}
+
+/** Read the shared credentials required by every database adapter. */
+export function readDatabaseConfiguration(
+  environment: EnvironmentVariables,
+): Readonly<DatabaseConfiguration> {
+  return Object.freeze({
+    url: requireEnvironmentVariable("TURSO_DATABASE_URL", environment),
+    authToken: requireEnvironmentVariable("TURSO_AUTH_TOKEN", environment),
+  });
+}

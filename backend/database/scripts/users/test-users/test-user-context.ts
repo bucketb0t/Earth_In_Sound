@@ -2,19 +2,18 @@ import type { StoredUser } from "../../../users/read/read-users";
 
 type AuthModule = typeof import("../../../../authentication/auth");
 type OwnerSetupModule =
-  typeof import("../../../../authentication/owner-setup-context");
-type TursoModule = typeof import("../../../turso-client");
-type UserReadsModule = typeof import("../../../users/read/read-users");
-type UserWritesModule = typeof import("../../../users/write/write-users");
+  typeof import("../../../../ownership/owner-setup-context");
+type DatabaseModule = typeof import("../../../database-module");
+type UserModule = typeof import("../../../users/user-module");
 
 /** Shared integration dependencies. Type-only imports defer clients until the test database is configured. */
 export interface UserDatabaseTestContext {
   readonly auth: AuthModule["auth"];
   readonly authContext: Awaited<AuthModule["auth"]["$context"]>;
-  readonly runWithOwnerSetupContext: OwnerSetupModule["runWithOwnerSetupContext"];
-  readonly turso: TursoModule["turso"];
-  readonly userReads: UserReadsModule;
-  readonly userWrites: UserWritesModule;
+  readonly runWithOwnerSetupContext: OwnerSetupModule["ownerSetupContext"]["run"];
+  readonly turso: DatabaseModule["turso"];
+  readonly userReads: UserModule["userReader"];
+  readonly userWrites: UserModule["userWriter"];
   readonly testRunId: string;
 }
 
