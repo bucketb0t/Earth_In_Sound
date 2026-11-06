@@ -100,6 +100,15 @@ export async function testDisableAndReactivate(
       .length === 0,
     "disabling should revoke all Better Auth sessions",
   );
+  await assertRejectsWithMessage(
+    () =>
+      userWrites.disableUser({
+        currentUserId: owner.id,
+        targetUserId: normalUser.user.id,
+      }),
+    "Only active users can be disabled.",
+    "an already disabled user should not be disabled again",
+  );
   await assertRejects(
     () =>
       auth.api.signInEmail({

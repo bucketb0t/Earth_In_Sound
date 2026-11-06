@@ -380,6 +380,10 @@ export function createUserWriter(
       throw new Error("Deleted users cannot be disabled.");
     }
 
+    if (targetUser.status !== "active") {
+      throw new Error("Only active users can be disabled.");
+    }
+
     if (currentUser.id === targetUser.id && currentUser.role === "owner") {
       throw new Error("Transfer ownership before disabling the owner account.");
     }
