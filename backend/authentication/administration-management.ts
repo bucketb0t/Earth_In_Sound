@@ -13,7 +13,10 @@ import type {
   UserRole,
   UserStatus,
 } from "@/backend/database/users/read/read-users";
-import type { UserWriter } from "@/backend/database/users/write/write-users";
+import {
+  USER_ACCOUNT_CHANGED_MESSAGE,
+  type UserWriter,
+} from "@/backend/database/users/write/write-users";
 
 export interface AdministrativeUserSummary {
   id: string;
@@ -167,6 +170,15 @@ export function createAdministrationManagement(
               user: toAdministrativeUserSummary(updatedUser),
             });
           } catch (error) {
+            if (
+              error instanceof Error &&
+              error.message === USER_ACCOUNT_CHANGED_MESSAGE
+            ) {
+              throw new APIError("CONFLICT", {
+                message: error.message,
+              });
+            }
+
             if (
               error instanceof Error &&
               error.message === "Target user was not found."

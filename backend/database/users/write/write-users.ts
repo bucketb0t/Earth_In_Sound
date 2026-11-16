@@ -20,6 +20,9 @@ import {
 
 /* Derive acting user IDs from the authenticated server session, never from browser input. */
 
+export const USER_ACCOUNT_CHANGED_MESSAGE =
+  "User account changed. Refresh and try again.";
+
 export interface UpdateUsernameInput {
   currentUserId: string;
   username: string;
@@ -391,22 +394,32 @@ export function createUserWriter(
     requireCanManageUser(currentUser, targetUser);
 
     const now = getCurrentTime();
+    let statusChanged: boolean;
 
     if (targetUser.auth_provider_user_id) {
-      await disableLinkedUserRecords({
+      statusChanged = await disableLinkedUserRecords({
         authProviderUserId: targetUser.auth_provider_user_id,
         projectUserId: targetUser.id,
+        expectedUpdatedAt: targetUser.updated_at,
         disabledAt: now,
       });
     } else {
-      await turso.execute({
+      const updateResult = await turso.execute({
         sql: `
-        UPDATE users
-        SET status = 'disabled', updated_at = ?
-        WHERE id = ?
-      `,
-        args: [now, targetUser.id],
+      UPDATE users
+      SET status = 'disabled', updated_at = ?
+      WHERE id = ?
+        AND status = 'active'
+        AND updated_at = ?
+    `,
+        args: [now, targetUser.id, targetUser.updated_at],
       });
+
+      statusChanged = updateResult.rowsAffected === 1;
+    }
+
+    if (!statusChanged) {
+      throw new Error(USER_ACCOUNT_CHANGED_MESSAGE);
     }
 
     const disabledUser = await getUserById(targetUser.id);
